@@ -1,10 +1,9 @@
-import { Header } from '@/components/layout/header';
+
 import { Container } from '@/components/layout/container';
 
 export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
-      <Header />
       <main className="py-8">
         <Container>
           <div className="max-w-xl mx-auto rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">

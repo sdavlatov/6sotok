@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Header } from '@/components/layout/header';
 import { Container } from '@/components/layout/container';
 import { ListingCard } from '@/components/listings/listing-card';
 import { CatalogFilters } from '@/components/catalog/filters';
@@ -13,9 +12,18 @@ export default function CatalogPage() {
 
   // Filter & Sort State
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [selectedPurposes, setSelectedPurposes] = useState<string[]>([]);
   const [priceFrom, setPriceFrom] = useState('');
   const [priceTo, setPriceTo] = useState('');
   const [sortOrder, setSortOrder] = useState('Сначала новые');
+  
+  // New Filter State
+  const [isPledged, setIsPledged] = useState(false); // Checkbox: Без залога
+  const [isOnRedLine, setIsOnRedLine] = useState(false); // Checkbox: Вне красных линий
+  const [hasElectricity, setHasElectricity] = useState(false);
+  const [hasGas, setHasGas] = useState(false);
+  const [hasWater, setHasWater] = useState(false);
+  const [hasRoadAccess, setHasRoadAccess] = useState(false);
 
   // Extend mock data array
   const baseListings = useMemo(() => [
@@ -32,6 +40,10 @@ export default function CatalogPage() {
     if (selectedTypes.length > 0) {
       result = result.filter(l => selectedTypes.includes(l.landType));
     }
+    // Filter Purpose
+    if (selectedPurposes.length > 0) {
+      result = result.filter(l => l.purpose && selectedPurposes.includes(l.purpose));
+    }
     // Filter Price
     if (priceFrom) {
       const from = parseInt(priceFrom.replace(/\D/g, ''));
@@ -41,6 +53,13 @@ export default function CatalogPage() {
       const to = parseInt(priceTo.replace(/\D/g, ''));
       if (to) result = result.filter(l => l.price <= to);
     }
+    // Legal & Comms
+    if (isPledged) result = result.filter(l => l.isPledged === false);
+    if (isOnRedLine) result = result.filter(l => l.isOnRedLine === false);
+    if (hasElectricity) result = result.filter(l => l.hasElectricity === true);
+    if (hasGas) result = result.filter(l => l.hasGas === true);
+    if (hasWater) result = result.filter(l => l.hasWater === true);
+    if (hasRoadAccess) result = result.filter(l => l.hasRoadAccess === true);
 
     // Sort
     result.sort((a, b) => {
@@ -52,11 +71,10 @@ export default function CatalogPage() {
     });
 
     return result;
-  }, [baseListings, selectedTypes, priceFrom, priceTo, sortOrder]);
+  }, [baseListings, selectedTypes, selectedPurposes, priceFrom, priceTo, sortOrder, isPledged, isOnRedLine, hasElectricity, hasGas, hasWater, hasRoadAccess]);
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-primary-soft">
-      <Header />
       <main className="py-8 pb-20">
         <Container>
           
@@ -77,6 +95,14 @@ export default function CatalogPage() {
                 setPriceFrom={setPriceFrom}
                 priceTo={priceTo}
                 setPriceTo={setPriceTo}
+                selectedPurposes={selectedPurposes}
+                onChangePurposes={setSelectedPurposes}
+                isPledged={isPledged} setIsPledged={setIsPledged}
+                isOnRedLine={isOnRedLine} setIsOnRedLine={setIsOnRedLine}
+                hasElectricity={hasElectricity} setHasElectricity={setHasElectricity}
+                hasGas={hasGas} setHasGas={setHasGas}
+                hasWater={hasWater} setHasWater={setHasWater}
+                hasRoadAccess={hasRoadAccess} setHasRoadAccess={setHasRoadAccess}
               />
             </aside>
 

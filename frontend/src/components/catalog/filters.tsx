@@ -1,15 +1,42 @@
 'use client';
 
 interface CatalogFiltersProps {
+  // Existing
   selectedTypes: string[];
   onChangeTypes: (types: string[]) => void;
   priceFrom: string;
   setPriceFrom: (v: string) => void;
   priceTo: string;
   setPriceTo: (v: string) => void;
+  
+  // New
+  selectedPurposes: string[];
+  onChangePurposes: (p: string[]) => void;
+  isPledged: boolean;
+  setIsPledged: (v: boolean) => void;
+  isOnRedLine: boolean;
+  setIsOnRedLine: (v: boolean) => void;
+  hasElectricity: boolean;
+  setHasElectricity: (v: boolean) => void;
+  hasGas: boolean;
+  setHasGas: (v: boolean) => void;
+  hasWater: boolean;
+  setHasWater: (v: boolean) => void;
+  hasRoadAccess: boolean;
+  setHasRoadAccess: (v: boolean) => void;
 }
 
-export function CatalogFilters({ selectedTypes, onChangeTypes, priceFrom, setPriceFrom, priceTo, setPriceTo }: CatalogFiltersProps) {
+export function CatalogFilters({ 
+  selectedTypes, onChangeTypes, 
+  priceFrom, setPriceFrom, priceTo, setPriceTo,
+  selectedPurposes, onChangePurposes,
+  isPledged, setIsPledged,
+  isOnRedLine, setIsOnRedLine,
+  hasElectricity, setHasElectricity,
+  hasGas, setHasGas,
+  hasWater, setHasWater,
+  hasRoadAccess, setHasRoadAccess
+}: CatalogFiltersProps) {
   
   const handleTypeToggle = (type: string) => {
     if (selectedTypes.includes(type)) {
@@ -19,10 +46,25 @@ export function CatalogFilters({ selectedTypes, onChangeTypes, priceFrom, setPri
     }
   };
 
+  const handlePurposeToggle = (purpose: string) => {
+    if (selectedPurposes.includes(purpose)) {
+      onChangePurposes(selectedPurposes.filter(p => p !== purpose));
+    } else {
+      onChangePurposes([...selectedPurposes, purpose]);
+    }
+  };
+
   const clearFilters = () => {
     onChangeTypes([]);
     setPriceFrom('');
     setPriceTo('');
+    onChangePurposes([]);
+    setIsPledged(false);
+    setIsOnRedLine(false);
+    setHasElectricity(false);
+    setHasGas(false);
+    setHasWater(false);
+    setHasRoadAccess(false);
   };
 
   return (
@@ -33,19 +75,20 @@ export function CatalogFilters({ selectedTypes, onChangeTypes, priceFrom, setPri
       </div>
 
       <div className="space-y-8">
-        {/* Тип участка */}
+        
+        {/* Целевое назначение (Purpose) */}
         <div>
-          <h3 className="mb-4 text-xs font-extrabold uppercase tracking-wider text-zinc-400">Тип участка</h3>
+          <h3 className="mb-4 text-xs font-extrabold uppercase tracking-wider text-zinc-400">Целевое назначение</h3>
           <div className="flex flex-col gap-3.5">
-            {['ИЖС', 'Дача', 'Коммерция', 'Сельхоз'].map(type => (
-              <label key={type} className="flex items-center gap-3 cursor-pointer group">
+            {['ИЖС', 'ЛПХ', 'Коммерция', 'Сельхоз'].map(purpose => (
+              <label key={purpose} className="flex items-center gap-3 cursor-pointer group">
                 <input 
                   type="checkbox" 
-                  checked={selectedTypes.includes(type)}
-                  onChange={() => handleTypeToggle(type)}
+                  checked={selectedPurposes.includes(purpose)}
+                  onChange={() => handlePurposeToggle(purpose)}
                   className="h-5 w-5 rounded border-zinc-300 text-primary accent-primary focus:ring-primary transition-colors cursor-pointer" 
                 />
-                <span className="text-sm font-semibold text-zinc-700 transition-colors group-hover:text-zinc-900">{type}</span>
+                <span className="text-sm font-semibold text-zinc-700 transition-colors group-hover:text-zinc-900">{purpose}</span>
               </label>
             ))}
           </div>
@@ -70,6 +113,54 @@ export function CatalogFilters({ selectedTypes, onChangeTypes, priceFrom, setPri
               onChange={e => setPriceTo(e.target.value)}
               className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-900 outline-none transition-colors focus:border-primary focus:bg-white focus:ring-1 focus:ring-primary placeholder:font-medium" 
             />
+          </div>
+        </div>
+
+        {/* Юридические параметры */}
+        <div>
+          <h3 className="mb-4 text-xs font-extrabold uppercase tracking-wider text-zinc-400">Юридически</h3>
+          <div className="flex flex-col gap-3.5">
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <input 
+                type="checkbox" 
+                checked={isPledged}
+                onChange={(e) => setIsPledged(e.target.checked)}
+                className="h-5 w-5 rounded border-zinc-300 text-primary accent-primary focus:ring-primary transition-colors cursor-pointer" 
+              />
+              <span className="text-sm font-semibold text-zinc-700 transition-colors group-hover:text-zinc-900">Без залога</span>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <input 
+                type="checkbox" 
+                checked={isOnRedLine}
+                onChange={(e) => setIsOnRedLine(e.target.checked)}
+                className="h-5 w-5 rounded border-zinc-300 text-primary accent-primary focus:ring-primary transition-colors cursor-pointer" 
+              />
+              <span className="text-sm font-semibold text-zinc-700 transition-colors group-hover:text-zinc-900">Вне красных линий</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Коммуникации */}
+        <div>
+          <h3 className="mb-4 text-xs font-extrabold uppercase tracking-wider text-zinc-400">Коммуникации</h3>
+          <div className="flex flex-col gap-3.5">
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" checked={hasElectricity} onChange={(e) => setHasElectricity(e.target.checked)} className="h-5 w-5 rounded border-zinc-300 text-primary accent-primary" />
+              <span className="text-sm font-semibold text-zinc-700">Свет заведен</span>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" checked={hasGas} onChange={(e) => setHasGas(e.target.checked)} className="h-5 w-5 rounded border-zinc-300 text-primary accent-primary" />
+              <span className="text-sm font-semibold text-zinc-700">Газ заведен</span>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" checked={hasWater} onChange={(e) => setHasWater(e.target.checked)} className="h-5 w-5 rounded border-zinc-300 text-primary accent-primary" />
+              <span className="text-sm font-semibold text-zinc-700">Вода есть</span>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" checked={hasRoadAccess} onChange={(e) => setHasRoadAccess(e.target.checked)} className="h-5 w-5 rounded border-zinc-300 text-primary accent-primary" />
+              <span className="text-sm font-semibold text-zinc-700">Асфальтированный подъезд</span>
+            </label>
           </div>
         </div>
 

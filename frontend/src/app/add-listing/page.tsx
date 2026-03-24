@@ -1,23 +1,34 @@
 'use client';
 
 import { useState } from 'react';
-import { Header } from '@/components/layout/header';
 import { Container } from '@/components/layout/container';
 import Link from 'next/link';
 
-const COMMUNICATION_OPTIONS = ['Свет', 'Вода', 'Газ', 'Канализация', 'Дорога (асфальт)'];
 const LAND_TYPES = ['ИЖС', 'Дача', 'Коммерция', 'Сельхоз'];
+const PURPOSES = ['ИЖС', 'ЛПХ', 'Коммерция', 'Сельхоз'];
+const RELIEF_TYPES = ['Ровный', 'Под уклон'];
 
 export default function AddListingPage() {
   const [formData, setFormData] = useState({
     title: '',
     landType: '',
+    purpose: '',
     area: '',
     price: '',
     region: '',
     city: '',
     address: '',
-    communications: [] as string[],
+    cadastralNumber: '',
+    isPledged: false,
+    hasStateAct: true,
+    isDivisible: false,
+    isOnRedLine: false,
+    reliefType: '',
+    hasElectricity: false,
+    hasGas: false,
+    hasWater: false,
+    hasSewer: false,
+    hasRoadAccess: false,
     description: '',
     name: '',
     phone: '',
@@ -25,21 +36,17 @@ export default function AddListingPage() {
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleCommToggle = (comm: string) => {
-    setFormData(prev => ({
-      ...prev,
-      communications: prev.communications.includes(comm)
-        ? prev.communications.filter(c => c !== comm)
-        : [...prev.communications, comm]
-    }));
+    const { name, value, type } = e.target;
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      setFormData(prev => ({ ...prev, [name]: checked }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleTypeSelect = (type: string) => {
-    setFormData(prev => ({ ...prev, landType: type }));
+    setFormData(prev => ({ ...prev, landType: type, purpose: type }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -56,7 +63,6 @@ export default function AddListingPage() {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-primary-soft">
-      <Header />
       
       <main className="py-10 lg:py-16 pb-32">
         <Container>
@@ -131,6 +137,66 @@ export default function AddListingPage() {
               </div>
             </div>
 
+            {/* БЛОК Юридические параметры */}
+            <div className="bg-white rounded-3xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+              <h2 className="text-xl font-extrabold text-zinc-900 mb-6">Юридические данные и Характеристики</h2>
+              
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-bold text-zinc-700 mb-2">Кадастровый номер</label>
+                    <input 
+                      type="text" name="cadastralNumber"
+                      placeholder="Например: 20-315-094-111"
+                      value={formData.cadastralNumber} onChange={handleChange}
+                      className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3.5 text-sm font-bold text-zinc-900 outline-none transition-colors focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-zinc-700 mb-2">Целевое назначение</label>
+                    <select 
+                      name="purpose"
+                      value={formData.purpose} onChange={handleChange}
+                      className="w-full appearance-none rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3.5 text-sm font-bold text-zinc-900 outline-none transition-colors focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 cursor-pointer"
+                    >
+                      <option value="" disabled>Выберите назначение</option>
+                      {PURPOSES.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-zinc-700 mb-2">Рельеф участка</label>
+                    <select 
+                      name="reliefType"
+                      value={formData.reliefType} onChange={handleChange}
+                      className="w-full appearance-none rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3.5 text-sm font-bold text-zinc-900 outline-none transition-colors focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 cursor-pointer"
+                    >
+                      <option value="" disabled>Выберите рельеф</option>
+                      {RELIEF_TYPES.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" name="hasStateAct" checked={formData.hasStateAct} onChange={handleChange} className="h-5 w-5 rounded border-zinc-300 text-primary accent-primary" />
+                    <span className="text-sm font-bold text-zinc-700">Госакт есть</span>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" name="isPledged" checked={formData.isPledged} onChange={handleChange} className="h-5 w-5 rounded border-zinc-300 text-primary accent-primary" />
+                    <span className="text-sm font-bold text-zinc-700">Участок в залоге</span>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" name="isDivisible" checked={formData.isDivisible} onChange={handleChange} className="h-5 w-5 rounded border-zinc-300 text-primary accent-primary" />
+                    <span className="text-sm font-bold text-zinc-700">Делимый участок</span>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" name="isOnRedLine" checked={formData.isOnRedLine} onChange={handleChange} className="h-5 w-5 rounded border-zinc-300 text-primary accent-primary" />
+                    <span className="text-sm font-bold text-zinc-700">На красной линии</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
             {/* БЛОК 2: Локация */}
             <div className="bg-white rounded-3xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
               <h2 className="text-xl font-extrabold text-zinc-900 mb-6">Расположение</h2>
@@ -173,20 +239,26 @@ export default function AddListingPage() {
             <div className="bg-white rounded-3xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
               <h2 className="text-xl font-extrabold text-zinc-900 mb-6">Коммуникации</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {COMMUNICATION_OPTIONS.map(comm => (
-                  <label key={comm} className="flex items-center gap-3 cursor-pointer group">
-                    <div className="relative flex items-center">
-                      <input 
-                        type="checkbox"
-                        checked={formData.communications.includes(comm)}
-                        onChange={() => handleCommToggle(comm)}
-                        className="peer h-6 w-6 appearance-none rounded-xl border-2 border-zinc-300 bg-zinc-50 transition-all checked:border-primary checked:bg-primary focus:outline-none focus:ring-4 focus:ring-primary/20 cursor-pointer"
-                      />
-                      <svg className="absolute left-1.5 top-1.5 h-3 w-3 text-white opacity-0 transition-opacity peer-checked:opacity-100 pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                    </div>
-                    <span className="text-sm font-bold text-zinc-700 transition-colors group-hover:text-zinc-900">{comm}</span>
-                  </label>
-                ))}
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input type="checkbox" name="hasElectricity" checked={formData.hasElectricity} onChange={handleChange} className="h-5 w-5 rounded border-zinc-300 text-primary accent-primary" />
+                  <span className="text-sm font-bold text-zinc-700">Свет заведен</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input type="checkbox" name="hasGas" checked={formData.hasGas} onChange={handleChange} className="h-5 w-5 rounded border-zinc-300 text-primary accent-primary" />
+                  <span className="text-sm font-bold text-zinc-700">Газ подключен</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input type="checkbox" name="hasWater" checked={formData.hasWater} onChange={handleChange} className="h-5 w-5 rounded border-zinc-300 text-primary accent-primary" />
+                  <span className="text-sm font-bold text-zinc-700">Центральная вода</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input type="checkbox" name="hasSewer" checked={formData.hasSewer} onChange={handleChange} className="h-5 w-5 rounded border-zinc-300 text-primary accent-primary" />
+                  <span className="text-sm font-bold text-zinc-700">Канализация</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input type="checkbox" name="hasRoadAccess" checked={formData.hasRoadAccess} onChange={handleChange} className="h-5 w-5 rounded border-zinc-300 text-primary accent-primary" />
+                  <span className="text-sm font-bold text-zinc-700">Дорога (асфальт)</span>
+                </label>
               </div>
             </div>
 
