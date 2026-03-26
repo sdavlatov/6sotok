@@ -4,6 +4,8 @@ import { Search, MapPin, Ruler, Wallet, Zap, Flame, Droplets, ShieldCheck, Alert
 import { Container } from '../layout/container';
 import Link from 'next/link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { pushDataLayer } from '@/lib/analytics';
 
 type ViewMode = 'list' | 'map';
 
@@ -28,9 +30,28 @@ const LEGAL = [
 ];
 
 export function SearchBar() {
+  const router = useRouter();
   const [purpose, setPurpose] = useState('');
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [location, setLocation] = useState('');
+  const [priceFrom, setPriceFrom] = useState('');
+  const [priceTo, setPriceTo] = useState('');
+
+  const handleSearch = () => {
+    pushDataLayer('search_submit', {
+      type: purpose || null,
+      price_from: priceFrom || null,
+      price_to: priceTo || null,
+      location: location || null,
+    });
+    const params = new URLSearchParams();
+    if (purpose) params.set('type', purpose);
+    if (priceFrom) params.set('priceFrom', priceFrom);
+    if (priceTo) params.set('priceTo', priceTo);
+    if (location) params.set('location', location);
+    router.push(`/catalog${params.toString() ? '?' + params.toString() : ''}`);
+  };
 
   const toggleFilter = (key: string) => {
     setActiveFilters(prev =>
@@ -103,6 +124,8 @@ export function SearchBar() {
               <input
                 type="text"
                 placeholder="Город, район, трасса..."
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
                 className="w-full bg-transparent text-[14px] font-medium text-zinc-900 placeholder-zinc-400 outline-none"
               />
             </div>
@@ -129,11 +152,11 @@ export function SearchBar() {
             <div className="flex items-center gap-2">
               <div className="flex-1 flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3.5 focus-within:border-primary focus-within:bg-white transition-all">
                 <Wallet className="w-4 h-4 text-zinc-400 shrink-0" strokeWidth={2} />
-                <input type="number" placeholder="От" className="w-full bg-transparent text-[14px] font-medium text-zinc-900 placeholder-zinc-400 outline-none" />
+                <input type="number" placeholder="От" value={priceFrom} onChange={(e) => setPriceFrom(e.target.value)} className="w-full bg-transparent text-[14px] font-medium text-zinc-900 placeholder-zinc-400 outline-none" />
               </div>
               <span className="text-zinc-300 text-lg shrink-0">—</span>
               <div className="flex-1 flex items-center rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3.5 focus-within:border-primary focus-within:bg-white transition-all">
-                <input type="number" placeholder="До" className="w-full bg-transparent text-[14px] font-medium text-zinc-900 placeholder-zinc-400 outline-none" />
+                <input type="number" placeholder="До" value={priceTo} onChange={(e) => setPriceTo(e.target.value)} className="w-full bg-transparent text-[14px] font-medium text-zinc-900 placeholder-zinc-400 outline-none" />
               </div>
             </div>
           </div>
@@ -193,7 +216,10 @@ export function SearchBar() {
           </div>
 
           {/* Кнопка поиска */}
-          <button className="flex w-full lg:w-auto shrink-0 items-center justify-center gap-2.5 rounded-xl bg-primary px-10 py-4 text-[15px] font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover hover:-translate-y-0.5 active:scale-95">
+          <button
+            onClick={handleSearch}
+            className="flex w-full lg:w-auto shrink-0 items-center justify-center gap-2.5 rounded-xl bg-primary px-10 py-4 text-[15px] font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover hover:-translate-y-0.5 active:scale-95"
+          >
             <Search className="w-5 h-5" strokeWidth={2.5} />
             Найти участки
           </button>

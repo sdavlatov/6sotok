@@ -13,11 +13,11 @@ export default function HomePage() {
       <SearchBar />
 
       {/* Свежие объявления */}
-      <section className="py-20 bg-white border-b border-zinc-100">
+      <section className="py-14 bg-white border-b border-zinc-100">
         <Container>
           <div className="mb-10 flex items-end justify-between">
             <div>
-              <h2 className="text-2xl font-bold tracking-tight text-zinc-900">
+              <h2 className="text-2xl font-black tracking-tight text-zinc-900">
                 Свежие объявления
               </h2>
               <p className="mt-2 text-[15px] text-zinc-500 font-normal">

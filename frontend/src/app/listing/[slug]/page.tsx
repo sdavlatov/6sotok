@@ -30,6 +30,7 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
   const similarListings = mockListings.filter(l => l.id !== listing.id).slice(0, 3);
   const formattedPrice = new Intl.NumberFormat('ru-RU').format(listing.price);
   const pricePerSotka = new Intl.NumberFormat('ru-RU').format(Math.round(listing.price / listing.area));
+  const cleanPhone = listing.seller?.phone?.replace(/\D/g, '') ?? '';
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 selection:bg-primary-soft relative">
@@ -217,10 +218,11 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
             {/* Правая колонка (Контакты / Sidebar Desktop) */}
             <div className="lg:col-span-1 hidden lg:block">
               <div className="sticky top-28">
-                <ContactCard 
-                  price={listing.price} 
+                <ContactCard
+                  price={listing.price}
                   pricePerSotka={Math.round(listing.price / listing.area)}
                   seller={listing.seller}
+                  slug={listing.slug}
                 />
               </div>
             </div>
@@ -251,9 +253,18 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
               <div className="text-2xl font-black tracking-tight text-zinc-900 leading-none mb-1.5">{formattedPrice} ₸</div>
               <div className="text-[10px] font-bold uppercase text-primary tracking-widest">{pricePerSotka} ₸ / сот.</div>
           </div>
-          <button className="bg-primary hover:bg-primary-light active:scale-95 text-white font-black px-8 py-4 rounded-2xl transition-all shadow-lg shadow-primary/20 uppercase tracking-widest text-[11px]">
-             Позвонить
-          </button>
+          {cleanPhone ? (
+            <a
+              href={`tel:${cleanPhone}`}
+              className="bg-primary hover:bg-primary-light active:scale-95 text-white font-black px-8 py-4 rounded-2xl transition-all shadow-lg shadow-primary/20 uppercase tracking-widest text-[11px]"
+            >
+              Позвонить
+            </a>
+          ) : (
+            <span className="bg-zinc-200 text-zinc-400 font-black px-8 py-4 rounded-2xl uppercase tracking-widest text-[11px]">
+              Нет номера
+            </span>
+          )}
       </div>
       
     </div>

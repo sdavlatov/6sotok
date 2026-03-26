@@ -32,68 +32,60 @@ export function ListingCard({ listing }: ListingCardProps) {
       {/* 2. Контентный блок (Увеличен приоритет сухих цифр) */}
       <div className="flex flex-1 flex-col p-4 sm:p-5">
         
-        {/* Цена: Отдельный акцентный блок с пересчетом за сотку */}
-        <div className="flex flex-wrap items-end justify-between gap-3 mb-4 rounded-2xl bg-zinc-50/80 p-4 border border-zinc-100/80">
+        {/* Цена */}
+        <div className="flex items-end justify-between gap-2 mb-4">
           <div>
-            <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-0.5">Полная стоимость</div>
-            <div className="text-2xl sm:text-[22px] font-black tracking-tight text-zinc-900">{formattedPrice} ₸</div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-0.5">Стоимость</div>
+            <div className="text-xl font-black tracking-tight text-zinc-900">{formattedPrice} ₸</div>
           </div>
-          <div className="text-right">
-             <div className="text-lg font-black text-primary">{pricePerSotka} ₸</div>
-             <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">за сотку</div>
+          <div className="text-right shrink-0">
+            <div className="text-base font-black text-primary">{pricePerSotka} ₸</div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">за сотку</div>
           </div>
         </div>
 
         {/* Заголовок */}
-        <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-zinc-800 mb-4">
+        <h3 className="line-clamp-2 text-[14px] font-bold leading-snug text-zinc-800 mb-4">
           {listing.title}
         </h3>
 
-        {/* Информационные слои (Коммуникации + Юридический статус) */}
-        <div className="space-y-2 mt-auto">
-          
-          {/* Коммуникации: Строгие цвета по типу */}
-          <div className="flex flex-wrap gap-1.5">
-            {listing.hasElectricity && (
-              <span className="inline-flex items-center gap-1 rounded bg-yellow-50 px-2.5 py-1 text-[10px] font-bold text-yellow-700 uppercase tracking-wider">
-                Свет
-              </span>
-            )}
-            {listing.hasGas && (
-              <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700 uppercase tracking-wider">
-                Газ
-              </span>
-            )}
-            {listing.hasWater && (
-              <span className="inline-flex items-center gap-1 rounded bg-cyan-50 px-2.5 py-1 text-[10px] font-bold text-cyan-700 uppercase tracking-wider">
-                Вода
-              </span>
-            )}
-          </div>
-
-          {/* Юридические статусы */}
-          <div className="flex flex-wrap gap-1.5">
-            {listing.isPledged === false && (
-              <span className="inline-flex items-center rounded border border-green-200/50 bg-green-50 px-2.5 py-1 text-[10px] font-bold text-green-700 uppercase tracking-wider">
-                Без залога
-              </span>
-            )}
-            {listing.isOnRedLine === true && (
-              <span className="inline-flex items-center rounded border border-red-200/50 bg-red-50 px-2.5 py-1 text-[10px] font-bold text-red-700 uppercase tracking-wider">
-                Красная линия
-              </span>
-            )}
-            {listing.isDivisible && (
-              <span className="inline-flex items-center rounded border border-purple-200/50 bg-purple-50 px-2.5 py-1 text-[10px] font-bold text-purple-700 uppercase tracking-wider">
-                Делимый
-              </span>
-            )}
-            {listing.hasStateAct !== false && (
-              <span className="inline-flex items-center rounded border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-bold text-zinc-600 uppercase tracking-wider">
-                Госакт
-              </span>
-            )}
-          </div>
+        {/* Бейджи: коммуникации + юридический статус */}
+        <div className="mt-auto flex flex-wrap gap-1.5">
+          {listing.hasElectricity && (
+            <span className="inline-flex items-center rounded bg-yellow-50 px-2.5 py-1 text-[10px] font-bold text-yellow-700 uppercase tracking-wider">
+              Свет
+            </span>
+          )}
+          {listing.hasGas && (
+            <span className="inline-flex items-center rounded bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700 uppercase tracking-wider">
+              Газ
+            </span>
+          )}
+          {listing.hasWater && (
+            <span className="inline-flex items-center rounded bg-cyan-50 px-2.5 py-1 text-[10px] font-bold text-cyan-700 uppercase tracking-wider">
+              Вода
+            </span>
+          )}
+          {listing.isPledged === false && (
+            <span className="inline-flex items-center rounded border border-green-200/50 bg-green-50 px-2.5 py-1 text-[10px] font-bold text-green-700 uppercase tracking-wider">
+              Без залога
+            </span>
+          )}
+          {listing.isOnRedLine === true && (
+            <span className="inline-flex items-center rounded border border-red-200/50 bg-red-50 px-2.5 py-1 text-[10px] font-bold text-red-700 uppercase tracking-wider">
+              Красная линия
+            </span>
+          )}
+          {listing.isDivisible && (
+            <span className="inline-flex items-center rounded border border-purple-200/50 bg-purple-50 px-2.5 py-1 text-[10px] font-bold text-purple-700 uppercase tracking-wider">
+              Делимый
+            </span>
+          )}
+          {listing.hasStateAct !== false && (
+            <span className="inline-flex items-center rounded border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-bold text-zinc-600 uppercase tracking-wider">
+              Госакт
+            </span>
+          )}
         </div>
 
         {/* Локация (Футер) */}

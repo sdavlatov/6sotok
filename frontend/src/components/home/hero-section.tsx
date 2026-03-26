@@ -2,7 +2,7 @@ import { Container } from '../layout/container';
 
 export function HeroSection() {
   return (
-    <section className="relative overflow-hidden bg-white pt-16 pb-24">
+    <section className="relative overflow-hidden bg-white pt-16 pb-20">
       <div className="absolute left-1/2 top-0 -translate-x-1/2 translate-y-[-30%] opacity-30 pointer-events-none">
         <div className="h-[600px] w-[900px] rounded-full bg-gradient-to-tr from-primary-soft via-emerald-50 to-accent blur-[100px]" />
       </div>
@@ -15,7 +15,7 @@ export function HeroSection() {
             Маркетплейс земли №1 в Казахстане
           </div>
 
-          <h1 className="text-5xl font-black tracking-tight text-zinc-900 sm:text-6xl lg:text-7xl leading-[1.05]">
+          <h1 className="text-4xl font-black tracking-tight text-zinc-900 sm:text-6xl lg:text-7xl leading-[1.05]">
             Найдите идеальный{' '}
             <br className="hidden sm:block" />
             <span className="bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">

@@ -1,14 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Container } from '@/components/layout/container';
 import Link from 'next/link';
+import { pushDataLayer } from '@/lib/analytics';
 
 const LAND_TYPES = ['ИЖС', 'Дача', 'Коммерция', 'Сельхоз'];
 const PURPOSES = ['ИЖС', 'ЛПХ', 'Коммерция', 'Сельхоз'];
 const RELIEF_TYPES = ['Ровный', 'Под уклон'];
 
 export default function AddListingPage() {
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     landType: '',
@@ -49,16 +53,40 @@ export default function AddListingPage() {
     setFormData(prev => ({ ...prev, landType: type, purpose: type }));
   };
 
+  useEffect(() => {
+    pushDataLayer('add_listing_open');
+  }, []);
+
+  const validate = (): Record<string, string> => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.title.trim()) newErrors.title = 'Укажите заголовок';
+    if (!formData.area || Number(formData.area) <= 0) newErrors.area = 'Укажите площадь';
+    if (!formData.price || Number(formData.price) <= 0) newErrors.price = 'Укажите цену';
+    if (!formData.phone.trim()) newErrors.phone = 'Укажите телефон';
+    return newErrors;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    pushDataLayer('add_listing_submit_attempt');
+    const newErrors = validate();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      pushDataLayer('add_listing_submit_error', { form: 'add_listing' });
+      return;
+    }
+    setErrors({});
+    setIsSubmitting(true);
+    // TODO: replace with real API call
     console.log('>>> SUBMIT PUBLISH:', formData);
-    alert('Симуляция публикации логирует данные в консоль (F12)');
+    pushDataLayer('add_listing_submit_success', { form: 'add_listing' });
+    setIsSubmitted(true);
+    setIsSubmitting(false);
   };
 
   const handleDraft = (e: React.MouseEvent) => {
     e.preventDefault();
     console.log('>>> SUBMIT DRAFT:', formData);
-    alert('Симуляция сохранения черновика (логи в консоли)');
   };
 
   return (
@@ -87,12 +115,13 @@ export default function AddListingPage() {
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-bold text-zinc-700 mb-2">Заголовок объявления <span className="text-red-500">*</span></label>
-                  <input 
+                  <input
                     type="text" name="title" required
                     placeholder="Например: Участок 10 соток под строительство дома"
                     value={formData.title} onChange={handleChange}
-                    className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3.5 text-sm font-bold text-zinc-900 outline-none transition-colors focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 placeholder:font-medium placeholder:text-zinc-400"
+                    className={`w-full rounded-2xl border bg-zinc-50 px-4 py-3.5 text-sm font-bold text-zinc-900 outline-none transition-colors focus:bg-white focus:ring-4 focus:ring-primary/10 placeholder:font-medium placeholder:text-zinc-400 ${errors.title ? 'border-red-400 focus:border-red-400' : 'border-zinc-200 focus:border-primary'}`}
                   />
+                  {errors.title && <p className="mt-1 text-sm font-medium text-red-500">{errors.title}</p>}
                 </div>
 
                 <div>
@@ -117,21 +146,23 @@ export default function AddListingPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-bold text-zinc-700 mb-2">Площадь (соток) <span className="text-red-500">*</span></label>
-                    <input 
+                    <input
                       type="number" name="area" required min="1"
                       placeholder="Например: 6"
                       value={formData.area} onChange={handleChange}
-                      className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3.5 text-sm font-bold text-zinc-900 outline-none transition-colors focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 placeholder:font-medium placeholder:text-zinc-400"
+                      className={`w-full rounded-2xl border bg-zinc-50 px-4 py-3.5 text-sm font-bold text-zinc-900 outline-none transition-colors focus:bg-white focus:ring-4 focus:ring-primary/10 placeholder:font-medium placeholder:text-zinc-400 ${errors.area ? 'border-red-400 focus:border-red-400' : 'border-zinc-200 focus:border-primary'}`}
                     />
+                    {errors.area && <p className="mt-1 text-sm font-medium text-red-500">{errors.area}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-zinc-700 mb-2">Цена (₸) <span className="text-red-500">*</span></label>
-                    <input 
+                    <input
                       type="number" name="price" required min="1"
                       placeholder="Например: 15000000"
                       value={formData.price} onChange={handleChange}
-                      className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3.5 text-sm font-bold text-zinc-900 outline-none transition-colors focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 placeholder:font-medium placeholder:text-zinc-400"
+                      className={`w-full rounded-2xl border bg-zinc-50 px-4 py-3.5 text-sm font-bold text-zinc-900 outline-none transition-colors focus:bg-white focus:ring-4 focus:ring-primary/10 placeholder:font-medium placeholder:text-zinc-400 ${errors.price ? 'border-red-400 focus:border-red-400' : 'border-zinc-200 focus:border-primary'}`}
                     />
+                    {errors.price && <p className="mt-1 text-sm font-medium text-red-500">{errors.price}</p>}
                   </div>
                 </div>
               </div>
@@ -306,12 +337,13 @@ export default function AddListingPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-zinc-700 mb-2">Телефон <span className="text-red-500">*</span></label>
-                  <input 
+                  <input
                     type="tel" name="phone" required
                     placeholder="+7 (___) ___ __ __"
                     value={formData.phone} onChange={handleChange}
-                    className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3.5 text-sm font-bold text-zinc-900 outline-none transition-colors focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 placeholder:font-medium placeholder:text-zinc-400"
+                    className={`w-full rounded-2xl border bg-zinc-50 px-4 py-3.5 text-sm font-bold text-zinc-900 outline-none transition-colors focus:bg-white focus:ring-4 focus:ring-primary/10 placeholder:font-medium placeholder:text-zinc-400 ${errors.phone ? 'border-red-400 focus:border-red-400' : 'border-zinc-200 focus:border-primary'}`}
                   />
+                  {errors.phone && <p className="mt-1 text-sm font-medium text-red-500">{errors.phone}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-zinc-700 mb-2">WhatsApp</label>
@@ -327,19 +359,29 @@ export default function AddListingPage() {
 
             {/* Кнопки */}
             <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-4 pt-6 border-t border-zinc-200">
-              <button 
-                type="button" 
-                onClick={handleDraft}
-                className="w-full sm:w-auto rounded-2xl px-8 py-4 text-sm font-extrabold text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
-              >
-                Сохранить как черновик
-              </button>
-              <button 
-                type="submit"
-                className="w-full sm:w-auto rounded-2xl bg-primary px-10 py-4 text-sm font-extrabold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-light hover:-translate-y-0.5 hover:shadow-xl active:scale-95 active:translate-y-0"
-              >
-                Опубликовать объявление
-              </button>
+              {isSubmitted ? (
+                <div className="w-full rounded-2xl bg-green-50 border border-green-200 px-8 py-5 text-center">
+                  <p className="font-extrabold text-green-700">Объявление отправлено на проверку</p>
+                  <p className="text-sm font-medium text-green-600 mt-1">Мы свяжемся с вами в течение 24 часов</p>
+                </div>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleDraft}
+                    className="w-full sm:w-auto rounded-2xl px-8 py-4 text-sm font-extrabold text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
+                  >
+                    Сохранить как черновик
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full sm:w-auto rounded-2xl bg-primary px-10 py-4 text-sm font-extrabold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-light hover:-translate-y-0.5 hover:shadow-xl active:scale-95 active:translate-y-0 disabled:opacity-60 disabled:pointer-events-none"
+                  >
+                    {isSubmitting ? 'Отправка...' : 'Опубликовать объявление'}
+                  </button>
+                </>
+              )}
             </div>
 
           </form>
