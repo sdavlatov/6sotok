@@ -92,7 +92,7 @@ export default function AddListingPage() {
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-primary-soft">
       
-      <main className="py-10 lg:py-16 pb-32">
+      <div className="py-10 lg:py-16 pb-32">
         <Container>
           
           <div className="mb-8 max-w-3xl mx-auto">
@@ -166,6 +166,21 @@ export default function AddListingPage() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* БЛОК 2: Фото */}
+            <div className="bg-white rounded-3xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+              <h2 className="text-xl font-extrabold text-zinc-900 mb-2">Фотографии</h2>
+              <p className="text-sm font-medium text-zinc-500 mb-6">Объявления с качественными фото получают в 5 раз больше откликов.</p>
+
+              <label className="flex flex-col items-center justify-center w-full h-48 sm:h-56 rounded-3xl border-2 border-dashed border-zinc-300 bg-zinc-50 transition-colors hover:bg-zinc-100 hover:border-primary/50 cursor-pointer group">
+                <div className="h-14 w-14 rounded-full bg-white shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-primary"><path fillRule="evenodd" d="M11.47 2.47a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1-1.06 1.06l-3.22-3.22V16.5a.75.75 0 0 1-1.5 0V4.81L8.03 8.03a.75.75 0 0 1-1.06-1.06l4.5-4.5ZM3 15.75a.75.75 0 0 1 .75.75v2.25a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5V16.5a.75.75 0 0 1 1.5 0v2.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V16.5a.75.75 0 0 1 .75-.75Z" clipRule="evenodd" /></svg>
+                </div>
+                <span className="text-sm font-bold text-zinc-700">Нажмите или перетащите фото сюда</span>
+                <span className="text-xs font-semibold text-zinc-400 mt-2">JPG, PNG до 10 МБ</span>
+                <input type="file" className="hidden" multiple accept="image/*" />
+              </label>
             </div>
 
             {/* БЛОК Юридические параметры */}
@@ -307,21 +322,6 @@ export default function AddListingPage() {
               />
             </div>
 
-            {/* БЛОК 5: Фото */}
-            <div className="bg-white rounded-3xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-              <h2 className="text-xl font-extrabold text-zinc-900 mb-2">Фотографии</h2>
-              <p className="text-sm font-medium text-zinc-500 mb-6">Объявления с качественными фото получают в 5 раз больше откликов.</p>
-              
-              <label className="flex flex-col items-center justify-center w-full h-48 sm:h-56 rounded-3xl border-2 border-dashed border-zinc-300 bg-zinc-50 transition-colors hover:bg-zinc-100 hover:border-primary/50 cursor-pointer group">
-                <div className="h-14 w-14 rounded-full bg-white shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-primary"><path fillRule="evenodd" d="M11.47 2.47a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1-1.06 1.06l-3.22-3.22V16.5a.75.75 0 0 1-1.5 0V4.81L8.03 8.03a.75.75 0 0 1-1.06-1.06l4.5-4.5ZM3 15.75a.75.75 0 0 1 .75.75v2.25a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5V16.5a.75.75 0 0 1 1.5 0v2.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V16.5a.75.75 0 0 1 .75-.75Z" clipRule="evenodd" /></svg>
-                </div>
-                <span className="text-sm font-bold text-zinc-700">Нажмите или перетащите фото сюда</span>
-                <span className="text-xs font-semibold text-zinc-400 mt-2">JPG, PNG до 10 МБ</span>
-                <input type="file" className="hidden" multiple accept="image/*" />
-              </label>
-            </div>
-
             {/* БЛОК 6: Контакты */}
             <div className="bg-white rounded-3xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
               <h2 className="text-xl font-extrabold text-zinc-900 mb-6">Ваши контакты</h2>
@@ -369,14 +369,14 @@ export default function AddListingPage() {
                   <button
                     type="button"
                     onClick={handleDraft}
-                    className="w-full sm:w-auto rounded-2xl px-8 py-4 text-sm font-extrabold text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
+                    className="w-full sm:w-auto rounded-2xl border border-zinc-200 px-8 py-4 text-sm font-extrabold text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
                   >
                     Сохранить как черновик
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full sm:w-auto rounded-2xl bg-primary px-10 py-4 text-sm font-extrabold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-light hover:-translate-y-0.5 hover:shadow-xl active:scale-95 active:translate-y-0 disabled:opacity-60 disabled:pointer-events-none"
+                    className="w-full sm:w-auto rounded-2xl bg-primary px-10 py-4 text-sm font-extrabold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover hover:-translate-y-0.5 hover:shadow-xl active:scale-95 active:translate-y-0 disabled:opacity-60 disabled:pointer-events-none"
                   >
                     {isSubmitting ? 'Отправка...' : 'Опубликовать объявление'}
                   </button>
@@ -386,7 +386,7 @@ export default function AddListingPage() {
 
           </form>
         </Container>
-      </main>
+      </div>
     </div>
   );
 }

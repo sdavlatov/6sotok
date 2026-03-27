@@ -1,6 +1,8 @@
 import { Container } from '../layout/container';
+import { allListings } from '@/lib/mock-data';
 
 export function HeroSection() {
+  const listingCount = allListings.length;
   return (
     <section className="relative overflow-hidden bg-white pt-16 pb-20">
       <div className="absolute left-1/2 top-0 -translate-x-1/2 translate-y-[-30%] opacity-30 pointer-events-none">
@@ -27,6 +29,14 @@ export function HeroSection() {
             Напрямую от собственников. Точные цены за сотку, сразу видны коммуникации,
             целевое назначение и расположение на карте.
           </p>
+
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[13px] font-semibold text-zinc-400">
+            <span>{listingCount} объявлений</span>
+            <span className="w-1 h-1 rounded-full bg-zinc-300 hidden sm:block" />
+            <span>Весь Казахстан</span>
+            <span className="w-1 h-1 rounded-full bg-zinc-300 hidden sm:block" />
+            <span>Без посредников</span>
+          </div>
 
         </div>
       </Container>

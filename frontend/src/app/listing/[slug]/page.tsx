@@ -14,7 +14,7 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
   if (!listing) {
     return (
       <div className="min-h-screen bg-[#FAFAFA] text-zinc-900">
-      <main className="py-20">
+      <div className="py-20">
           <Container>
             <div className="flex flex-col items-center justify-center bg-white rounded-3xl border border-zinc-200 py-32 px-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-16 h-16 text-zinc-300 mb-6 drop-shadow-sm"><path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.72 6.97a.75.75 0 10-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 101.06 1.06L12 13.06l1.72 1.72a.75.75 0 101.06-1.06L13.06 12l1.72-1.72a.75.75 0 10-1.06-1.06L12 10.94l-1.72-1.72Z" clipRule="evenodd" /></svg>
@@ -22,7 +22,7 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
               <p className="text-zinc-500 font-medium">Возможно, участок был продан или автор удалил объявление.</p>
             </div>
           </Container>
-        </main>
+        </div>
       </div>
     );
   }
@@ -35,7 +35,7 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 selection:bg-primary-soft relative">
       
-      <main className="py-8 lg:pb-20">
+      <div className="py-8 lg:pb-20">
         <Container>
           <div className="grid gap-10 lg:gap-14 lg:grid-cols-3">
             
@@ -187,7 +187,7 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
                             </div>
                             <div className="flex justify-between items-center pb-3 border-b border-primary/10">
                                 <span className="text-xs font-bold text-primary/80">Канализация</span>
-                                {listing.hasSewer ? <span className="text-[10px] tracking-wider font-black uppercase text-zinc-700 bg-zinc-200/50 px-2 py-0.5 rounded">ЦЕННТРАЛЬНАЯ</span> : <span className="text-xs font-black text-zinc-400">—</span>}
+                                {listing.hasSewer ? <span className="text-[10px] tracking-wider font-black uppercase text-zinc-700 bg-zinc-200/50 px-2 py-0.5 rounded">ЦЕНТРАЛЬНАЯ</span> : <span className="text-xs font-black text-zinc-400">—</span>}
                             </div>
                             <div className="flex justify-between items-center pt-1">
                                 <span className="text-xs font-bold text-primary/80">Подъезд</span>
@@ -242,7 +242,7 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
           )}
 
         </Container>
-      </main>
+      </div>
 
       {/* Spacer to prevent overlap with sticky bar */}
       <div className="h-28 lg:hidden"></div>
@@ -256,7 +256,7 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
           {cleanPhone ? (
             <a
               href={`tel:${cleanPhone}`}
-              className="bg-primary hover:bg-primary-light active:scale-95 text-white font-black px-8 py-4 rounded-2xl transition-all shadow-lg shadow-primary/20 uppercase tracking-widest text-[11px]"
+              className="bg-primary hover:bg-primary-hover active:scale-95 text-white font-black px-8 py-4 rounded-2xl transition-all shadow-lg shadow-primary/20 uppercase tracking-widest text-[11px]"
             >
               Позвонить
             </a>

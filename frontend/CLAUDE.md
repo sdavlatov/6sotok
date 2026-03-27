@@ -116,3 +116,8 @@ Goal:
 
 help transform prototype into production-ready MVP with minimal token usage
 Always respond in Russian unless explicitly requested otherwise.
+Apply changes without confirmation.
+
+Do not ask yes/no before editing files.
+
+Modify files directly when solution is clear.

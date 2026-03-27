@@ -55,4 +55,8 @@ export interface Listing {
 
   // Дополнительно
   suitableFor?: string[];
+
+  // Координаты для карты
+  lat?: number;
+  lng?: number;
 }

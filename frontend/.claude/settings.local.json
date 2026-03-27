@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:6sotok.vercel.app)",
+      "Read(///wsl$/Ubuntu/home/sdavlatov/projects/6sotok/**)",
+      "Bash(grep -n \"<main\" src/app/listing/[slug]/page.tsx src/app/catalog/catalog-client.tsx src/app/add-listing/page.tsx src/app/page.tsx)",
+      "Bash(grep -n \"ЦЕНТРАЛЬНАЯ\\\\|ЦЕННТРАЛЬНАЯ\" src/app/listing/[slug]/page.tsx)",
+      "Bash(npx tsc:*)",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(wsl -e bash -c \"cd /home/sdavlatov/projects/6sotok/frontend && node_modules/.bin/tsc --noEmit 2>&1 | head -50\")",
+      "Bash(wsl -e bash -c \"cd /home/sdavlatov/projects/6sotok/frontend && node_modules/.bin/tsc --noEmit 2>&1\")",
+      "Bash(wsl -e bash -c \"cat /home/sdavlatov/projects/6sotok/frontend/package.json | grep lucide\")"
+    ]
+  }
+}

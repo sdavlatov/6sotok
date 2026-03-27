@@ -10,7 +10,7 @@ export function ListingCard({ listing }: ListingCardProps) {
   const pricePerSotka = new Intl.NumberFormat('ru-RU').format(Math.round(listing.price / listing.area));
 
   return (
-    <Link href={`/listing/${listing.slug}`} className="group flex h-full flex-col overflow-hidden rounded-3xl border border-zinc-200 bg-white transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_20px_40px_-15px_rgba(6,111,54,0.1)]">
+    <Link href={`/listing/${listing.slug}`} className="group flex h-full flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_20px_40px_-15px_rgba(6,111,54,0.1)]">
       
       {/* 1. Блок Изображения (Уменьшен приоритет, соотношение 16:9) */}
       <div className="relative aspect-video w-full overflow-hidden bg-zinc-100 shrink-0">
@@ -33,9 +33,8 @@ export function ListingCard({ listing }: ListingCardProps) {
       <div className="flex flex-1 flex-col p-4 sm:p-5">
         
         {/* Цена */}
-        <div className="flex items-end justify-between gap-2 mb-4">
+        <div className="flex items-end justify-between gap-2 mb-3">
           <div>
-            <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-0.5">Стоимость</div>
             <div className="text-xl font-black tracking-tight text-zinc-900">{formattedPrice} ₸</div>
           </div>
           <div className="text-right shrink-0">
@@ -52,17 +51,17 @@ export function ListingCard({ listing }: ListingCardProps) {
         {/* Бейджи: коммуникации + юридический статус */}
         <div className="mt-auto flex flex-wrap gap-1.5">
           {listing.hasElectricity && (
-            <span className="inline-flex items-center rounded bg-yellow-50 px-2.5 py-1 text-[10px] font-bold text-yellow-700 uppercase tracking-wider">
+            <span className="inline-flex items-center rounded border border-yellow-200/60 bg-yellow-50 px-2.5 py-1 text-[10px] font-bold text-yellow-700 uppercase tracking-wider">
               Свет
             </span>
           )}
           {listing.hasGas && (
-            <span className="inline-flex items-center rounded bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700 uppercase tracking-wider">
+            <span className="inline-flex items-center rounded border border-blue-200/60 bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700 uppercase tracking-wider">
               Газ
             </span>
           )}
           {listing.hasWater && (
-            <span className="inline-flex items-center rounded bg-cyan-50 px-2.5 py-1 text-[10px] font-bold text-cyan-700 uppercase tracking-wider">
+            <span className="inline-flex items-center rounded border border-cyan-200/60 bg-cyan-50 px-2.5 py-1 text-[10px] font-bold text-cyan-700 uppercase tracking-wider">
               Вода
             </span>
           )}
@@ -81,7 +80,7 @@ export function ListingCard({ listing }: ListingCardProps) {
               Делимый
             </span>
           )}
-          {listing.hasStateAct !== false && (
+          {listing.hasStateAct === true && (
             <span className="inline-flex items-center rounded border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-bold text-zinc-600 uppercase tracking-wider">
               Госакт
             </span>
