@@ -119,6 +119,14 @@ export async function getListings(params: Record<string, string> = {}): Promise<
   return (data.docs as PayloadListing[]).map(mapListing)
 }
 
+export async function getListingById(id: string): Promise<Listing | null> {
+  const res = await fetch(`${API_BASE}/api/listings/${id}?depth=1`, { next: { revalidate: 60 } })
+  if (!res.ok) return null
+  const data = await res.json()
+  if (!data?.id) return null
+  return mapListing(data as PayloadListing)
+}
+
 export async function getListingBySlug(slug: string): Promise<Listing | null> {
   const qs = new URLSearchParams({
     'where[slug][equals]': slug,

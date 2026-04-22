@@ -22,6 +22,30 @@ export const Listings: CollectionConfig = {
     useAsTitle: 'title',
     defaultColumns: ['title', 'price', 'area', 'landType', 'location', 'status', 'createdAt'],
   },
+  endpoints: [
+    {
+      path: '/bulk-publish',
+      method: 'post',
+      handler: async (req) => {
+        const body = await req.json?.() ?? {}
+        const ids: string[] = body?.ids ?? []
+        if (!ids.length) return Response.json({ updated: 0 })
+        let updated = 0
+        for (const id of ids) {
+          try {
+            await req.payload.update({
+              collection: 'listings',
+              id,
+              data: { status: 'published' },
+              overrideAccess: true,
+            })
+            updated++
+          } catch { /* пропускаем невалидный id */ }
+        }
+        return Response.json({ updated })
+      },
+    },
+  ],
   access: {
     read: () => true,
     create: () => true,

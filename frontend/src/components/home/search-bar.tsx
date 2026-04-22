@@ -61,6 +61,9 @@ export function SearchBar({ countByType: propCountByType, locations: propLocatio
   const [activeFilters, setActiveFilters] = useState<Record<FilterKey, boolean>>(
     initialValues?.activeFilters ?? INITIAL_FILTERS
   );
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   const locationRef = useRef<HTMLDivElement>(null);
 
@@ -162,7 +165,7 @@ export function SearchBar({ countByType: propCountByType, locations: propLocatio
                   }`}
                 >
                   {p.label}
-                  {cnt > 0 && (
+                  {mounted && cnt > 0 && (
                     <span className={`text-[11px] font-extrabold tabular-nums px-1.5 py-0.5 rounded-md ${
                       purpose === p.value ? 'bg-primary/10 text-primary' : 'bg-zinc-100 text-zinc-400'
                     }`}>

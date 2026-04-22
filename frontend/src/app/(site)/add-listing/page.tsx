@@ -60,12 +60,13 @@ function LocationPicker({ value, onChange }: {
       zoomControl: true,
       scrollWheelZoom: true,
       maxBounds: KZ_BOUNDS,
-      maxBoundsViscosity: 0.85,
+      maxBoundsViscosity: 1.0,
     });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap', maxZoom: 19,
     }).addTo(map);
-    map.setView(KZ_CENTER, 5);
+    map.fitBounds(KZ_BOUNDS);
+    map.once('moveend', () => map.setMinZoom(map.getZoom()));
     map.on('click', (e) => {
       const { lat, lng } = e.latlng;
       onChange({ lat: +lat.toFixed(6), lng: +lng.toFixed(6) });
@@ -154,6 +155,8 @@ export default function AddListingPage() {
   const [isSubmitted, setIsSubmitted]   = useState(false);
   const [photos, setPhotos]             = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  const [dragIndex, setDragIndex]       = useState<number | null>(null);
+  const [dragOver, setDragOver]         = useState<number | null>(null);
   const [markerPos, setMarkerPos]       = useState<{ lat: number; lng: number } | null>(null);
   const [isGeocoding, setIsGeocoding]   = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -223,6 +226,18 @@ export default function AddListingPage() {
   const removePhoto = (i: number) => {
     setPhotos(prev => prev.filter((_, j) => j !== i));
     setPhotoPreviews(prev => { URL.revokeObjectURL(prev[i]); return prev.filter((_, j) => j !== i); });
+  };
+
+  const movePhoto = (from: number, to: number) => {
+    if (from === to) return;
+    const reorder = <T,>(arr: T[]) => {
+      const next = [...arr];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return next;
+    };
+    setPhotos(prev => reorder(prev));
+    setPhotoPreviews(prev => reorder(prev));
   };
 
   const validate = (): Record<string, string> => {
@@ -377,15 +392,66 @@ export default function AddListingPage() {
             <section className="bg-white rounded-3xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-4">
               <div>
                 <h2 className="text-xl font-extrabold text-zinc-900">Фото и видео <span className="text-red-500">*</span></h2>
-                <p className="mt-1 text-sm font-medium text-zinc-500">Объявления с фото получают в 5× больше откликов.</p>
+              </div>
+
+              {/* Подсказка по форматам */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Видео */}
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 flex gap-3.5">
+                  <div className="shrink-0 w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="15" height="12" rx="2"/><path d="m17 9 5-3v12l-5-3V9Z"/></svg>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-[13px] font-bold text-zinc-900">Видео</p>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">Рекомендуем</span>
+                    </div>
+                    <p className="text-[12px] text-zinc-500 font-medium leading-relaxed">
+                      Снимайте вертикально (9:16) — как Reels или TikTok.<br/>
+                      MP4 · MOV · до 200 МБ
+                    </p>
+                  </div>
+                </div>
+
+                {/* Фото */}
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 flex gap-3.5">
+                  <div className="shrink-0 w-9 h-9 rounded-xl bg-zinc-200/70 flex items-center justify-center text-zinc-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-bold text-zinc-900 mb-1">Фото</p>
+                    <p className="text-[12px] text-zinc-500 font-medium leading-relaxed">
+                      Снимайте с разных ракурсов — общий план, въезд, коммуникации.<br/>
+                      JPG · PNG · WEBP · до 50 МБ
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {photoPreviews.length > 0 && (
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 items-start">
+                <div className="space-y-2">
+                  <p className="text-[11px] font-semibold text-zinc-400 flex items-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 9h14M5 15h14"/></svg>
+                    Перетащите чтобы изменить порядок
+                  </p>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 items-start">
                   {photoPreviews.map((src, i) => {
                     const isVid = photos[i]?.type.startsWith('video/');
                     return (
-                      <div key={i} className={`relative rounded-2xl overflow-hidden bg-zinc-100 group ${isVid ? 'aspect-[9/16]' : 'aspect-square'}`}>
+                      <div
+                        key={i}
+                        draggable
+                        onDragStart={() => setDragIndex(i)}
+                        onDragOver={e => { e.preventDefault(); setDragOver(i); }}
+                        onDrop={e => { e.preventDefault(); if (dragIndex !== null) movePhoto(dragIndex, i); setDragIndex(null); setDragOver(null); }}
+                        onDragEnd={() => { setDragIndex(null); setDragOver(null); }}
+                        className={`relative aspect-square rounded-2xl overflow-hidden bg-zinc-100 group cursor-grab active:cursor-grabbing transition-all ${dragOver === i && dragIndex !== i ? 'ring-2 ring-primary scale-[1.02]' : ''} ${dragIndex === i ? 'opacity-40' : ''}`}
+                      >
+                        {i === 0 && (
+                          <div className="absolute top-2 left-2 z-10">
+                            <span className="bg-zinc-900/80 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg">Обложка</span>
+                          </div>
+                        )}
                         {isVid ? (
                           <>
                             <video src={src} className="w-full h-full object-cover" muted playsInline />
@@ -405,6 +471,7 @@ export default function AddListingPage() {
                       </div>
                     );
                   })}
+                  </div>
                 </div>
               )}
 
@@ -424,6 +491,15 @@ export default function AddListingPage() {
             {/* ── 3. Расположение ────────────────────────────────────────────── */}
             <section className="bg-white rounded-3xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-5">
               <h2 className="text-xl font-extrabold text-zinc-900">Расположение</h2>
+
+              {/* Карта — только Казахстан, клик ставит точку и заполняет город */}
+              <div>
+                <label className="block text-sm font-bold text-zinc-700 mb-1">Точка на карте</label>
+                <p className="text-[12px] font-medium text-zinc-400 mb-2">
+                  Нажмите на карте — город заполнится автоматически
+                </p>
+                <LocationPicker value={markerPos} onChange={setMarkerPos} />
+              </div>
 
               {/* Единое поле города с KZ автодополнением */}
               <div>
@@ -470,15 +546,6 @@ export default function AddListingPage() {
                     </button>
                   ))}
                 </div>
-              </div>
-
-              {/* Карта — только Казахстан, клик ставит точку и заполняет город */}
-              <div>
-                <label className="block text-sm font-bold text-zinc-700 mb-1">Точка на карте</label>
-                <p className="text-[12px] font-medium text-zinc-400 mb-2">
-                  Нажмите на карте — город заполнится автоматически
-                </p>
-                <LocationPicker value={markerPos} onChange={setMarkerPos} />
               </div>
             </section>
 

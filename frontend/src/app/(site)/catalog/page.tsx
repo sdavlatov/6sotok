@@ -1,6 +1,5 @@
 import { CatalogClient } from './catalog-client';
 import { getListings } from '@/lib/api';
-import { mockListings as fallback } from '@/lib/mock-data';
 
 export default async function CatalogPage({
   searchParams,
@@ -24,8 +23,7 @@ export default async function CatalogPage({
   }>;
 }) {
   const params = await searchParams;
-  const apiListings = await getListings();
-  const listings = apiListings.length > 0 ? apiListings : fallback;
+  const listings = await getListings();
 
   return (
     <CatalogClient
