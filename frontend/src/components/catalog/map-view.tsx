@@ -28,12 +28,14 @@ interface LMap {
   setView(center: [number, number], zoom: number): LMap;
   remove(): void;
   fitBounds(bounds: LLatLngBounds, options?: { padding?: [number, number]; maxZoom?: number }): LMap;
+  on(event: string, fn: (e: { latlng: { lat: number; lng: number } }) => void): LMap;
 }
 interface LMarker {
   addTo(map: LMap): LMarker;
   bindPopup(content: string): LMarker;
   on(event: string, fn: () => void): LMarker;
   remove(): void;
+  setLatLng(latlng: [number, number]): LMarker;
 }
 interface LLatLngBounds {
   isValid(): boolean;

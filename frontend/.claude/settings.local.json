@@ -9,7 +9,9 @@
       "Bash(node_modules/.bin/tsc --noEmit)",
       "Bash(wsl -e bash -c \"cd /home/sdavlatov/projects/6sotok/frontend && node_modules/.bin/tsc --noEmit 2>&1 | head -50\")",
       "Bash(wsl -e bash -c \"cd /home/sdavlatov/projects/6sotok/frontend && node_modules/.bin/tsc --noEmit 2>&1\")",
-      "Bash(wsl -e bash -c \"cat /home/sdavlatov/projects/6sotok/frontend/package.json | grep lucide\")"
+      "Bash(wsl -e bash -c \"cat /home/sdavlatov/projects/6sotok/frontend/package.json | grep lucide\")",
+      "Read(///wsl$/Ubuntu/home/sdavlatov/projects/6sotok/frontend/node_modules/@payloadcms/next/dist/withPayload/**)",
+      "Read(//c/Users/Сергей Давлатов/.claude/**)"
     ]
   }
 }

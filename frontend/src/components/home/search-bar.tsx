@@ -5,7 +5,7 @@ import { Container } from '../layout/container';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { pushDataLayer } from '@/lib/analytics';
-import { allListings } from '@/lib/mock-data';
+import { allListings as mockListings } from '@/lib/mock-data';
 import { LAND_CATEGORIES, UTILITIES, LEGAL_FILTERS, FilterKey } from '@/lib/listing-constants';
 import { MapView } from '@/components/catalog/map-view';
 
@@ -37,12 +37,16 @@ interface FilterValues {
 }
 
 interface SearchBarProps {
-  // Режим каталога: начальные значения + колбэк вместо навигации
+  // Серверно-вычисленные мета-данные (лёгкие, без полных объектов)
+  countByType?: Record<string, number>;
+  locations?: string[];
+  totalCount?: number;
   initialValues?: Partial<FilterValues>;
   onApply?: (values: FilterValues) => void;
 }
 
-export function SearchBar({ initialValues, onApply }: SearchBarProps = {}) {
+export function SearchBar({ countByType: propCountByType, locations: propLocations, totalCount, initialValues, onApply }: SearchBarProps = {}) {
+  const allListings = mockListings;
   const router = useRouter();
   const isCatalogMode = !!onApply;
 
@@ -60,10 +64,21 @@ export function SearchBar({ initialValues, onApply }: SearchBarProps = {}) {
 
   const locationRef = useRef<HTMLDivElement>(null);
 
+  // Локации для саджеста: реальные если переданы, иначе из mock
   const allLocations = useMemo(
-    () => [...new Set(allListings.map(l => l.location))],
-    []
+    () => propLocations ?? [...new Set(allListings.map(l => l.location))],
+    [propLocations]
   );
+
+  // Счётчики по типу: реальные если переданы, иначе из mock
+  const countByType = useMemo(() => {
+    if (propCountByType) return propCountByType;
+    const counts: Record<string, number> = {};
+    for (const l of allListings) {
+      counts[l.landType] = (counts[l.landType] || 0) + 1;
+    }
+    return counts;
+  }, [propCountByType]);
 
   const suggestions = useMemo(() => {
     const q = location.trim().toLowerCase();
@@ -134,19 +149,29 @@ export function SearchBar({ initialValues, onApply }: SearchBarProps = {}) {
       <div className="flex items-center justify-between gap-2 px-4 sm:px-6 pt-4 sm:pt-5 pb-0">
         <div className="relative flex-1 min-w-0 overflow-hidden">
           <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-none">
-            {PURPOSES.map(p => (
-              <button
-                key={p.value}
-                onClick={() => setPurpose(p.value)}
-                className={`shrink-0 px-3 sm:px-5 py-2.5 text-[13px] sm:text-[14px] font-bold rounded-t-xl border-b-2 transition-all ${
-                  purpose === p.value
-                    ? 'border-primary text-primary bg-primary-soft/30'
-                    : 'border-transparent text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50'
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
+            {PURPOSES.map(p => {
+              const cnt = p.value === '' ? (totalCount ?? allListings.length) : (countByType[p.value] ?? 0);
+              return (
+                <button
+                  key={p.value}
+                  onClick={() => setPurpose(p.value)}
+                  className={`shrink-0 flex items-center gap-1.5 px-3 sm:px-5 py-2.5 text-[13px] sm:text-[14px] font-bold rounded-t-xl border-b-2 transition-all ${
+                    purpose === p.value
+                      ? 'border-primary text-primary bg-primary-soft/30'
+                      : 'border-transparent text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50'
+                  }`}
+                >
+                  {p.label}
+                  {cnt > 0 && (
+                    <span className={`text-[11px] font-extrabold tabular-nums px-1.5 py-0.5 rounded-md ${
+                      purpose === p.value ? 'bg-primary/10 text-primary' : 'bg-zinc-100 text-zinc-400'
+                    }`}>
+                      {cnt}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
           <div className="sm:hidden absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none" />
         </div>

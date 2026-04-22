@@ -9,17 +9,29 @@ interface ContactCardProps {
   pricePerSotka: number;
   seller?: ListingSeller;
   slug?: string;
+  title?: string;
+  isNegotiable?: boolean;
 }
 
-export function ContactCard({ price, pricePerSotka, seller, slug }: ContactCardProps) {
+export function ContactCard({ price, pricePerSotka, seller, slug, title, isNegotiable }: ContactCardProps) {
   const [isPhoneVisible, setIsPhoneVisible] = useState(false);
   const formattedPrice = new Intl.NumberFormat('ru-RU').format(price);
   const formattedPerSotka = new Intl.NumberFormat('ru-RU').format(pricePerSotka);
   const cleanPhone = seller?.phone?.replace(/\D/g, '') ?? '';
 
+  const waText = encodeURIComponent(
+    `Здравствуйте! Интересует ваш участок «${title ?? ''}» за ${formattedPrice} ₸.\nhttps://6sotok.kz/listing/${slug ?? ''}`
+  );
+  const waHref = `https://wa.me/${cleanPhone}?text=${waText}`;
+
   return (
     <div className="rounded-3xl border border-zinc-200 p-6 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white">
-      <div className="text-3xl xl:text-4xl font-black tracking-tight text-zinc-900">{formattedPrice} ₸</div>
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="text-3xl xl:text-4xl font-black tracking-tight text-zinc-900">{formattedPrice} ₸</div>
+        {isNegotiable && (
+          <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg">Торг</span>
+        )}
+      </div>
       <div className="mt-2 text-base font-bold text-zinc-400">{formattedPerSotka} ₸ / сотка</div>
 
       <div className="mt-8 space-y-3">
@@ -45,15 +57,18 @@ export function ContactCard({ price, pricePerSotka, seller, slug }: ContactCardP
                 Показать телефон
               </button>
             )}
-            <a
-              href={`https://wa.me/${cleanPhone}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full rounded-2xl bg-[#25D366] py-4 font-extrabold text-white transition-all hover:bg-[#20BE5A] hover:-translate-y-0.5 active:scale-95 shadow-lg shadow-[#25D366]/20 flex items-center justify-center gap-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M16.666 4.9a10.518 10.518 0 0 0-7.464-3.15C3.398 1.75.12 6.55.12 12.35c0 1.912.496 3.766 1.439 5.4L.12 23.003l5.378-1.41a10.428 10.428 0 0 0 3.704.686h.005c5.803 0 10.526-4.8 10.526-10.603a10.524 10.524 0 0 0-3.067-7.427Zm-7.464 15.65h-.003a8.69 8.69 0 0 1-4.433-1.215l-.318-.188-3.295.864.88-3.212-.207-.329a8.683 8.683 0 0 1-1.328-4.62c0-4.823 3.926-8.75 8.75-8.75a8.704 8.704 0 0 1 6.182 2.569 8.707 8.707 0 0 1 2.564 6.185c0 4.824-3.926 8.75-8.748 8.75Zm4.81-6.57c-.264-.132-1.562-.77-1.803-.858-.242-.088-.418-.132-.594.133-.176.264-.683.858-.837 1.034-.154.175-.308.197-.573.065-.264-.131-1.115-.41-2.123-1.306-.784-.698-1.314-1.562-1.468-1.826-.154-.265-.016-.407.116-.539.12-.12.264-.308.396-.462.132-.154.176-.264.264-.44.088-.176.044-.33-.022-.462-.066-.132-.594-1.43-.814-1.958-.215-.516-.432-.446-.594-.455-.154-.007-.33-.008-.506-.008a.978.978 0 0 0-.704.33c-.242.264-.924.903-.924 2.202 0 1.298.946 2.552 1.078 2.728.132.176 1.86 2.837 4.5 3.976.629.27 1.12.433 1.503.555.631.2 1.205.172 1.657.104.506-.076 1.562-.638 1.782-1.254.22-.616.22-1.144.154-1.254-.066-.11-.242-.176-.506-.308Z" /></svg>
-              Написать в WhatsApp
-            </a>
+            {seller?.hasWhatsApp && (
+              <a
+                href={waHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => pushDataLayer('whatsapp_click', { listing_slug: slug ?? null })}
+                className="w-full rounded-2xl bg-[#25D366] py-4 font-extrabold text-white transition-all hover:bg-[#20BE5A] hover:-translate-y-0.5 active:scale-95 shadow-lg shadow-[#25D366]/20 flex items-center justify-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M16.666 4.9a10.518 10.518 0 0 0-7.464-3.15C3.398 1.75.12 6.55.12 12.35c0 1.912.496 3.766 1.439 5.4L.12 23.003l5.378-1.41a10.428 10.428 0 0 0 3.704.686h.005c5.803 0 10.526-4.8 10.526-10.603a10.524 10.524 0 0 0-3.067-7.427Zm-7.464 15.65h-.003a8.69 8.69 0 0 1-4.433-1.215l-.318-.188-3.295.864.88-3.212-.207-.329a8.683 8.683 0 0 1-1.328-4.62c0-4.823 3.926-8.75 8.75-8.75a8.704 8.704 0 0 1 6.182 2.569 8.707 8.707 0 0 1 2.564 6.185c0 4.824-3.926 8.75-8.748 8.75Zm4.81-6.57c-.264-.132-1.562-.77-1.803-.858-.242-.088-.418-.132-.594.133-.176.264-.683.858-.837 1.034-.154.175-.308.197-.573.065-.264-.131-1.115-.41-2.123-1.306-.784-.698-1.314-1.562-1.468-1.826-.154-.265-.016-.407.116-.539.12-.12.264-.308.396-.462.132-.154.176-.264.264-.44.088-.176.044-.33-.022-.462-.066-.132-.594-1.43-.814-1.958-.215-.516-.432-.446-.594-.455-.154-.007-.33-.008-.506-.008a.978.978 0 0 0-.704.33c-.242.264-.924.903-.924 2.202 0 1.298.946 2.552 1.078 2.728.132.176 1.86 2.837 4.5 3.976.629.27 1.12.433 1.503.555.631.2 1.205.172 1.657.104.506-.076 1.562-.638 1.782-1.254.22-.616.22-1.144.154-1.254-.066-.11-.242-.176-.506-.308Z" /></svg>
+                Написать в WhatsApp
+              </a>
+            )}
           </>
         ) : (
           <div className="w-full rounded-2xl bg-zinc-100 py-4 font-extrabold text-zinc-400 flex items-center justify-center gap-2 text-sm">

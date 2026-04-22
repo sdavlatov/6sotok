@@ -1,8 +1,7 @@
 import { Container } from '../layout/container';
-import { allListings } from '@/lib/mock-data';
 
-export function HeroSection() {
-  const listingCount = allListings.length;
+export function HeroSection({ count }: { count: number }) {
+  const listingCount = count;
   return (
     <section className="relative overflow-hidden bg-white pt-16 pb-20">
       <div className="absolute left-1/2 top-0 -translate-x-1/2 translate-y-[-30%] opacity-30 pointer-events-none">

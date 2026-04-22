@@ -9,6 +9,7 @@ export interface ListingSeller {
   isAgency: boolean;
   registerDate: string;
   avatar?: string;
+  hasWhatsApp?: boolean;
 }
 
 export interface Listing {
@@ -53,8 +54,8 @@ export interface Listing {
   purpose?: Purpose;
   canChangePurpose?: boolean;
 
-  // Дополнительно
-  suitableFor?: string[];
+  isNegotiable?: boolean;
+  locationType?: string[];
 
   // Координаты для карты
   lat?: number;
