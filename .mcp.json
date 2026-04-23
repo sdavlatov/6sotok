@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "wsl",
+      "args": ["-d", "Ubuntu", "-e", "bash", "-c", "cd ~ && npx @playwright/mcp --headless --isolated --executable-path /home/sdavlatov/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome --output-dir /tmp/playwright-mcp"]
+    }
+  }
+}
