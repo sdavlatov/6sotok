@@ -12,7 +12,17 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import type { Listing } from '@/types/listing';
+
+export interface MapItem {
+  id: string | number
+  slug: string
+  title: string
+  price: number
+  location: string
+  image: string
+  lat?: number | null
+  lng?: number | null
+}
 
 // ─── Константы ──────────────────────────────────────────────────────────────
 const LEAFLET_VERSION = '1.9.4';
@@ -87,9 +97,8 @@ function loadCss(href: string): void {
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 export interface MapViewProps {
-  listings: Listing[];
-  /** Клик по маркеру — прокручивает к карточке в сетке */
-  onMarkerClick?: (listing: Listing) => void;
+  listings: MapItem[];
+  onMarkerClick?: (listing: MapItem) => void;
 }
 
 // ─── Компонент ───────────────────────────────────────────────────────────────
@@ -99,7 +108,7 @@ export function MapView({ listings, onMarkerClick }: MapViewProps) {
   const markersRef  = useRef<LMarker[]>([]);
   const [ready, setReady]   = useState(false);
   const [error, setError]   = useState(false);
-  const [active, setActive] = useState<Listing | null>(null);
+  const [active, setActive] = useState<MapItem | null>(null);
 
   // Загружаем Leaflet один раз
   useEffect(() => {

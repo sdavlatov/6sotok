@@ -5,9 +5,8 @@ import { Container } from '../layout/container';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { pushDataLayer } from '@/lib/analytics';
-import { allListings as mockListings } from '@/lib/mock-data';
 import { LAND_CATEGORIES, UTILITIES, LEGAL_FILTERS, FilterKey } from '@/lib/listing-constants';
-import { MapView } from '@/components/catalog/map-view';
+import { MapView, type MapItem } from '@/components/catalog/map-view';
 
 type ViewMode = 'list' | 'map';
 
@@ -45,8 +44,21 @@ interface SearchBarProps {
   onApply?: (values: FilterValues) => void;
 }
 
+type MapListingFull = MapItem & {
+  area: number
+  landType: string
+  purpose?: string
+  hasElectricity?: boolean
+  hasGas?: boolean
+  hasWater?: boolean
+  hasSewer?: boolean
+  hasRoadAccess?: boolean
+  isPledged?: boolean
+  isOnRedLine?: boolean
+  isDivisible?: boolean
+}
+
 export function SearchBar({ countByType: propCountByType, locations: propLocations, totalCount, initialValues, onApply }: SearchBarProps = {}) {
-  const allListings = mockListings;
   const router = useRouter();
   const isCatalogMode = !!onApply;
 
@@ -62,31 +74,36 @@ export function SearchBar({ countByType: propCountByType, locations: propLocatio
     initialValues?.activeFilters ?? INITIAL_FILTERS
   );
   const [mounted, setMounted] = useState(false);
+  const [mapListings, setMapListings] = useState<MapListingFull[]>([]);
+  const mapFetchedRef = useRef(false);
 
   useEffect(() => setMounted(true), []);
 
+  useEffect(() => {
+    if (viewMode !== 'map' || mapFetchedRef.current) return;
+    mapFetchedRef.current = true;
+    fetch('/api/map-listings')
+      .then(r => r.json())
+      .then(data => setMapListings(data))
+      .catch(() => {});
+  }, [viewMode]);
+
   const locationRef = useRef<HTMLDivElement>(null);
 
-  // Локации для саджеста: реальные если переданы, иначе из mock
   const allLocations = useMemo(
-    () => propLocations ?? [...new Set(allListings.map(l => l.location))],
+    () => propLocations ?? [],
     [propLocations]
   );
 
-  // Счётчики по типу: реальные если переданы, иначе из mock
-  const countByType = useMemo(() => {
-    if (propCountByType) return propCountByType;
-    const counts: Record<string, number> = {};
-    for (const l of allListings) {
-      counts[l.landType] = (counts[l.landType] || 0) + 1;
-    }
-    return counts;
-  }, [propCountByType]);
+  const countByType = useMemo(
+    () => propCountByType ?? {},
+    [propCountByType]
+  );
 
   const suggestions = useMemo(() => {
     const q = location.trim().toLowerCase();
-    if (q.length < 2) return [];
-    return allLocations.filter(loc => loc.toLowerCase().includes(q)).slice(0, 6);
+    if (q.length === 0) return allLocations.slice(0, 8);
+    return allLocations.filter(loc => loc.toLowerCase().includes(q)).slice(0, 8);
   }, [location, allLocations]);
 
   useEffect(() => {
@@ -105,8 +122,8 @@ export function SearchBar({ countByType: propCountByType, locations: propLocatio
 
   const activeCount = Object.values(activeFilters).filter(Boolean).length;
 
-  const filteredListings = useMemo(() => {
-    let result = allListings;
+  const filteredMapListings = useMemo(() => {
+    let result = mapListings;
     if (purpose) result = result.filter(l => l.landType === purpose || l.purpose === purpose);
     if (areaFrom) { const v = parseFloat(areaFrom); if (v > 0) result = result.filter(l => l.area >= v); }
     if (areaTo)   { const v = parseFloat(areaTo);   if (v > 0) result = result.filter(l => l.area <= v); }
@@ -121,9 +138,9 @@ export function SearchBar({ countByType: propCountByType, locations: propLocatio
     if (activeFilters.hasSewer)       result = result.filter(l => l.hasSewer === true);
     if (activeFilters.hasRoadAccess)  result = result.filter(l => l.hasRoadAccess === true);
     return result;
-  }, [purpose, areaFrom, areaTo, priceFrom, priceTo, activeFilters]);
+  }, [mapListings, purpose, areaFrom, areaTo, priceFrom, priceTo, activeFilters]);
 
-  const matchCount = filteredListings.length;
+  const matchCount = totalCount ?? 0;
 
   const handleSearch = () => {
     if (isCatalogMode) {
@@ -329,7 +346,7 @@ export function SearchBar({ countByType: propCountByType, locations: propLocatio
       {/* Карта — только отфильтрованные */}
       {!isCatalogMode && viewMode === 'map' && (
         <div className="mx-6 mb-6 -mt-1">
-          <MapView listings={filteredListings} />
+          <MapView listings={filteredMapListings} />
         </div>
       )}
 
