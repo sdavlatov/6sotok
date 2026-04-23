@@ -1,3 +1,4 @@
 {
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "buildCommand": "npx payload migrate && npm run build"
 }
