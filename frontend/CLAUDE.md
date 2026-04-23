@@ -10,11 +10,12 @@ Responses must be short and concise. No summaries at end of response.
 
 ## Последние изменения (2026-04-23)
 
+- **Vercel деплой**: https://6sotok.vercel.app — работает. Neon PostgreSQL (unpooled URL — pooler ломает search_path). Vercel Blob для медиафайлов.
+- **payload.config.ts**: `vercelBlobStorage` плагин (`enabled: !!process.env.BLOB_READ_WRITE_TOKEN`). `push: true` в postgres адаптере.
+- **importMap.ts**: Добавлен `VercelBlobClientUploadHandler` вручную (generate:importmap не работает локально).
+- **instrumentation.ts**: Инициализирует Payload при старте сервера.
 - **Инфраструктура**: Frontend перенесён из Docker в WSL2 systemd service (`6sotok-dev.service`). Docker используется только для Postgres.
-- **api.ts**: Переписан на Payload JS API (`getPayload({config})`) вместо HTTP-запросов к себе — устраняет Turbopack panic при компиляции `/api/[...slug]`.
-- **page.tsx**: Секция "Свежие объявления" — 3 колонки (`lg:grid-cols-3`), показывает 3 новейших объявления (`slice(0, 3)`).
-- **search-bar.tsx**: Табы — hydration fix через `mounted` state (`{mounted && cnt > 0 && <span>счётчик</span>}`).
-- **БД**: Пустая (данные потеряны при отладке Docker). Нужно добавить объявления через http://localhost:3000/admin.
+- **api.ts**: Payload JS API напрямую (`getPayload({config})`), не HTTP — устраняет Turbopack panic.
 
 ---
 
