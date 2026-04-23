@@ -1,6 +1,7 @@
 import { CollectionCards, FolderField, FolderTableCell } from '@payloadcms/ui/rsc'
 import { DocumentHeader, DefaultNav } from '@payloadcms/next/rsc'
 import { RscEntryLexicalField } from '@payloadcms/richtext-lexical/rsc'
+import { VercelBlobClientUploadHandler } from '@payloadcms/storage-vercel-blob/client'
 
 export const importMap = {
   '@payloadcms/ui/rsc#CollectionCards': CollectionCards,
@@ -10,4 +11,5 @@ export const importMap = {
   '@payloadcms/next/rsc#DocumentHeader': DocumentHeader,
   '@payloadcms/next/rsc#DefaultNav': DefaultNav,
   '@payloadcms/richtext-lexical/rsc#RscEntryLexicalField': RscEntryLexicalField,
+  '@payloadcms/storage-vercel-blob/client#VercelBlobClientUploadHandler': VercelBlobClientUploadHandler,
 }
