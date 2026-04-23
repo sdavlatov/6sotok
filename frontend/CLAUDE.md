@@ -4,15 +4,48 @@ Apply changes without confirmation. Modify files directly. Always.
 NEVER ask yes/no questions. Always proceed immediately.
 Always respond in Russian unless explicitly requested otherwise.
 Responses must be short and concise. No summaries at end of response.
+В конце каждой сессии обновлять раздел "Последние изменения" ниже.
+
+---
+
+## Последние изменения (2026-04-23)
+
+- **Инфраструктура**: Frontend перенесён из Docker в WSL2 systemd service (`6sotok-dev.service`). Docker используется только для Postgres.
+- **api.ts**: Переписан на Payload JS API (`getPayload({config})`) вместо HTTP-запросов к себе — устраняет Turbopack panic при компиляции `/api/[...slug]`.
+- **page.tsx**: Секция "Свежие объявления" — 3 колонки (`lg:grid-cols-3`), показывает 3 новейших объявления (`slice(0, 3)`).
+- **search-bar.tsx**: Табы — hydration fix через `mounted` state (`{mounted && cnt > 0 && <span>счётчик</span>}`).
+- **БД**: Пустая (данные потеряны при отладке Docker). Нужно добавить объявления через http://localhost:3000/admin.
+
+---
+
+## Инфраструктура (Dev)
+
+**Next.js** работает НЕ в Docker — через systemd user service в WSL2:
+```bash
+systemctl --user status 6sotok-dev.service   # статус
+systemctl --user restart 6sotok-dev.service  # перезапуск
+journalctl --user -u 6sotok-dev.service -f   # логи
+```
+Сервис автостартует вместе с WSL2. Файл: `~/.config/systemd/user/6sotok-dev.service`
+
+**PostgreSQL** — Docker контейнер `postgres`, доступен на `localhost:5432` из WSL2.
+
+**DATABASE_URI** в `.env.local` = `postgresql://postgres:postgres@localhost:5432/sixsotok` (localhost, не postgres!)
+
+**Admin**: http://localhost:3000/admin
+
+**Важно**: после изменения файлов через Windows (Claude Code IDE) Turbopack может не подхватить изменения автоматически — нужен `systemctl --user restart 6sotok-dev.service`.
+
+**api.ts** вызывает Payload JS API напрямую (`getPayload({ config })`), НЕ через HTTP-запросы к себе. Это важно — самореферентный fetch вызывал Turbopack panic.
 
 ---
 
 ## Stack
 
-- Next.js 15 App Router, Turbopack
+- Next.js 16, App Router, Turbopack
 - Tailwind v4, TypeScript
-- Payload CMS 3.x (REST API `/api/*`, admin `/admin`)
-- PostgreSQL via Docker (`service: postgres`, NOT localhost)
+- Payload CMS 3.x (admin `/admin`, JS API через `getPayload`)
+- PostgreSQL via Docker (`localhost:5432` из WSL2)
 - Leaflet via CDN (no npm install) — types in `map-view.tsx` declare global `window.L`
 
 ---
@@ -83,13 +116,6 @@ seller: { name, phone, isAgency, hasWhatsApp }
 
 **Цвет primary**: `#16a34a` (green-600). Tailwind классы: `bg-primary`, `text-primary`, `border-primary`, `primary-soft`, `primary-hover`
 
-## Docker
-
-```yaml
-# DATABASE_URI должен использовать имя сервиса, не localhost
-DATABASE_URI=postgresql://postgres:postgres@postgres:5432/sixsotok
-```
-
 ## Что НЕ делать
 
 - Не переписывать файлы целиком без необходимости
@@ -98,4 +124,6 @@ DATABASE_URI=postgresql://postgres:postgres@postgres:5432/sixsotok
 - Не импортировать `from 'leaflet'` — пакет не установлен, типы локальные
 - Не читать файл если не меняешь его
 - Не передавать `Listing[]` как пропс в клиентские компоненты — только скалярные данные
-- Не перезапускать сервер через `kill $(lsof -t -i:3000)` — не работает в этой среде, использовать `pkill -f "next dev"`
+- Не перезапускать сервер через `kill $(lsof -t -i:3000)` — использовать `systemctl --user restart 6sotok-dev.service`
+- Не писать `DATABASE_URI` с hostname `postgres` — только `localhost` (Next.js вне Docker)
+- Не делать fetch к `http://localhost:3000/api/*` из серверных компонентов — использовать `getPayload({ config })` напрямую

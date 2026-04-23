@@ -10,7 +10,7 @@ import Link from 'next/link';
 export default async function HomePage() {
   const apiListings = await getListings({ limit: '500' })
   const allListings = apiListings.length > 0 ? apiListings : mockListings
-  const listings = allListings.slice(0, 8)
+  const listings = allListings.slice(0, 3)
 
   const countByType: Record<string, number> = {};
   const locSet = new Set<string>();
@@ -44,7 +44,7 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {listings.map((listing, i) => (
               <ListingCard key={listing.id + i} listing={listing} />
             ))}

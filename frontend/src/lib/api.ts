@@ -1,6 +1,6 @@
+import { getPayload } from 'payload'
+import config from '@payload-config'
 import type { Listing } from '@/types/listing'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'
 
 interface PayloadMedia {
   url?: string
@@ -106,37 +106,50 @@ function mapListing(p: PayloadListing): Listing {
   }
 }
 
+async function payload() {
+  return getPayload({ config })
+}
+
 export async function getListings(params: Record<string, string> = {}): Promise<Listing[]> {
-  const qs = new URLSearchParams({
-    'where[status][equals]': 'published',
-    limit: '100',
-    depth: '1',
-    ...params,
+  const limit = parseInt(params.limit ?? '100')
+  const p = await payload()
+  const result = await p.find({
+    collection: 'listings',
+    where: { status: { equals: 'published' } },
+    limit,
+    depth: 1,
   })
-  const res = await fetch(`${API_BASE}/api/listings?${qs}`, { next: { revalidate: 60 } })
-  if (!res.ok) return []
-  const data = await res.json()
-  return (data.docs as PayloadListing[]).map(mapListing)
+  return (result.docs as unknown as PayloadListing[]).map(mapListing)
 }
 
 export async function getListingById(id: string): Promise<Listing | null> {
-  const res = await fetch(`${API_BASE}/api/listings/${id}?depth=1`, { next: { revalidate: 60 } })
-  if (!res.ok) return null
-  const data = await res.json()
-  if (!data?.id) return null
-  return mapListing(data as PayloadListing)
+  try {
+    const p = await payload()
+    const doc = await p.findByID({
+      collection: 'listings',
+      id,
+      depth: 1,
+    })
+    if (!doc?.id) return null
+    return mapListing(doc as unknown as PayloadListing)
+  } catch {
+    return null
+  }
 }
 
 export async function getListingBySlug(slug: string): Promise<Listing | null> {
-  const qs = new URLSearchParams({
-    'where[slug][equals]': slug,
-    'where[status][equals]': 'published',
-    depth: '1',
-    limit: '1',
+  const p = await payload()
+  const result = await p.find({
+    collection: 'listings',
+    where: {
+      and: [
+        { slug: { equals: slug } },
+        { status: { equals: 'published' } },
+      ],
+    },
+    depth: 1,
+    limit: 1,
   })
-  const res = await fetch(`${API_BASE}/api/listings?${qs}`, { next: { revalidate: 60 } })
-  if (!res.ok) return null
-  const data = await res.json()
-  if (!data.docs?.length) return null
-  return mapListing(data.docs[0] as PayloadListing)
+  if (!result.docs?.length) return null
+  return mapListing(result.docs[0] as unknown as PayloadListing)
 }
