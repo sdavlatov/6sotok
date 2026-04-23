@@ -28,11 +28,7 @@ export default buildConfig({
 
   db: postgresAdapter({
     pool: {
-      connectionString: (() => {
-        const uri = process.env.DATABASE_URI as string
-        const sep = uri.includes('?') ? '&' : '?'
-        return uri.includes('search_path') ? uri : `${uri}${sep}options=-c+search_path%3Dpublic`
-      })(),
+      connectionString: process.env.DATABASE_URI as string,
     },
     push: true,
   }),
