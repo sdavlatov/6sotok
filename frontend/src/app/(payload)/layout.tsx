@@ -1,12 +1,13 @@
 import config from '@payload-config'
 import { RootLayout, handleServerFunctions } from '@payloadcms/next/layouts'
 import React from 'react'
+import type { ServerFunctionClient } from 'payload'
 import { importMap } from './importMap'
 import '@payloadcms/next/css'
 
-async function serverFunction(args: Parameters<typeof handleServerFunctions>[0]) {
+const serverFunction: ServerFunctionClient = async (args) => {
   'use server'
-  return handleServerFunctions({ ...args, config })
+  return handleServerFunctions({ ...args, config, importMap })
 }
 
 type Args = {
