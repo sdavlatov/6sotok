@@ -111,15 +111,19 @@ async function payload() {
 }
 
 export async function getListings(params: Record<string, string> = {}): Promise<Listing[]> {
-  const limit = parseInt(params.limit ?? '100')
-  const p = await payload()
-  const result = await p.find({
-    collection: 'listings',
-    where: { status: { equals: 'published' } },
-    limit,
-    depth: 1,
-  })
-  return (result.docs as unknown as PayloadListing[]).map(mapListing)
+  try {
+    const limit = parseInt(params.limit ?? '100')
+    const p = await payload()
+    const result = await p.find({
+      collection: 'listings',
+      where: { status: { equals: 'published' } },
+      limit,
+      depth: 1,
+    })
+    return (result.docs as unknown as PayloadListing[]).map(mapListing)
+  } catch {
+    return []
+  }
 }
 
 export async function getListingById(id: string): Promise<Listing | null> {

@@ -10,6 +10,8 @@ import { ListingCard } from '@/components/listings/listing-card';
 import { Breadcrumb } from '@/components/listings/Breadcrumb';
 import { SLUG_LANDTYPE, listingUrl } from '@/lib/listing-url';
 import Link from 'next/link';
+export const dynamic = 'force-dynamic'
+
 import type { Metadata } from 'next';
 
 interface Props {

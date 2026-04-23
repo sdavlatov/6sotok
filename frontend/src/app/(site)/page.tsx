@@ -7,6 +7,8 @@ import { getListings } from '@/lib/api';
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic'
+
 export default async function HomePage() {
   const apiListings = await getListings({ limit: '500' })
   const allListings = apiListings.length > 0 ? apiListings : mockListings
