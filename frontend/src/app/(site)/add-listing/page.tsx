@@ -17,7 +17,8 @@ const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
 const LEAFLET_JS  = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
 const KZ_CENTER: [number, number] = [48.0, 68.0];
 // Приблизительные границы Казахстана
-const KZ_BOUNDS: [[number, number], [number, number]] = [[40.5, 50.3], [55.5, 87.3]];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const KZ_BOUNDS: any = [[40.5, 50.3], [55.5, 87.3]];
 
 function loadLeaflet(): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -56,7 +57,8 @@ function LocationPicker({ value, onChange }: {
     if (!ready || !mapEl.current || mapRef.current || !window.L) return;
     if ((mapEl.current as HTMLElement & { _leaflet_id?: number })._leaflet_id) return;
     const L = window.L;
-    const map = L.map(mapEl.current, {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const map: any = L.map(mapEl.current, {
       zoomControl: true,
       scrollWheelZoom: true,
       maxBounds: KZ_BOUNDS,
@@ -67,7 +69,8 @@ function LocationPicker({ value, onChange }: {
     }).addTo(map);
     map.fitBounds(KZ_BOUNDS);
     map.once('moveend', () => map.setMinZoom(map.getZoom()));
-    map.on('click', (e) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    map.on('click', (e: any) => {
       const { lat, lng } = e.latlng;
       onChange({ lat: +lat.toFixed(6), lng: +lng.toFixed(6) });
     });

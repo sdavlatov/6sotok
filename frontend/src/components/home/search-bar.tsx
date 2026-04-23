@@ -170,7 +170,7 @@ export function SearchBar({ countByType: propCountByType, locations: propLocatio
         <div className="relative flex-1 min-w-0 overflow-hidden">
           <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-none">
             {PURPOSES.map(p => {
-              const cnt = p.value === '' ? (totalCount ?? allListings.length) : (countByType[p.value] ?? 0);
+              const cnt = p.value === '' ? (totalCount ?? 0) : (countByType[p.value] ?? 0);
               return (
                 <button
                   key={p.value}

@@ -6,7 +6,7 @@ import { Container } from '@/components/layout/container';
 import { ListingCard } from '@/components/listings/listing-card';
 import { CatalogFilters } from '@/components/catalog/filters';
 import { CatalogSort } from '@/components/catalog/sort';
-import { MapView } from '@/components/catalog/map-view';
+import { MapView, type MapItem } from '@/components/catalog/map-view';
 import type { Listing } from '@/types/listing';
 
 type ViewMode = 'list' | 'map';
@@ -125,7 +125,8 @@ export function CatalogClient({
     setIsPledged(false); setIsOnRedLine(false); setIsDivisible(false);
   };
 
-  const handleMarkerClick = useCallback((listing: Listing) => {
+  const handleMarkerClick = useCallback((listing: MapItem) => {
+    const l = listing as unknown as Listing;
     if (highlightTimer.current) {
       clearTimeout(highlightTimer.current);
       highlightTimer.current = null;

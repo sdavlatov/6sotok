@@ -157,12 +157,12 @@ export default async function ListingPage({ params }: Props) {
                     listing.frontWidth && { label: 'Ширина фасада', value: `${listing.frontWidth} м` },
                     listing.depth && { label: 'Глубина', value: `${listing.depth} м` },
                     { label: 'Делимость', value: listing.isDivisible ? 'Делимый' : 'Неделимый' },
-                  ].filter(Boolean).map(({ label, value }) => (
+                  ].filter(Boolean).map((item) => { const { label, value } = item as { label: string; value: string }; return (
                     <div key={label} className="flex items-center justify-between py-3">
                       <span className="text-[13px] font-semibold text-zinc-500">{label}</span>
                       <span className="text-[13px] font-black text-zinc-900 text-right ml-4">{value}</span>
                     </div>
-                  ))}
+                  ); })}
                 </div>
               </div>
 
