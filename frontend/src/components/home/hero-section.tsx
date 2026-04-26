@@ -10,7 +10,7 @@ export function HeroSection({ count }: { count: number }) {
 
       <Container className="relative z-10">
         <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
-          
+
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary-soft/50 px-4 py-1.5 text-[11px] uppercase tracking-widest font-bold text-primary backdrop-blur-md">
             <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
             Маркетплейс земли №1 в Казахстане

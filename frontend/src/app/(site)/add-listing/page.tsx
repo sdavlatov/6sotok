@@ -127,15 +127,6 @@ function LocationPicker({ value, onChange }: {
 }
 
 // ── Константы ────────────────────────────────────────────────────────────────
-const LOC_TYPES = [
-  { value: 'city',      label: 'В городе' },
-  { value: 'suburb',    label: 'В пригороде' },
-  { value: 'highway',   label: 'Вдоль трассы' },
-  { value: 'water',     label: 'Возле водоёма' },
-  { value: 'foothills', label: 'В предгорьях' },
-  { value: 'dacha',     label: 'В дачном массиве' },
-];
-
 const KZ_CITIES = [
   'Алматы', 'Астана', 'Шымкент', 'Актобе', 'Атырау', 'Павлодар', 'Семей',
   'Қарағанды', 'Тараз', 'Өскемен', 'Актау', 'Уральск', 'Петропавловск',
@@ -164,9 +155,8 @@ export default function AddListingPage() {
   const [isGeocoding, setIsGeocoding]   = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [locationType, setLocationType] = useState<string[]>([]);
   const [fd, setFd] = useState({
-    landType: '', area: '', price: '', isNegotiable: false,
+    landType: '', area: '', price: '',
     location: '',
     address: '',
     hasElectricity: false, hasGas: false, hasWater: false, hasSewer: false, hasRoadAccess: false,
@@ -181,9 +171,6 @@ export default function AddListingPage() {
 
   const toggle = (k: keyof typeof fd) =>
     setFd(prev => ({ ...prev, [k]: !prev[k] }));
-
-  const toggleLocType = (v: string) =>
-    setLocationType(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v]);
 
   const autoTitle = [
     fd.landType || 'Участок',
@@ -203,10 +190,15 @@ export default function AddListingPage() {
       .then(r => r.json())
       .then(data => {
         const addr = data.address ?? {};
-        const city = addr.city || addr.town || addr.village || addr.suburb || addr.county || '';
-        const state = (addr.state || '').replace(/\s*область$/i, ' обл.').trim();
-        const parts = [city, state].filter(Boolean);
-        if (parts.length) set('location', parts.join(', '));
+        const road   = addr.road || addr.residential || addr.pedestrian || '';
+        const nbhd   = addr.neighbourhood || addr.suburb || addr.city_district || '';
+        const city   = addr.city || addr.town || addr.village || addr.county || '';
+        const state  = (addr.state || '').replace(/\s*область$/i, ' обл.').trim();
+        // Улица/район → поле address; город+область → location
+        const streetParts = [road, nbhd].filter(Boolean);
+        if (streetParts.length) set('address', streetParts.join(', '));
+        const cityParts = [city, state].filter(Boolean);
+        if (cityParts.length) set('location', cityParts.join(', '));
       })
       .catch(() => {})
       .finally(() => setIsGeocoding(false));
@@ -273,8 +265,6 @@ export default function AddListingPage() {
       const body = {
         title: autoTitle || 'Участок',
         landType: fd.landType || 'ИЖС',
-        isNegotiable: fd.isNegotiable,
-        locationType: locationType.length ? locationType : undefined,
         area: Number(fd.area),
         price: rawPrice(fd.price),
         location: fd.location || 'Казахстан',
@@ -335,7 +325,7 @@ export default function AddListingPage() {
           <form onSubmit={e => { e.preventDefault(); submit('draft'); }} className="max-w-3xl mx-auto space-y-6">
 
             {/* ── 1. Основная информация ─────────────────────────────────────── */}
-            <section className="bg-white rounded-3xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-6">
+            <section className="bg-white rounded-2xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-6">
               <div>
                 <h2 className="text-xl font-extrabold text-zinc-900">Основная информация</h2>
                 {autoTitle && (
@@ -380,19 +370,12 @@ export default function AddListingPage() {
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-zinc-400 pointer-events-none">₸</span>
                   </div>
                   {errors.price && <p className="mt-1 text-sm font-medium text-red-500">{errors.price}</p>}
-                  <label className="mt-3 flex items-center gap-2.5 cursor-pointer select-none w-fit">
-                    <div onClick={() => toggle('isNegotiable')}
-                      className={`relative w-10 h-6 rounded-full transition-colors ${fd.isNegotiable ? 'bg-primary' : 'bg-zinc-200'}`}>
-                      <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${fd.isNegotiable ? 'translate-x-5' : 'translate-x-1'}`} />
-                    </div>
-                    <span className="text-sm font-bold text-zinc-600">Торг уместен</span>
-                  </label>
                 </div>
               </div>
             </section>
 
             {/* ── 2. Фото и видео ────────────────────────────────────────────── */}
-            <section className="bg-white rounded-3xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-4">
+            <section className="bg-white rounded-2xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-4">
               <div>
                 <h2 className="text-xl font-extrabold text-zinc-900">Фото и видео <span className="text-red-500">*</span></h2>
               </div>
@@ -407,7 +390,7 @@ export default function AddListingPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="text-[13px] font-bold text-zinc-900">Видео</p>
-                      <span className="text-[9px] font-black uppercase tracking-widest text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">Рекомендуем</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">Рекомендуем</span>
                     </div>
                     <p className="text-[12px] text-zinc-500 font-medium leading-relaxed">
                       Снимайте вертикально (9:16) — как Reels или TikTok.<br/>
@@ -452,7 +435,7 @@ export default function AddListingPage() {
                       >
                         {i === 0 && (
                           <div className="absolute top-2 left-2 z-10">
-                            <span className="bg-zinc-900/80 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg">Обложка</span>
+                            <span className="bg-zinc-900/80 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full">Обложка</span>
                           </div>
                         )}
                         {isVid ? (
@@ -478,7 +461,7 @@ export default function AddListingPage() {
                 </div>
               )}
 
-              <label className={`flex flex-col items-center justify-center w-full h-36 rounded-3xl border-2 border-dashed bg-zinc-50 hover:bg-zinc-100 cursor-pointer transition-colors group ${errors.photos ? 'border-red-400' : 'border-zinc-300 hover:border-primary/50'}`}>
+              <label className={`flex flex-col items-center justify-center w-full h-36 rounded-2xl border-2 border-dashed bg-zinc-50 hover:bg-zinc-100 cursor-pointer transition-colors group ${errors.photos ? 'border-red-400' : 'border-zinc-300 hover:border-primary/50'}`}>
                 <div className="h-11 w-11 rounded-full bg-white shadow-sm flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-primary"><path fillRule="evenodd" d="M11.47 2.47a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1-1.06 1.06l-3.22-3.22V16.5a.75.75 0 0 1-1.5 0V4.81L8.03 8.03a.75.75 0 0 1-1.06-1.06l4.5-4.5ZM3 15.75a.75.75 0 0 1 .75.75v2.25a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5V16.5a.75.75 0 0 1 1.5 0v2.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V16.5a.75.75 0 0 1 .75-.75Z" clipRule="evenodd"/></svg>
                 </div>
@@ -492,7 +475,7 @@ export default function AddListingPage() {
             </section>
 
             {/* ── 3. Расположение ────────────────────────────────────────────── */}
-            <section className="bg-white rounded-3xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-5">
+            <section className="bg-white rounded-2xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-5">
               <h2 className="text-xl font-extrabold text-zinc-900">Расположение</h2>
 
               {/* Карта — только Казахстан, клик ставит точку и заполняет город */}
@@ -538,22 +521,10 @@ export default function AddListingPage() {
                   className={inputCls()} />
               </div>
 
-              {/* Тип местоположения */}
-              <div>
-                <label className="block text-sm font-bold text-zinc-700 mb-3">Тип местоположения</label>
-                <div className="flex flex-wrap gap-2">
-                  {LOC_TYPES.map(({ value, label }) => (
-                    <button key={value} type="button" onClick={() => toggleLocType(value)}
-                      className={`px-3.5 py-2.5 rounded-xl text-[13px] font-bold border transition-all active:scale-95 ${locationType.includes(value) ? 'bg-primary border-primary text-white shadow-sm' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-white'}`}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
             </section>
 
             {/* ── 4. Коммуникации ────────────────────────────────────────────── */}
-            <section className="bg-white rounded-3xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-4">
+            <section className="bg-white rounded-2xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-4">
               <h2 className="text-xl font-extrabold text-zinc-900">Коммуникации</h2>
               <div className="flex flex-wrap gap-2">
                 {UTILITIES.map(({ key, icon: Icon, label, active }) => (
@@ -567,14 +538,14 @@ export default function AddListingPage() {
             </section>
 
             {/* ── 5. Юридические данные ──────────────────────────────────────── */}
-            <section className="bg-white rounded-3xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-5">
+            <section className="bg-white rounded-2xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-5">
               <h2 className="text-xl font-extrabold text-zinc-900">Юридические данные</h2>
 
               <div>
                 <label className="block text-[11px] font-extrabold uppercase tracking-widest text-zinc-400 mb-3">Юридическая чистота</label>
                 <div className="flex flex-wrap gap-2">
                   <button type="button" onClick={() => toggle('hasStateAct')}
-                    className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-[13px] font-bold border transition-all active:scale-95 ${fd.hasStateAct ? 'border-green-300 bg-green-50 text-green-700' : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:bg-white'}`}>
+                    className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-[13px] font-bold border transition-all active:scale-95 ${fd.hasStateAct ? 'border-primary/30 bg-primary-soft text-primary' : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:bg-white'}`}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                     Гос. акт
                   </button>
@@ -610,7 +581,7 @@ export default function AddListingPage() {
             </section>
 
             {/* ── 6. Описание ────────────────────────────────────────────────── */}
-            <section className="bg-white rounded-3xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-3">
+            <section className="bg-white rounded-2xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-3">
               <div className="flex items-end justify-between">
                 <h2 className="text-xl font-extrabold text-zinc-900">Описание</h2>
                 <span className="text-xs font-bold text-zinc-400">{fd.description.length} / 2000</span>
@@ -622,7 +593,7 @@ export default function AddListingPage() {
             </section>
 
             {/* ── 7. Контакты ────────────────────────────────────────────────── */}
-            <section className="bg-white rounded-3xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-5">
+            <section className="bg-white rounded-2xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-5">
               <h2 className="text-xl font-extrabold text-zinc-900">Ваши контакты</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
@@ -652,9 +623,9 @@ export default function AddListingPage() {
             <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-4 pt-2 border-t border-zinc-200">
               {errors.submit && <p className="w-full text-sm font-medium text-red-500 text-center">{errors.submit}</p>}
               {isSubmitted ? (
-                <div className="w-full rounded-2xl bg-green-50 border border-green-200 px-8 py-5 text-center">
-                  <p className="font-extrabold text-green-700">Объявление отправлено на проверку</p>
-                  <p className="text-sm font-medium text-green-600 mt-1">Мы свяжемся с вами в течение 24 часов</p>
+                <div className="w-full rounded-2xl bg-primary-soft border border-primary/20 px-8 py-5 text-center">
+                  <p className="font-extrabold text-primary">Объявление отправлено на проверку</p>
+                  <p className="text-sm font-medium text-primary/70 mt-1">Мы свяжемся с вами в течение 24 часов</p>
                 </div>
               ) : (
                 <>

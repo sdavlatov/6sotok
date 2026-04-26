@@ -1,23 +1,47 @@
 'use client';
 
+const SORT_OPTIONS = [
+  { value: 'Сначала новые',   label: 'Сначала новые',   short: 'Новые'   },
+  { value: 'Сначала дешевые', label: 'Сначала дешевые', short: 'Дешевле' },
+  { value: 'Сначала дорогие', label: 'Сначала дорогие', short: 'Дороже'  },
+];
+
+const CHEVRON = `url("data:image/svg+xml;charset=US-ASCII,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 9l6 6 6-6' stroke='%2371717A' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`;
+
 interface CatalogSortProps {
   value: string;
   onChange: (value: string) => void;
+  mobile?: boolean;
 }
 
-export function CatalogSort({ value, onChange }: CatalogSortProps) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="hidden sm:block text-sm font-bold text-zinc-500">Сортировка:</span>
-      <select 
+export function CatalogSort({ value, onChange, mobile }: CatalogSortProps) {
+  if (mobile) {
+    return (
+      <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none rounded-2xl border border-zinc-200 bg-white px-5 py-3 pr-11 text-sm font-bold text-zinc-900 shadow-sm outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer hover:border-zinc-300 bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M6%209L12%2015L18%209%22%20stroke%3D%22%2371717A%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[position:right_16px_center] bg-no-repeat"
+        style={{ backgroundImage: CHEVRON }}
+        className="appearance-none rounded-xl border border-zinc-200 bg-white bg-no-repeat bg-[length:14px_14px] bg-[position:right_10px_center] pl-3 pr-7 py-2.5 text-[13px] font-bold text-zinc-900 shadow-sm outline-none cursor-pointer hover:border-zinc-300 transition-colors focus:border-primary"
       >
-        <option value="Сначала новые">Сначала новые</option>
-        <option value="Сначала дешевые">Сначала дешевые</option>
-        <option value="Сначала дорогие">Сначала дорогие</option>
-        <option value="Дешевле за сотку">Дешевле за сотку</option>
+        {SORT_OPTIONS.map(o => (
+          <option key={o.value} value={o.value}>{o.short}</option>
+        ))}
+      </select>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-3">
+      <span className="hidden sm:block text-sm font-bold text-zinc-500 shrink-0">Сортировка:</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={{ backgroundImage: CHEVRON }}
+        className="appearance-none rounded-xl border border-zinc-200 bg-white bg-no-repeat bg-[length:14px_14px] bg-[position:right_14px_center] px-4 py-2.5 pr-10 text-[13px] font-bold text-zinc-900 shadow-sm outline-none cursor-pointer hover:border-zinc-300 transition-colors focus:border-primary focus:ring-1 focus:ring-primary/10"
+      >
+        {SORT_OPTIONS.map(o => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
       </select>
     </div>
   );

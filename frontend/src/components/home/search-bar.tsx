@@ -140,7 +140,7 @@ export function SearchBar({ countByType: propCountByType, locations: propLocatio
     return result;
   }, [mapListings, purpose, areaFrom, areaTo, priceFrom, priceTo, activeFilters]);
 
-  const matchCount = totalCount ?? 0;
+  const matchCount = purpose ? (countByType[purpose] ?? 0) : (totalCount ?? 0);
 
   const handleSearch = () => {
     if (isCatalogMode) {

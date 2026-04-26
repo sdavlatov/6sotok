@@ -128,3 +128,429 @@ seller: { name, phone, isAgency, hasWhatsApp }
 - Не перезапускать сервер через `kill $(lsof -t -i:3000)` — использовать `systemctl --user restart 6sotok-dev.service`
 - Не писать `DATABASE_URI` с hostname `postgres` — только `localhost` (Next.js вне Docker)
 - Не делать fetch к `http://localhost:3000/api/*` из серверных компонентов — использовать `getPayload({ config })` напрямую
+
+---
+
+# ДИЗАЙН-СИСТЕМА 6sotok
+
+> Эталон визуального стиля: **Linear**, **Vercel**, **Luma.events**, **Airbnb**
+> Принцип: каждый экран должен выглядеть как продукт уровня Series B стартапа.
+
+---
+
+## Цвета — Design Tokens (`globals.css`)
+
+```
+--color-primary:       #066F36   ← основной зелёный (бренд)
+--color-primary-light: #2CA64E   ← светлее для hover-акцентов
+--color-primary-hover: #055a2b   ← hover на кнопках
+--color-primary-soft:  #f0fdf4   ← фоновый тинт (bg карточек, секций)
+--color-primary-dark:  #022c15   ← тёмный вариант
+
+--color-accent:        #A3D2F0   ← небесно-голубой акцент (теги, бейджи)
+--color-accent-purple: #7e22ce
+--color-accent-soft:   #faf5ff
+
+--color-muted:         #a1a1aa   ← zinc-400 (плейсхолдеры, второстепенный текст)
+--color-border:        #e4e4e7   ← zinc-200 (разделители, рамки)
+--color-card:          #ffffff
+--color-background:    #fafafa
+```
+
+**Правила использования цвета:**
+- `bg-primary` / `text-primary` — ТОЛЬКО для главных CTA, активных состояний, ключевых цифр
+- Большие области — никогда `bg-primary`, используй `bg-primary-soft`
+- Нейтралы — всегда `zinc-*`, никогда `gray-*` (несовместимы с токенами)
+- Текст на белом фоне: заголовки `text-zinc-900`, тело `text-zinc-700`, второстепенное `text-zinc-500`, плейсхолдеры `text-zinc-400`
+- Никогда `text-black` или `color: #000` — только через zinc шкалу
+
+---
+
+## Типографика
+
+**Шрифт:** `Inter` (подключён через `next/font/google`, переменная `--font-inter`)
+
+### Шкала размеров
+```
+Микро-лейбл:  10px  font-bold   uppercase  tracking-widest   text-zinc-400
+Caption:      11px  font-medium                               text-zinc-500
+Small:        12px  font-medium                               text-zinc-600
+Body sm:      13px  font-normal  leading-relaxed
+Body:         15px  font-normal  leading-relaxed              text-zinc-700
+Body md:      16px  font-medium
+Subheading:   18px  font-semibold tracking-tight
+H4:           20px  font-bold    tracking-tight
+H3:           24px  font-bold    tracking-tight               text-zinc-900
+H2:           30px  font-bold    tracking-tight  (md:36px)
+H1:           36px  font-black   tracking-tight  (md:48px)
+Hero:         48px  font-black   tracking-tighter (md:64px)
+```
+
+**Правила:**
+- Заголовки всегда `tracking-tight` или `tracking-tighter` — никогда дефолтный letter-spacing
+- Цены и числа — `font-black tabular-nums`
+- Не более 3 разных размеров шрифта в одной секции
+- Длинные параграфы: `leading-relaxed` (1.625), короткие UI-лейблы: `leading-none`
+- Никакого `text-black` — минимум `text-zinc-800`
+
+---
+
+## Отступы и сетка
+
+**Базовая единица: 4px.** Все отступы кратны ей.
+
+```
+gap-1   = 4px    gap-2   = 8px    gap-3   = 12px
+gap-4   = 16px   gap-6   = 24px   gap-8   = 32px
+gap-10  = 40px   gap-12  = 48px   gap-16  = 64px
+```
+
+**Стандартные паттерны:**
+```
+Паддинг карточки:        px-4 pt-4 pb-4  (или p-5)
+Паддинг секции:          py-12 md:py-16 lg:py-20
+Паддинг страницы:        px-4 sm:px-6 lg:px-8
+Максимальная ширина:     max-w-7xl mx-auto
+Gap в сетке карточек:    gap-2 sm:gap-3
+Gap между секциями:      space-y-12 md:space-y-16
+```
+
+**Сетки карточек:**
+```tsx
+// 2 колонки
+'grid-cols-2'
+// 3 колонки (дефолт каталога)
+'grid-cols-2 sm:grid-cols-3'
+// 4 колонки
+'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'
+```
+
+---
+
+## Border Radius
+
+```
+rounded-lg   = 8px   ← только для мелких UI элементов (dropdown items)
+rounded-xl   = 12px  ← кнопки, инпуты, теги, иконки-контейнеры
+rounded-2xl  = 16px  ← карточки, модальные, панели (ОСНОВНОЙ для карточек)
+rounded-3xl  = 24px  ← hero-блоки, большие секции
+rounded-full        ← пилюли (бейджи, теги, аватары, кнопки-иконки)
+```
+
+**Запрещено:**
+- `rounded` (4px) — слишком острый для контента
+- `rounded-md` (6px) — устаревший корпоративный стиль
+- `rounded-sm` — только для мелких внутренних элементов
+
+---
+
+## Тени
+
+```
+shadow-sm    ← дефолт карточки в покое (едва заметная)
+shadow-md    ← hover карточки
+shadow-lg    ← активная/выбранная карточка, dropdown
+shadow-xl    ← модальные, поповеры
+```
+
+**Паттерн карточки:**
+```tsx
+className="shadow-sm hover:shadow-lg transition-shadow duration-200"
+```
+
+**Кастомная тень (для особых случаев):**
+```tsx
+shadow-[0_8px_32px_rgba(0,0,0,0.08)]    // мягкая рассеянная
+shadow-[0_20px_56px_rgba(0,0,0,0.12)]   // эффект "парения"
+```
+
+---
+
+## Анимации и переходы
+
+**Базовые классы:**
+```tsx
+transition-all duration-200        // универсальный
+transition-colors duration-150     // только цвет (hover кнопок)
+transition-shadow duration-200     // тень карточек
+transition-transform duration-300  // движение/масштаб
+```
+
+**Hover-эффекты карточек:**
+```tsx
+hover:-translate-y-1 transition-all duration-300   // лёгкий подъём
+hover:scale-[1.03]                                  // для медиа внутри карточки (через group)
+```
+
+**Pulse-анимация (коммуникации):**
+```tsx
+<span className="relative flex size-2">
+  <span className="absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-60 animate-ping" />
+  <span className="relative inline-flex size-2 rounded-full bg-amber-400" />
+</span>
+```
+
+**Цвета pulse-точек по типу коммуникации:**
+```
+Свет    → bg-yellow-400   (жёлтый — лампочка/солнце)
+Газ     → bg-orange-400   (оранжевый — пламя горелки)
+Вода    → bg-cyan-400     (голубой/аква — вода)
+Дорога  → bg-stone-400    (серый — асфальт)
+Госакт  → bg-emerald-500  (зелёный — одобрено/официально)
+Делимый → bg-violet-400   (фиолетовый — абстрактное)
+```
+
+**Skeleton / загрузка:**
+```tsx
+<div className="bg-zinc-100 animate-pulse rounded-2xl" />
+```
+
+**Запрещено:**
+- `transition` без `duration` — браузеры дают 150ms, но явно лучше
+- Анимации длиннее `duration-500` в UI (кроме page transitions)
+- `animate-bounce` — дешёвый эффект, не использовать
+
+---
+
+## Кнопки
+
+```tsx
+// Primary CTA
+"bg-primary hover:bg-primary-hover text-white font-semibold px-5 py-2.5 rounded-xl transition-colors duration-150"
+
+// Secondary
+"bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-medium px-5 py-2.5 rounded-xl transition-colors duration-150"
+
+// Ghost / outline
+"border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 text-zinc-700 font-medium px-5 py-2.5 rounded-xl transition-all duration-150"
+
+// Destructive
+"bg-red-50 hover:bg-red-100 text-red-700 font-medium px-5 py-2.5 rounded-xl transition-colors duration-150"
+
+// Icon-only
+"size-9 flex items-center justify-center rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-600 transition-colors duration-150"
+```
+
+**Правила кнопок:**
+- Минимальный padding по вертикали: `py-2.5`
+- Минимальный padding по горизонтали: `px-4`
+- Иконка внутри кнопки с текстом: `size-4 gap-2`
+- Не более 1 Primary CTA в видимой области экрана
+- Disabled state: `opacity-50 cursor-not-allowed pointer-events-none`
+
+---
+
+## Инпуты и формы
+
+```tsx
+// Текстовый инпут
+"w-full px-4 py-2.5 bg-white border border-zinc-200 rounded-xl text-[15px] placeholder:text-zinc-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all duration-150"
+
+// Select
+"w-full px-4 py-2.5 bg-white border border-zinc-200 rounded-xl text-[15px] text-zinc-700 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 appearance-none cursor-pointer"
+
+// Label
+"block text-sm font-medium text-zinc-700 mb-1.5"
+
+// Error state (добавить к инпуту)
+"border-red-300 focus:border-red-400 focus:ring-red-100"
+
+// Error message
+"text-xs text-red-600 mt-1"
+```
+
+---
+
+## Карточки и поверхности
+
+```tsx
+// Стандартная карточка
+"bg-white rounded-2xl border border-zinc-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+
+// Карточка без hover (статичная)
+"bg-white rounded-2xl border border-zinc-100 shadow-sm"
+
+// Карточка с акцентом (featured)
+"bg-white rounded-2xl border border-primary/20 shadow-sm ring-1 ring-primary/10"
+
+// Фоновая секция
+"bg-primary-soft rounded-3xl p-6 md:p-8"
+
+// Внутренний блок (nested)
+"bg-zinc-50 rounded-xl p-4"
+
+// Glass (для оверлеев на фото)
+"bg-white/80 backdrop-blur-md rounded-2xl border border-white/50"
+```
+
+---
+
+## Бейджи и теги
+
+```tsx
+// Категория (primary)
+"bg-primary-soft text-primary text-xs font-semibold px-2.5 py-1 rounded-full"
+
+// Нейтральный тег
+"bg-zinc-100 text-zinc-600 text-xs font-medium px-2.5 py-1 rounded-full"
+
+// Тёмный (тип участка)
+"bg-zinc-900 text-white text-[11px] font-semibold px-2.5 py-1 rounded-full"
+
+// Успех
+"bg-emerald-50 text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-full"
+
+// Предупреждение (Торг)
+"bg-amber-50 text-amber-700 text-xs font-semibold px-2.5 py-1 rounded-full"
+
+// Акцент (синий)
+"bg-sky-50 text-sky-700 text-xs font-semibold px-2.5 py-1 rounded-full"
+```
+
+---
+
+## Иконки
+
+- **Библиотека:** только `lucide-react` — никаких других
+- Размеры:
+  ```
+  size-3.5  (14px) — внутри текстовых строк (адрес, мета)
+  size-4    (16px) — стандарт в кнопках и списках
+  size-5    (20px) — feature-секции, заголовки
+  size-6    (24px) — hero иконки, пустые состояния
+  size-8+         — декоративные иконки в карточках
+  ```
+- Иконка-контейнер для feature-секций:
+  ```tsx
+  "bg-primary-soft p-3 rounded-2xl text-primary"
+  ```
+- Цвет иконок в тексте: всегда совпадает с цветом текста или `text-zinc-400`
+
+---
+
+## Изображения и медиа
+
+```tsx
+// Карточка листинга (фото)
+<div className="relative overflow-hidden rounded-t-2xl bg-zinc-100" style={{ aspectRatio: '4/3' }}>
+  <img className="w-full h-full object-contain" />  // contain — для видео совместимости
+</div>
+
+// Полноэкранная галерея
+aspect-[16/9]  // фото
+aspect-[9/16] max-w-sm  // вертикальное видео
+
+// Avatar
+"size-10 rounded-full object-cover"
+
+// Placeholder (нет фото)
+"bg-gradient-to-br from-zinc-100 to-zinc-200 flex items-center justify-center"
+```
+
+**Правила:**
+- LCP-изображения (hero, первая карточка): `loading="eager"`, остальные `loading="lazy"`
+- Всегда указывать `alt` (для SEO и a11y)
+- Контейнер всегда с фиксированным `aspect-ratio` — никогда не полагаться на высоту изображения
+
+---
+
+## Заголовки секций
+
+```tsx
+// С подзаголовком и ссылкой
+<div className="flex items-end justify-between mb-6">
+  <div>
+    <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
+      Категория
+    </p>
+    <h2 className="text-2xl font-bold tracking-tight text-zinc-900">
+      Заголовок секции
+    </h2>
+  </div>
+  <a className="text-sm font-medium text-primary hover:underline shrink-0">
+    Смотреть все →
+  </a>
+</div>
+
+// Центрированный hero-заголовок
+<div className="text-center max-w-2xl mx-auto mb-10">
+  <p className="text-sm font-semibold text-primary mb-2 uppercase tracking-wider">Надзаголовок</p>
+  <h1 className="text-4xl md:text-5xl font-black tracking-tight text-zinc-900 mb-4">
+    Главный заголовок
+  </h1>
+  <p className="text-lg text-zinc-500 leading-relaxed">Описание</p>
+</div>
+```
+
+---
+
+## Пустые состояния
+
+```tsx
+<div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 py-16 px-4 text-center">
+  <div className="bg-zinc-100 p-4 rounded-2xl mb-4">
+    <SearchX className="size-8 text-zinc-400" />
+  </div>
+  <p className="text-base font-semibold text-zinc-700 mb-1">Ничего не найдено</p>
+  <p className="text-sm text-zinc-400">Попробуйте изменить фильтры</p>
+</div>
+```
+
+---
+
+## Адаптивность (mobile-first)
+
+```
+Точки останова Tailwind:
+sm:  640px   — планшет вертикально
+md:  768px   — планшет горизонтально
+lg:  1024px  — десктоп
+xl:  1280px  — широкий десктоп
+2xl: 1536px  — 4K / ультраширокий
+```
+
+**Правила:**
+- Писать base (мобильный) стиль первым, потом `md:` / `lg:`
+- Типографика: `text-2xl md:text-3xl lg:text-4xl`
+- Паддинги страницы: `px-4 sm:px-6 lg:px-8`
+- Колонки карточек: `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4`
+- Скрывать декоративные элементы на мобиле: `hidden md:block`
+- Минимальная область касания: `min-h-[44px] min-w-[44px]`
+
+---
+
+## Sticky header
+
+```tsx
+"sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b border-zinc-100 transition-shadow"
+```
+
+---
+
+## Современные паттерны (2025–2026)
+
+1. **Bento grid** — асимметричные сетки `grid-cols-3` с `col-span-2` / `row-span-2`
+2. **Subtle gradients** — `bg-gradient-to-br from-zinc-50 via-white to-primary-soft/20`
+3. **Glassmorphism** — `bg-white/80 backdrop-blur-md border border-white/50` (только для оверлеев)
+4. **Большая типографика** — не бояться `text-5xl` / `text-6xl` в hero
+5. **Цветные pulse-точки** — для статусных индикаторов (коммуникации участка)
+6. **Hover border-color** — `hover:border-primary/30` вместо только shadow
+7. **Micro-copy** — `text-xs text-zinc-400` под ценой, датой, площадью
+
+---
+
+## ЗАПРЕЩЕНО — никогда не делать
+
+| Что | Почему |
+|-----|--------|
+| `rounded-md` на карточках/кнопках | Устаревший корпоративный стиль |
+| `text-black` / `color: #000` | Слишком резко, используй zinc-900 |
+| `border-2` на карточках | `border` (1px) + shadow достаточно |
+| `text-green-*` классы Tailwind | Конфликт с кастомным `--color-primary` |
+| `gray-*` нейтралы | Используй `zinc-*` — они нейтральнее |
+| Более 1 Primary CTA на экране | Размывает фокус пользователя |
+| Центрирование длинного текста | Читабельно только для 1–2 строк |
+| `p-2` и меньше внутри карточек | Минимум `p-4` |
+| Иконки из других библиотек | Только `lucide-react` |
+| `animate-bounce` | Дешёво выглядит |
+| Хардкод цветов (#hex) в компонентах | Всегда через CSS переменные или zinc шкалу |

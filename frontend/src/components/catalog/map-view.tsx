@@ -63,6 +63,8 @@ declare global {
 }
 
 // ─── Утилиты ────────────────────────────────────────────────────────────────
+const isVideo = (url: string) => /\.(mp4|mov|webm|ogv|m4v)$/i.test(url.split('?')[0]);
+
 function formatPrice(price: number): string {
   if (price >= 1_000_000) return `${(price / 1_000_000).toFixed(1)} млн ₸`;
   if (price >= 1_000)     return `${(price / 1_000).toFixed(0)} тыс ₸`;
@@ -106,9 +108,10 @@ export function MapView({ listings, onMarkerClick }: MapViewProps) {
   const mapRef      = useRef<HTMLDivElement>(null);
   const leafletMap  = useRef<LMap | null>(null);
   const markersRef  = useRef<LMarker[]>([]);
-  const [ready, setReady]   = useState(false);
-  const [error, setError]   = useState(false);
-  const [active, setActive] = useState<MapItem | null>(null);
+  const [ready, setReady]       = useState(false);
+  const [error, setError]       = useState(false);
+  const [active, setActive]     = useState<MapItem | null>(null);
+  const [imgError, setImgError] = useState(false);
 
   // Загружаем Leaflet один раз
   useEffect(() => {
@@ -146,28 +149,46 @@ export function MapView({ listings, onMarkerClick }: MapViewProps) {
     const withCoords = listings.filter(l => l.lat != null && l.lng != null);
 
     withCoords.forEach(listing => {
+      const priceLabel = formatPrice(listing.price);
       const icon = L.divIcon({
         className: '',
         html: `<div style="
-          background: #16a34a;
+          position: relative;
+          display: inline-block;
+          background: #066F36;
           color: white;
-          border: 2px solid white;
-          border-radius: 8px;
-          padding: 3px 7px;
-          font-size: 11px;
+          border: 2.5px solid white;
+          border-radius: 20px;
+          padding: 5px 11px;
+          font-size: 12px;
           font-weight: 800;
           white-space: nowrap;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+          box-shadow: 0 4px 14px rgba(0,0,0,0.28);
           cursor: pointer;
           font-family: system-ui, sans-serif;
-        ">${formatPrice(listing.price)}</div>`,
-        iconAnchor: [0, 0],
+          transform: translateX(-50%);
+          transition: transform 0.15s, background 0.15s;
+        ">
+          ${priceLabel}
+          <div style="
+            position: absolute;
+            bottom: -7px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0; height: 0;
+            border-left: 7px solid transparent;
+            border-right: 7px solid transparent;
+            border-top: 7px solid #066F36;
+          "></div>
+        </div>`,
+        iconAnchor: [0, 38],
       });
 
       const marker = L.marker([listing.lat!, listing.lng!], { icon })
         .addTo(map)
         .on('click', () => {
-          setActive(listing);
+          setActive(prev => prev?.id === listing.id ? null : listing);
+          setImgError(false);
           onMarkerClick?.(listing);
         });
 
@@ -232,21 +253,38 @@ export function MapView({ listings, onMarkerClick }: MapViewProps) {
       {/* Попап выбранного объявления */}
       {active && (
         <div className="relative -mt-1 mx-2">
-          <div className="bg-white rounded-2xl border border-zinc-200 shadow-xl p-4 flex gap-4 items-start">
-            <img
-              src={active.image}
-              alt={active.title}
-              className="w-20 h-16 rounded-xl object-cover shrink-0 bg-zinc-100"
-            />
+          <div className="bg-white rounded-2xl border border-zinc-200 shadow-xl p-4 flex gap-3 items-center">
+            {active.image && !imgError ? (
+              isVideo(active.image) ? (
+                <video
+                  src={active.image}
+                  className="w-16 h-16 rounded-xl object-cover shrink-0 bg-zinc-950"
+                  muted playsInline loop autoPlay
+                />
+              ) : (
+                <img
+                  src={active.image}
+                  alt={active.title}
+                  className="w-16 h-16 rounded-xl object-cover shrink-0 bg-zinc-100"
+                  onError={() => setImgError(true)}
+                />
+              )
+            ) : (
+              <div className="w-16 h-16 rounded-xl bg-zinc-100 shrink-0 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-zinc-300">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>
+                </svg>
+              </div>
+            )}
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-black text-zinc-900 leading-snug line-clamp-2">{active.title}</p>
-              <p className="text-[12px] text-zinc-500 mt-0.5">{active.location}</p>
-              <p className="text-[14px] font-black text-primary mt-1">{formatPrice(active.price)}</p>
+              <p className="text-[13px] font-bold text-zinc-900 leading-snug line-clamp-1">{active.title}</p>
+              <p className="text-[11px] text-zinc-400 mt-0.5 truncate">{active.location}</p>
+              <p className="text-[15px] font-black text-primary mt-1 tabular-nums">{formatPrice(active.price)}</p>
             </div>
             <div className="flex flex-col items-end gap-2 shrink-0">
               <button
                 onClick={() => setActive(null)}
-                className="p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-100 transition-colors"
+                className="p-1.5 rounded-xl text-zinc-400 hover:bg-zinc-100 transition-colors"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
@@ -254,7 +292,7 @@ export function MapView({ listings, onMarkerClick }: MapViewProps) {
               </button>
               <Link
                 href={`/listing/${active.slug}`}
-                className="text-[11px] font-bold text-primary hover:text-primary-hover border border-primary/30 rounded-lg px-2.5 py-1 transition-colors"
+                className="text-[11px] font-bold text-white bg-primary hover:bg-primary-hover rounded-xl px-3 py-1.5 transition-colors"
               >
                 Открыть →
               </Link>

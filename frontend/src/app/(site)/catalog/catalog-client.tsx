@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { List, Map, SlidersHorizontal } from 'lucide-react';
 import { Container } from '@/components/layout/container';
+import { ListingsGrid } from '@/components/listings/listings-grid';
 import { ListingCard } from '@/components/listings/listing-card';
 import { CatalogFilters } from '@/components/catalog/filters';
+
 import { CatalogSort } from '@/components/catalog/sort';
 import { MapView, type MapItem } from '@/components/catalog/map-view';
 import type { Listing } from '@/types/listing';
@@ -41,6 +43,7 @@ export function CatalogClient({
   allListings,
 }: CatalogClientProps) {
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [drawerVisible, setDrawerVisible] = useState(false);
   const [sortOrder, setSortOrder] = useState('Сначала новые');
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
 
@@ -58,6 +61,17 @@ export function CatalogClient({
   const [isPledged, setIsPledged] = useState(initialIsPledged);
   const [isOnRedLine, setIsOnRedLine] = useState(initialIsOnRedLine);
   const [isDivisible, setIsDivisible] = useState(initialIsDivisible);
+
+  useEffect(() => {
+    if (isMobileFiltersOpen) {
+      document.body.style.overflow = 'hidden';
+      requestAnimationFrame(() => setDrawerVisible(true));
+    } else {
+      document.body.style.overflow = '';
+      setDrawerVisible(false);
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isMobileFiltersOpen]);
 
   const cardRefs       = useRef<Record<string, HTMLDivElement | null>>({});
   const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -126,7 +140,6 @@ export function CatalogClient({
   };
 
   const handleMarkerClick = useCallback((listing: MapItem) => {
-    const l = listing as unknown as Listing;
     if (highlightTimer.current) {
       clearTimeout(highlightTimer.current);
       highlightTimer.current = null;
@@ -156,7 +169,7 @@ export function CatalogClient({
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-primary-soft">
+    <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-primary-soft overflow-x-hidden">
       <div className="py-8 pb-20">
         <Container>
 
@@ -176,13 +189,13 @@ export function CatalogClient({
 
             <div className="flex-1 w-full min-w-0">
 
-              {/* Mobile control bar */}
+              {/* Mobile control bar — одна строка */}
               <div className="lg:hidden mb-4 flex items-center gap-2">
 
                 {/* Фильтры */}
                 <button
                   onClick={() => setIsMobileFiltersOpen(true)}
-                  className="flex items-center gap-2 rounded-xl bg-white border border-zinc-200 px-4 py-2.5 text-[13px] font-bold text-zinc-900 shadow-sm active:scale-95 transition-transform shrink-0"
+                  className="flex items-center gap-2 rounded-xl bg-white border border-zinc-200 px-3.5 py-2.5 text-[13px] font-bold text-zinc-900 shadow-sm active:scale-95 transition-transform shrink-0"
                 >
                   <SlidersHorizontal className="w-4 h-4" strokeWidth={2.5} />
                   Фильтры
@@ -194,31 +207,31 @@ export function CatalogClient({
                 </button>
 
                 {/* Список / Карта */}
-                <div className="flex items-center rounded-xl border border-zinc-200 bg-white shadow-sm p-0.5 gap-0.5">
+                <div className="flex items-center rounded-xl border border-zinc-200 bg-white shadow-sm p-0.5 gap-0.5 shrink-0">
                   <button
                     onClick={() => handleViewModeChange('list')}
-                    className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-[12px] font-bold transition-all ${
+                    title="Список"
+                    className={`flex items-center justify-center rounded-lg w-9 h-9 transition-all ${
                       viewMode === 'list' ? 'bg-zinc-900 text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-700'
                     }`}
                   >
-                    <List className="w-3.5 h-3.5" strokeWidth={2} />
-                    Список
+                    <List className="w-4 h-4" strokeWidth={2} />
                   </button>
                   <button
                     onClick={() => handleViewModeChange('map')}
-                    className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-[12px] font-bold transition-all ${
+                    title="Карта"
+                    className={`flex items-center justify-center rounded-lg w-9 h-9 transition-all ${
                       viewMode === 'map' ? 'bg-primary text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-700'
                     }`}
                   >
-                    <Map className="w-3.5 h-3.5" strokeWidth={2} />
-                    Карта
+                    <Map className="w-4 h-4" strokeWidth={2} />
                   </button>
                 </div>
 
-                {/* Сортировка — только в режиме списка */}
+                {/* Сортировка */}
                 {viewMode === 'list' && (
                   <div className="ml-auto shrink-0">
-                    <CatalogSort value={sortOrder} onChange={setSortOrder} />
+                    <CatalogSort value={sortOrder} onChange={setSortOrder} mobile />
                   </div>
                 )}
               </div>
@@ -236,14 +249,13 @@ export function CatalogClient({
                   className="flex flex-col gap-8"
                   style={isMobileFiltersOpen ? { pointerEvents: 'none' } : undefined}
                 >
-                  <MapView listings={filteredListings} onMarkerClick={handleMarkerClick} />
+                  <MapView listings={filteredListings} />
                   {filteredListings.length > 0 && (
-                    <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                       {filteredListings.map(listing => (
                         <div
                           key={listing.id}
                           ref={el => { cardRefs.current[listing.id] = el; }}
-                          className="rounded-2xl transition-shadow duration-300"
                         >
                           <ListingCard listing={listing} />
                         </div>
@@ -257,13 +269,9 @@ export function CatalogClient({
               {viewMode === 'list' && (
                 <>
                   {filteredListings.length > 0 ? (
-                    <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                      {filteredListings.map(listing => (
-                        <ListingCard key={listing.id} listing={listing} />
-                      ))}
-                    </div>
+                    <ListingsGrid listings={filteredListings} columns={3} />
                   ) : (
-                    <div className="flex flex-col items-center justify-center rounded-3xl border border-zinc-200 bg-white py-20 px-4 text-center">
+                    <div className="flex flex-col items-center justify-center rounded-2xl border border-zinc-200 bg-white py-20 px-4 text-center">
                       <div className="rounded-full bg-zinc-100 p-4 text-zinc-400">
                         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                           <path d="m21 21-4.3-4.3"/><circle cx="11" cy="11" r="8"/>
@@ -289,25 +297,19 @@ export function CatalogClient({
       {/* Mobile filter drawer */}
       {isMobileFiltersOpen && (
         <>
-          {/* Overlay — z выше Leaflet (1000) */}
+          {/* Overlay */}
           <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm lg:hidden"
-            style={{ zIndex: 1050 }}
+            className={`fixed inset-0 lg:hidden transition-opacity duration-300 ${drawerVisible ? 'opacity-100' : 'opacity-0'}`}
+            style={{ zIndex: 1050, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
             onClick={() => setIsMobileFiltersOpen(false)}
           />
-          {/* Drawer — z выше overlay */}
+          {/* Drawer */}
           <div
-            className="fixed inset-x-0 bottom-0 flex flex-col rounded-t-3xl bg-white shadow-2xl lg:hidden"
+            className={`fixed inset-x-0 bottom-0 flex flex-col rounded-t-3xl bg-white shadow-2xl lg:hidden transition-transform duration-300 ease-out ${drawerVisible ? 'translate-y-0' : 'translate-y-full'}`}
             style={{ zIndex: 1100, maxHeight: '92dvh' }}
           >
-            {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-1 shrink-0">
-              <div className="h-1 w-10 rounded-full bg-zinc-300" />
-            </div>
-            {/* CatalogFilters управляет своим scroll-ом внутри */}
             <CatalogFilters
-              {...filterProps}
-              onViewModeChange={handleViewModeChange}
+              {...{ ...filterProps, onViewModeChange: undefined }}
               onClose={() => setIsMobileFiltersOpen(false)}
             />
           </div>

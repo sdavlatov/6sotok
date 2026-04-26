@@ -25,11 +25,11 @@ export function ContactCard({ price, pricePerSotka, seller, slug, title, isNegot
   const waHref = `https://wa.me/${cleanPhone}?text=${waText}`;
 
   return (
-    <div className="rounded-3xl border border-zinc-200 p-6 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white">
+    <div className="rounded-2xl border border-zinc-200 p-6 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white">
       <div className="flex items-center gap-2 flex-wrap">
         <div className="text-3xl xl:text-4xl font-black tracking-tight text-zinc-900">{formattedPrice} ₸</div>
         {isNegotiable && (
-          <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg">Торг</span>
+          <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full">Торг</span>
         )}
       </div>
       <div className="mt-2 text-base font-bold text-zinc-400">{formattedPerSotka} ₸ / сотка</div>

@@ -54,10 +54,7 @@ export function Header() {
             </Link>
             <nav className="hidden md:flex items-center gap-6 lg:gap-10">
               <Link href="/catalog" className="text-[15px] font-bold text-zinc-700 transition-colors hover:text-primary whitespace-nowrap">
-                Купить участок
-              </Link>
-              <Link href="/map" className="text-[15px] font-bold text-zinc-700 transition-colors hover:text-primary">
-                Карта
+                Каталог участков
               </Link>
               <Link href="/b2b" className="relative text-[15px] font-bold text-zinc-700 transition-colors hover:text-primary">
                 Агентствам
@@ -129,14 +126,7 @@ export function Header() {
           onClick={() => setIsMenuOpen(false)}
           className={`flex items-center px-4 py-3.5 rounded-xl text-[15px] font-bold transition-colors ${pathname === '/catalog' ? 'bg-primary-soft/40 text-primary' : 'text-zinc-700 hover:bg-zinc-50 hover:text-primary'}`}
         >
-          Купить участок
-        </Link>
-        <Link
-          href="/map"
-          onClick={() => setIsMenuOpen(false)}
-          className={`flex items-center px-4 py-3.5 rounded-xl text-[15px] font-bold transition-colors ${pathname === '/map' ? 'bg-primary-soft/40 text-primary' : 'text-zinc-700 hover:bg-zinc-50 hover:text-primary'}`}
-        >
-          Карта
+          Каталог участков
         </Link>
         <Link
           href="/b2b"

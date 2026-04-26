@@ -7,6 +7,7 @@ import { ListingDescription } from '@/components/listings/listing-description';
 import { ContactCard } from '@/components/listings/contact-card';
 import { MobileContactBar } from '@/components/listings/mobile-contact-bar';
 import { ListingCard } from '@/components/listings/listing-card';
+import { CopyLink } from '@/components/listings/copy-link';
 import { Breadcrumb } from '@/components/listings/Breadcrumb';
 import { SLUG_LANDTYPE, listingUrl } from '@/lib/listing-url';
 import Link from 'next/link';
@@ -26,11 +27,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${listing.title} — 6sotok.kz`,
     description: `${listing.area} соток, ${listing.location}. Цена ${new Intl.NumberFormat('ru-RU').format(listing.price)} ₸`,
   }
-}
-
-const LOCATION_LABELS: Record<string, string> = {
-  city: 'В городе', suburb: 'В пригороде', highway: 'Вдоль трассы',
-  water: 'Возле водоёма', foothills: 'В предгорьях', dacha: 'В дачном массиве',
 }
 
 export default async function ListingPage({ params }: Props) {
@@ -77,28 +73,20 @@ export default async function ListingPage({ params }: Props) {
               {/* Галерея */}
               <ListingGallery title={listing.title} images={allMedia} />
 
-              {/* Заголовок + бейджи */}
+              {/* Заголовок */}
               <div>
                 <div className="flex flex-wrap items-center gap-2 mb-3">
                   <span className="rounded-lg bg-zinc-900 px-3 py-1.5 text-[11px] font-black tracking-widest text-white uppercase">
                     {listing.purpose || listing.landType}
                   </span>
-                  {listing.isNegotiable && (
-                    <span className="rounded-lg bg-amber-400 px-3 py-1.5 text-[11px] font-black text-amber-900 uppercase tracking-wider">Торг</span>
-                  )}
-                  {listing.locationType?.map(t => (
-                    <span key={t} className="text-[11px] font-bold text-zinc-500 bg-zinc-100 border border-zinc-200 px-2.5 py-1 rounded-lg">
-                      {LOCATION_LABELS[t] ?? t}
-                    </span>
-                  ))}
+                  <CopyLink
+                    id={listing.id}
+                    url={`https://6sotok.kz${listingUrl(listing)}`}
+                  />
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900 leading-tight">
                   {listing.title}
                 </h1>
-                <div className="mt-3 flex items-center gap-2 text-[14px] text-zinc-500 font-medium">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary shrink-0"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-                  {listing.location}
-                </div>
               </div>
 
               {/* Цена — только мобайл */}
@@ -107,9 +95,6 @@ export default async function ListingPage({ params }: Props) {
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-3xl font-black tracking-tight text-zinc-900">{formattedPrice} ₸</span>
-                      {listing.isNegotiable && (
-                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg">Торг</span>
-                      )}
                     </div>
                     <div className="mt-1 text-[13px] font-bold text-zinc-400">{formattedPerSotka} ₸ / сотка</div>
                   </div>
@@ -217,11 +202,6 @@ export default async function ListingPage({ params }: Props) {
                 </div>
               )}
 
-              {/* ID */}
-              <div className="flex items-center gap-2 text-[12px] text-zinc-300 font-bold">
-                <span>ID объявления:</span>
-                <span className="font-mono">{listing.id}</span>
-              </div>
             </div>
 
             {/* ── Правая колонка (sticky) ────────────────── */}

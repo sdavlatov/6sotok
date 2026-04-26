@@ -58,42 +58,33 @@ export function CardMediaSlider({ images, title }: CardMediaSliderProps) {
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      {/* Blur backdrop — для любого формата */}
       {currentIsVideo ? (
-        <video
-          key={`bg-${current}`}
-          src={current}
-          className="absolute inset-0 h-full w-full object-cover blur-2xl scale-110 opacity-50"
-          muted playsInline loop autoPlay aria-hidden
-        />
+        /*
+          Видео (9:16 и любое другое):
+          Тёмный фон + object-contain — чистые тёмные полосы.
+          Выглядит как Instagram/YouTube, а не как баг с блюром.
+        */
+        <div className="h-full w-full bg-zinc-950 flex items-center justify-center">
+          <video
+            key={current}
+            src={current}
+            className="h-full w-full object-contain"
+            muted playsInline loop autoPlay
+          />
+        </div>
       ) : (
+        /*
+          Фото любого формата:
+          object-cover заполняет контейнер без блюра.
+          Квадрат, вертикаль, горизонталь — всё выглядит чисто.
+        */
         <img
-          src={current}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover blur-2xl scale-110 opacity-60"
-          aria-hidden
-        />
-      )}
-
-      {/* Основной медиа */}
-      {currentIsVideo ? (
-        <video
-          key={`main-${current}`}
-          src={current}
-          className="relative z-10 h-full w-full object-contain"
-          muted playsInline loop autoPlay
-        />
-      ) : (
-        <img
-          key={`main-${current}`}
+          key={current}
           src={current}
           alt={title}
-          className="relative z-10 h-full w-full object-contain"
+          className="h-full w-full object-cover"
         />
       )}
-
-      {/* Градиент снизу */}
-      <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/50 to-transparent pointer-events-none z-20" />
 
       {/* Стрелки */}
       {total > 1 && (

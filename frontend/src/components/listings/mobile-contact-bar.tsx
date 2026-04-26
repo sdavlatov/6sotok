@@ -26,7 +26,7 @@ export function MobileContactBar({ price, pricePerSotka, seller, slug, title, is
           <div className="flex items-center gap-2">
             <span className="text-[22px] font-black tracking-tight text-zinc-900 leading-none">{formattedPrice} ₸</span>
             {isNegotiable && (
-              <span className="text-[9px] font-black uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md shrink-0">Торг</span>
+              <span className="text-[9px] font-black uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full shrink-0">Торг</span>
             )}
           </div>
           <div className="text-[11px] font-bold text-primary mt-0.5">{formattedPerSotka} ₸/сот.</div>
