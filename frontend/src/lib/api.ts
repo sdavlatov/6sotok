@@ -118,7 +118,7 @@ export async function getListings(params: Record<string, string> = {}): Promise<
     const p = await payload()
     const result = await p.find({
       collection: 'listings',
-      where: { status: { equals: 'published' } },
+      where: { status: { in: ['published', 'draft'] } },
       limit,
       depth: 1,
     })
