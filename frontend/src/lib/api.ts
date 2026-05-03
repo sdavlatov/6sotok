@@ -118,13 +118,12 @@ export async function getListings(params: Record<string, string> = {}): Promise<
     const p = await payload()
     const result = await p.find({
       collection: 'listings',
-      where: { status: { in: ['published', 'draft'] } },
+      where: { status: { equals: 'published' } },
       limit,
       depth: 1,
     })
     return (result.docs as unknown as PayloadListing[]).map(mapListing)
-  } catch (e) {
-    console.error('[getListings] error:', e)
+  } catch {
     return []
   }
 }
