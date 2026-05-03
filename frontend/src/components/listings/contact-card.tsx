@@ -10,90 +10,191 @@ interface ContactCardProps {
   seller?: ListingSeller;
   slug?: string;
   title?: string;
-  isNegotiable?: boolean;
+  listingUrl?: string;
+  createdAt?: string;
+  views?: number;
 }
 
-export function ContactCard({ price, pricePerSotka, seller, slug, title, isNegotiable }: ContactCardProps) {
-  const [isPhoneVisible, setIsPhoneVisible] = useState(false);
+const PhoneIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>
+  </svg>
+);
+
+const ShieldIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>
+  </svg>
+);
+
+const VerifyIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m12 2 2.4 1.7 2.9-.3 1 2.7 2.5 1.5-.7 2.8 1.4 2.6-2 2.1.1 2.9-2.7 1-1.5 2.5-2.8-.7L12 22l-2.6-1.4-2.8.7L5 18.8l-2.7-1 .1-2.9-2-2.1L1.8 10 1.1 7.2l2.5-1.5 1-2.7 2.9.3z"/><path d="m9 12 2 2 4-4"/>
+  </svg>
+);
+
+
+const EyeIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>
+  </svg>
+);
+
+const ClockIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+  </svg>
+);
+
+const WaIcon = () => (
+  <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0 0 20.464 3.488"/>
+  </svg>
+);
+
+function formatDate(dateStr?: string): string {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / 86400000);
+  if (diffDays === 0) return 'сегодня';
+  if (diffDays === 1) return 'вчера';
+  if (diffDays < 7) return `${diffDays} дня назад`;
+  return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+}
+
+export function ContactCard({ price, pricePerSotka, seller, slug, title, listingUrl, createdAt, views }: ContactCardProps) {
+  const [phoneVisible, setPhoneVisible] = useState(false);
   const formattedPrice = new Intl.NumberFormat('ru-RU').format(price);
   const formattedPerSotka = new Intl.NumberFormat('ru-RU').format(pricePerSotka);
   const cleanPhone = seller?.phone?.replace(/\D/g, '') ?? '';
-
-  const waText = encodeURIComponent(
-    `Здравствуйте! Интересует ваш участок «${title ?? ''}» за ${formattedPrice} ₸.\nhttps://6sotok.kz/listing/${slug ?? ''}`
-  );
+  const url = listingUrl ?? `https://6sotok.kz/listing/${slug ?? ''}`;
+  const waText = encodeURIComponent(`Здравствуйте! Интересует участок «${title ?? ''}» за ${formattedPrice} ₸.\n${url}`);
   const waHref = `https://wa.me/${cleanPhone}?text=${waText}`;
 
   return (
-    <div className="rounded-2xl border border-zinc-200 p-6 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white">
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="text-3xl xl:text-4xl font-black tracking-tight text-zinc-900">{formattedPrice} ₸</div>
-        {isNegotiable && (
-          <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full">Торг</span>
-        )}
-      </div>
-      <div className="mt-2 text-base font-bold text-zinc-400">{formattedPerSotka} ₸ / сотка</div>
+    <div className="flex flex-col gap-3">
 
-      <div className="mt-8 space-y-3">
-        {cleanPhone ? (
-          <>
-            {isPhoneVisible ? (
+      {/* Прайс-карточка */}
+      <div className="bg-white rounded-2xl overflow-hidden" style={{ border: '1px solid #f0f0f0', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+
+        {/* Цена */}
+        <div className="px-6 pt-7 pb-6" style={{ borderBottom: '1px solid #f4f4f5' }}>
+          <p className="text-[11px] font-medium text-zinc-400 mb-2">Стоимость участка</p>
+          <p className="text-[46px] font-bold tracking-[-0.03em] text-zinc-900 leading-[1] tabular-nums">
+            {formattedPrice} ₸
+          </p>
+          <p className="text-[13px] text-zinc-400 mt-2 tabular-nums">
+            {formattedPerSotka} ₸ · за сотку
+          </p>
+        </div>
+
+        {/* Кнопки */}
+        <div className="px-6 py-5 flex gap-2">
+          {cleanPhone ? (
+            phoneVisible ? (
               <a
                 href={`tel:${cleanPhone}`}
-                className="w-full rounded-2xl bg-primary py-4 font-extrabold text-white transition-all hover:bg-primary-hover hover:-translate-y-0.5 active:scale-95 shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+                className="flex-1 flex items-center justify-center gap-2 h-11 rounded-xl bg-primary text-white text-[14px] font-semibold transition-colors duration-150 hover:bg-primary-hover active:scale-[0.98]"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M1.5 4.5a3 3 0 0 1 3-3h1.372c.86 0 1.61.586 1.819 1.42l1.105 4.423a1.875 1.875 0 0 1-.694 1.955l-1.293.97c-.135.101-.164.249-.126.352a11.285 11.285 0 0 0 6.697 6.697c.103.038.25.009.352-.126l.97-1.293a1.875 1.875 0 0 1 1.955-.694l4.423 1.105c.834.209 1.42.959 1.42 1.82V19.5a3 3 0 0 1-3 3h-2.25C8.552 22.5 1.5 15.448 1.5 6.75V4.5Z" clipRule="evenodd" /></svg>
-                {seller?.phone}
+                <PhoneIcon /> {seller?.phone}
               </a>
             ) : (
               <button
-                onClick={() => {
-                  pushDataLayer('phone_reveal', { source: 'contact_card', listing_slug: slug ?? null });
-                  setIsPhoneVisible(true);
-                }}
-                className="w-full rounded-2xl bg-primary py-4 font-extrabold text-white transition-all hover:bg-primary-hover hover:-translate-y-0.5 active:scale-95 shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+                onClick={() => { pushDataLayer('phone_reveal', { source: 'contact_card', listing_slug: slug ?? null }); setPhoneVisible(true); }}
+                className="flex-1 flex items-center justify-center gap-2 h-11 rounded-xl bg-primary text-white text-[14px] font-semibold transition-colors duration-150 hover:bg-primary-hover active:scale-[0.98]"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M1.5 4.5a3 3 0 0 1 3-3h1.372c.86 0 1.61.586 1.819 1.42l1.105 4.423a1.875 1.875 0 0 1-.694 1.955l-1.293.97c-.135.101-.164.249-.126.352a11.285 11.285 0 0 0 6.697 6.697c.103.038.25.009.352-.126l.97-1.293a1.875 1.875 0 0 1 1.955-.694l4.423 1.105c.834.209 1.42.959 1.42 1.82V19.5a3 3 0 0 1-3 3h-2.25C8.552 22.5 1.5 15.448 1.5 6.75V4.5Z" clipRule="evenodd" /></svg>
-                Показать телефон
+                <PhoneIcon /> Показать телефон
               </button>
-            )}
-            {seller?.hasWhatsApp && (
-              <a
-                href={waHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => pushDataLayer('whatsapp_click', { listing_slug: slug ?? null })}
-                className="w-full rounded-2xl bg-[#25D366] py-4 font-extrabold text-white transition-all hover:bg-[#20BE5A] hover:-translate-y-0.5 active:scale-95 shadow-lg shadow-[#25D366]/20 flex items-center justify-center gap-2"
+            )
+          ) : (
+            <div className="flex-1 flex items-center justify-center h-11 rounded-xl bg-zinc-50 text-zinc-400 text-sm border border-zinc-100">
+              Контакт недоступен
+            </div>
+          )}
+
+          {seller?.hasWhatsApp && cleanPhone && (
+            <a
+              href={waHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => pushDataLayer('whatsapp_click', { listing_slug: slug ?? null })}
+              className="w-11 h-11 flex items-center justify-center rounded-xl text-white transition-opacity duration-150 hover:opacity-90 active:scale-[0.96] shrink-0"
+              style={{ background: '#25D366' }}
+              title="Написать в WhatsApp"
+            >
+              <WaIcon />
+            </a>
+          )}
+        </div>
+
+        {/* Продавец */}
+        {seller && (
+          <div className="px-6 py-5" style={{ borderTop: '1px solid #f4f4f5' }}>
+            <div className="flex items-center gap-3">
+              <div
+                className="size-10 rounded-full flex items-center justify-center font-semibold text-white text-[15px] shrink-0 overflow-hidden"
+                style={{ background: 'linear-gradient(135deg, #82d4b6, #066F36)' }}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M16.666 4.9a10.518 10.518 0 0 0-7.464-3.15C3.398 1.75.12 6.55.12 12.35c0 1.912.496 3.766 1.439 5.4L.12 23.003l5.378-1.41a10.428 10.428 0 0 0 3.704.686h.005c5.803 0 10.526-4.8 10.526-10.603a10.524 10.524 0 0 0-3.067-7.427Zm-7.464 15.65h-.003a8.69 8.69 0 0 1-4.433-1.215l-.318-.188-3.295.864.88-3.212-.207-.329a8.683 8.683 0 0 1-1.328-4.62c0-4.823 3.926-8.75 8.75-8.75a8.704 8.704 0 0 1 6.182 2.569 8.707 8.707 0 0 1 2.564 6.185c0 4.824-3.926 8.75-8.748 8.75Zm4.81-6.57c-.264-.132-1.562-.77-1.803-.858-.242-.088-.418-.132-.594.133-.176.264-.683.858-.837 1.034-.154.175-.308.197-.573.065-.264-.131-1.115-.41-2.123-1.306-.784-.698-1.314-1.562-1.468-1.826-.154-.265-.016-.407.116-.539.12-.12.264-.308.396-.462.132-.154.176-.264.264-.44.088-.176.044-.33-.022-.462-.066-.132-.594-1.43-.814-1.958-.215-.516-.432-.446-.594-.455-.154-.007-.33-.008-.506-.008a.978.978 0 0 0-.704.33c-.242.264-.924.903-.924 2.202 0 1.298.946 2.552 1.078 2.728.132.176 1.86 2.837 4.5 3.976.629.27 1.12.433 1.503.555.631.2 1.205.172 1.657.104.506-.076 1.562-.638 1.782-1.254.22-.616.22-1.144.154-1.254-.066-.11-.242-.176-.506-.308Z" /></svg>
-                Написать в WhatsApp
-              </a>
+                {seller.avatar
+                  ? <img src={seller.avatar} className="size-10 object-cover" alt={seller.name} />
+                  : seller.name.charAt(0).toUpperCase()
+                }
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-semibold text-zinc-900 text-[14px] leading-snug">{seller.name}</span>
+                  {seller.isAgency && <span className="text-primary shrink-0"><VerifyIcon /></span>}
+                </div>
+                <span className="text-[12px] text-zinc-400 font-normal">
+                  {seller.isAgency ? 'Агентство' : 'Собственник'}
+                </span>
+              </div>
+            </div>
+
+            {(createdAt || views !== undefined) && (
+              <div className="flex items-center gap-4 mt-4 text-[12px] text-zinc-400">
+                {createdAt && (
+                  <span className="flex items-center gap-1.5">
+                    <ClockIcon /> {formatDate(createdAt)}
+                  </span>
+                )}
+                {views !== undefined && (
+                  <span className="flex items-center gap-1.5">
+                    <EyeIcon /> {views.toLocaleString('ru-RU')} просмотров
+                  </span>
+                )}
+              </div>
             )}
-          </>
-        ) : (
-          <div className="w-full rounded-2xl bg-zinc-100 py-4 font-extrabold text-zinc-400 flex items-center justify-center gap-2 text-sm">
-            Контакт недоступен
           </div>
         )}
       </div>
 
-      {seller && (
-        <div className="mt-8 pt-8 border-t border-zinc-100 flex gap-5">
-          <div className="h-14 w-14 rounded-full bg-primary-soft flex-shrink-0 flex items-center justify-center font-black text-primary text-xl relative shadow-inner">
-            {seller.avatar ? <img src={seller.avatar} className="rounded-full h-full w-full object-cover" alt="avatar"/> : seller.name.charAt(0)}
-            {seller.isAgency && (
-              <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm border border-zinc-100">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-blue-500"><path fillRule="evenodd" d="M8.603 3.799A4.49 4.49 0 0 1 12 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 0 1 3.498 1.307 4.491 4.491 0 0 1 1.307 3.497A4.49 4.49 0 0 1 21.75 12a4.49 4.49 0 0 1-1.549 3.397 4.491 4.491 0 0 1-1.307 3.497 4.491 4.491 0 0 1-3.497 1.307A4.49 4.49 0 0 1 12 21.75a4.49 4.49 0 0 1-3.397-1.549 4.49 4.49 0 0 1-3.498-1.306 4.491 4.491 0 0 1-1.307-3.498A4.49 4.49 0 0 1 2.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 0 1 1.307-3.497 4.49 4.49 0 0 1 3.497-1.307Zm7.007 6.387a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" /></svg>
-              </span>
-            )}
-          </div>
-          <div>
-            <div className="font-extrabold text-zinc-900 text-lg">{seller.name}</div>
-            <div className="text-sm font-bold text-zinc-500 mt-0.5">{seller.isAgency ? 'Агентство недвижимости' : 'Собственник'}</div>
-            <div className="text-xs font-bold text-zinc-300 mt-1">На сайте с {seller.registerDate}</div>
-          </div>
+      {/* Безопасная сделка */}
+      <div className="rounded-2xl px-5 py-5" style={{ background: '#f6fdf8', border: '1px solid rgba(6,111,54,0.12)' }}>
+        <div className="flex items-center gap-2 mb-3">
+          <span style={{ color: '#066F36' }}><ShieldIcon /></span>
+          <span className="text-[13px] font-semibold" style={{ color: '#066F36' }}>Безопасная сделка</span>
         </div>
-      )}
+        <ul className="space-y-2">
+          {[
+            'Проверка документов на участок',
+            'Сопровождение до ЦОН',
+            'Юридическая защита покупателя',
+          ].map((item) => (
+            <li key={item} className="flex items-start gap-2">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#066F36" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0">
+                <path d="M20 6 9 17l-5-5"/>
+              </svg>
+              <span className="text-[13px] text-zinc-600 leading-snug">{item}</span>
+            </li>
+          ))}
+        </ul>
+        <a href="/safe-deal" className="inline-flex items-center gap-1 text-[12px] font-medium mt-4" style={{ color: '#066F36' }}>
+          Подробнее →
+        </a>
+      </div>
+
     </div>
   );
 }

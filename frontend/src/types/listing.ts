@@ -54,6 +54,7 @@ export interface Listing {
   purpose?: Purpose;
   canChangePurpose?: boolean;
 
+  views?: number;
   isNegotiable?: boolean;
   locationType?: string[];
 

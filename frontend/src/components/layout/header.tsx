@@ -53,12 +53,18 @@ export function Header() {
               </span>
             </Link>
             <nav className="hidden md:flex items-center gap-6 lg:gap-10">
-              <Link href="/catalog" className="text-[15px] font-bold text-zinc-700 transition-colors hover:text-primary whitespace-nowrap">
-                Каталог участков
+              <Link href="/catalog" className={`text-[15px] font-semibold transition-colors hover:text-primary whitespace-nowrap ${pathname?.startsWith('/catalog') ? 'text-primary' : 'text-zinc-700'}`}>
+                Участки
               </Link>
-              <Link href="/b2b" className="relative text-[15px] font-bold text-zinc-700 transition-colors hover:text-primary">
+              <Link href="/business" className={`flex items-center gap-1.5 text-[15px] font-semibold transition-colors hover:text-primary whitespace-nowrap ${pathname?.startsWith('/business') ? 'text-primary' : 'text-zinc-700'}`}>
+                Бизнес
+                <span className="relative flex size-1.5">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
+                  <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
+                </span>
+              </Link>
+              <Link href="/b2b" className={`text-[14px] font-medium transition-colors hover:text-primary whitespace-nowrap ${pathname?.startsWith('/b2b') ? 'text-primary' : 'text-zinc-400'}`}>
                 Агентствам
-                <span className="absolute -top-2 -right-3 flex h-2 w-2 rounded-full bg-accent-purple" />
               </Link>
             </nav>
           </div>
@@ -124,17 +130,20 @@ export function Header() {
         <Link
           href="/catalog"
           onClick={() => setIsMenuOpen(false)}
-          className={`flex items-center px-4 py-3.5 rounded-xl text-[15px] font-bold transition-colors ${pathname === '/catalog' ? 'bg-primary-soft/40 text-primary' : 'text-zinc-700 hover:bg-zinc-50 hover:text-primary'}`}
+          className={`flex items-center px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${pathname?.startsWith('/catalog') ? 'bg-primary-soft/40 text-primary' : 'text-zinc-700 hover:bg-zinc-50 hover:text-primary'}`}
         >
-          Каталог участков
+          Участки
         </Link>
         <Link
-          href="/b2b"
+          href="/business"
           onClick={() => setIsMenuOpen(false)}
-          className={`flex items-center gap-2 px-4 py-3.5 rounded-xl text-[15px] font-bold transition-colors ${pathname === '/b2b' ? 'bg-primary-soft/40 text-primary' : 'text-zinc-700 hover:bg-zinc-50 hover:text-primary'}`}
+          className={`flex items-center gap-2 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${pathname?.startsWith('/business') ? 'bg-primary-soft/40 text-primary' : 'text-zinc-700 hover:bg-zinc-50 hover:text-primary'}`}
         >
-          Агентствам
-          <span className="h-2 w-2 rounded-full bg-accent-purple" />
+          Бизнес
+          <span className="relative flex size-1.5">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
+            <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
+          </span>
         </Link>
 
         <div className="my-2 border-t border-zinc-100" />
@@ -142,18 +151,28 @@ export function Header() {
         <Link
           href="/favorites"
           onClick={() => setIsMenuOpen(false)}
-          className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-bold transition-colors ${pathname === '/favorites' ? 'bg-primary-soft/40 text-primary' : 'text-zinc-700 hover:bg-zinc-50 hover:text-primary'}`}
+          className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${pathname === '/favorites' ? 'bg-primary-soft/40 text-primary' : 'text-zinc-700 hover:bg-zinc-50 hover:text-primary'}`}
         >
-          <Heart className="w-5 h-5" strokeWidth={2.5} />
+          <Heart className="w-5 h-5" strokeWidth={2} />
           Избранное
         </Link>
         <Link
           href="/profile"
           onClick={() => setIsMenuOpen(false)}
-          className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-bold transition-colors ${pathname === '/profile' ? 'bg-primary-soft/40 text-primary' : 'text-zinc-700 hover:bg-zinc-50 hover:text-primary'}`}
+          className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${pathname === '/profile' ? 'bg-primary-soft/40 text-primary' : 'text-zinc-700 hover:bg-zinc-50 hover:text-primary'}`}
         >
-          <User className="w-5 h-5" strokeWidth={2.5} />
+          <User className="w-5 h-5" strokeWidth={2} />
           Войти
+        </Link>
+
+        <div className="my-2 border-t border-zinc-100" />
+
+        <Link
+          href="/b2b"
+          onClick={() => setIsMenuOpen(false)}
+          className="flex items-center gap-2 px-4 py-3 rounded-xl text-[14px] font-medium text-zinc-400 hover:bg-zinc-50 hover:text-zinc-600 transition-colors"
+        >
+          Агентствам
         </Link>
       </nav>
 

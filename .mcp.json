@@ -1,8 +1,14 @@
 {
   "mcpServers": {
-    "playwright": {
-      "command": "wsl",
-      "args": ["-d", "Ubuntu", "-e", "bash", "-c", "cd ~ && npx @playwright/mcp --headless --isolated --executable-path /home/sdavlatov/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome --output-dir /tmp/playwright-mcp"]
+    "21st-dev-magic": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@21st-dev/magic@latest",
+        "start",
+        "--api-key",
+        "an_sk_1e4c15bca17b852a6e6100de38c788d3598c9c5ef954303cb88cf29775ab9050"
+      ]
     }
   }
 }

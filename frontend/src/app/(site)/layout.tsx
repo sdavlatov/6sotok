@@ -12,8 +12,8 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: '6sotok.kz — Маркетплейс земельных участков',
-  description: 'Продажа и покупка земельных участков в Казахстане по честной цене за сотку.',
+  title: '6sotok.kz — Маркетплейс земельных участков Казахстана',
+  description: 'Покупка и продажа земельных участков в Казахстане. Напрямую от собственников и проверенных агентств.',
 }
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {

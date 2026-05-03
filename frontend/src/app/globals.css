@@ -32,13 +32,46 @@
 :root {
   --background: #fafafa;
   --foreground: #18181b;
+
+  /* Ink scale = zinc scale (для page.tsx inline стилей) */
+  --ink-900: #18181b; /* zinc-900 */
+  --ink-800: #27272a; /* zinc-800 */
+  --ink-700: #3f3f46; /* zinc-700 */
+  --ink-600: #52525b; /* zinc-600 */
+  --ink-500: #71717a; /* zinc-500 */
+  --ink-400: #a1a1aa; /* zinc-400 */
+  --ink-200: #e4e4e7; /* zinc-200 */
+
+  /* Paper & surface */
+  --paper:   #fafafa; /* = background */
+  --paper-2: #f4f4f5; /* zinc-100 */
+
+  /* Borders */
+  --line:      #e4e4e7; /* zinc-200 */
+  --line-soft: #f4f4f5; /* zinc-100 */
+
+  /* Emerald = primary green scale */
+  --emerald-50:  #f0fdf4; /* = primary-soft */
+  --emerald-600: #066F36; /* = primary */
+  --emerald-700: #055a2b; /* = primary-hover */
+  --emerald-800: #14532d; /* green-900 */
 }
 
 /* Force Light Mode strictly for analytical UX mapping constraints */
+html {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  font-variant-numeric: proportional-nums;
+  font-optical-sizing: auto;
+  text-rendering: optimizeLegibility;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans);
+  font-family: inherit;
 }
 
 /* Task 1: Macro Typography Utilities */

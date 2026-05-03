@@ -62,7 +62,7 @@ export function ListingCard({ listing, mediaAspect = '4/3' }: ListingCardProps) 
 
         {/* Цена */}
         <div className="-mt-0.5">
-          <p className="text-lg sm:text-2xl font-black text-primary leading-none tabular-nums tracking-tight">
+          <p className="text-lg sm:text-2xl font-bold text-zinc-900 leading-none tabular-nums tracking-tight">
             {price} ₸
           </p>
           <p className="text-[11px] sm:text-xs text-zinc-400 mt-1 tabular-nums">{perSotka} ₸/сот.</p>

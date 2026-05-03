@@ -21,7 +21,7 @@ export function Footer() {
               </span>
             </Link>
             <p className="text-[14px] text-zinc-500 font-normal leading-relaxed max-w-xs">
-              Специализированный маркетплейс земельных участков Казахстана. Продажа напрямую от собственников и агентств.
+              Маркетплейс земельных участков в Казахстане. Найдите идеальный участок для жизни и бизнеса.
             </p>
             <div className="mt-6 flex items-center gap-4">
               <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-9 h-9 rounded-xl border border-zinc-200 text-zinc-400 hover:text-primary hover:border-primary transition-colors">
@@ -42,10 +42,10 @@ export function Footer() {
             <ul className="space-y-3">
               {[
                 { label: 'Все участки', href: '/catalog' },
-                { label: 'Поиск на карте', href: '/catalog' },
-                { label: 'Под строительство', href: '/catalog?type=ИЖС' },
-                { label: 'Под бизнес', href: '/catalog?type=Коммерция' },
-                { label: 'Под фермерство', href: '/catalog?type=Сельхоз' },
+                { label: 'Под строительство', href: '/catalog?type=izhs' },
+                { label: 'Под фермерство', href: '/catalog?type=selhoz' },
+                { label: 'Готовый бизнес', href: '/business' },
+                { label: 'Безопасная сделка', href: '/safe-deal' },
               ].map(link => (
                 <li key={link.href + link.label}>
                   <Link href={link.href} className="text-[14px] text-zinc-600 font-normal hover:text-primary transition-colors">
@@ -101,7 +101,7 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-zinc-100 py-6">
           <p className="text-[13px] text-zinc-400 font-normal">
-            © {year} 6sotok.kz. Маркетплейс земли Казахстана.
+            © {year} 6sotok.kz — маркетплейс земли Казахстана.
           </p>
           <div className="flex items-center gap-1.5 text-[13px] text-zinc-400">
             <MapPin className="w-3.5 h-3.5" strokeWidth={2} />

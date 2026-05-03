@@ -264,6 +264,15 @@ export const Listings: CollectionConfig = {
       ],
     },
 
+    // ─── Статистика ──────────────────────────────────────────────────────────
+    {
+      name: 'views',
+      type: 'number',
+      label: 'Просмотры',
+      defaultValue: 0,
+      admin: { position: 'sidebar', readOnly: true },
+    },
+
     // ─── Контакт продавца ────────────────────────────────────────────────────
     {
       type: 'collapsible',

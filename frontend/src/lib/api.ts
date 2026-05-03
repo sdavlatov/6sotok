@@ -40,6 +40,7 @@ interface PayloadListing {
   plotShape?: string
   frontWidth?: number
   depth?: number
+  views?: number
   isNegotiable?: boolean
   locationType?: string[]
   sellerName?: string
@@ -73,6 +74,7 @@ function mapListing(p: PayloadListing): Listing {
     communications,
     description: typeof p.description === 'string' ? p.description : undefined,
     createdAt: p.createdAt,
+    views: p.views ?? 0,
     isNegotiable: p.isNegotiable,
     locationType: p.locationType,
     lat: p.lat,

@@ -67,7 +67,7 @@ export function ListingGallery({ title, images }: { title: string; images?: stri
             <img
               src={url}
               alt={`${title} — фото ${idx + 1}`}
-              className="h-full w-full object-contain"
+              className="h-full w-full object-cover"
             />
           )}
 

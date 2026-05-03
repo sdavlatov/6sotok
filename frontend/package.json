@@ -19,6 +19,7 @@
     "@payloadcms/translations": "^3.84.0",
     "@payloadcms/ui": "^3.84.0",
     "@vercel/blob": "^2.3.3",
+    "framer-motion": "^12.38.0",
     "graphql": "^16.13.2",
     "lucide-react": "^0.470.0",
     "next": "16.2.0",
