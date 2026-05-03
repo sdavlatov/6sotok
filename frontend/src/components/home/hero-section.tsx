@@ -1,6 +1,6 @@
 import { Container } from '../layout/container';
 
-export function HeroSection({ count }: { count: number }) {
+export function HeroSection({ count, minSotok, maxHa }: { count: number; minSotok: number; maxHa: number }) {
   const listingCount = count;
   return (
     <section className="relative overflow-hidden bg-white pt-16 pb-20">
@@ -25,16 +25,15 @@ export function HeroSection({ count }: { count: number }) {
           </h1>
 
           <p className="mt-7 max-w-2xl text-lg text-zinc-500 font-normal leading-relaxed">
-            Напрямую от собственников. Точные цены за сотку, сразу видны коммуникации,
-            целевое назначение и расположение на карте.
+            Покупайте и продавайте земельные участки по всему Казахстану на одной платформе.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[13px] font-semibold text-zinc-400">
+            <span>Бесплатное размещение</span>
+            <span className="w-1 h-1 rounded-full bg-zinc-300 hidden sm:block" />
             <span>{listingCount} объявлений</span>
             <span className="w-1 h-1 rounded-full bg-zinc-300 hidden sm:block" />
-            <span>Весь Казахстан</span>
-            <span className="w-1 h-1 rounded-full bg-zinc-300 hidden sm:block" />
-            <span>Без посредников</span>
+            <span>От {minSotok} соток до {maxHa} гектаров</span>
           </div>
 
         </div>
