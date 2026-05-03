@@ -123,7 +123,8 @@ export async function getListings(params: Record<string, string> = {}): Promise<
       depth: 1,
     })
     return (result.docs as unknown as PayloadListing[]).map(mapListing)
-  } catch {
+  } catch (e) {
+    console.error('[getListings] error:', e)
     return []
   }
 }
