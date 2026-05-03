@@ -59,8 +59,8 @@ export function Header() {
               <Link href="/business" className={`flex items-center gap-1.5 text-[15px] font-semibold transition-colors hover:text-primary whitespace-nowrap ${pathname?.startsWith('/business') ? 'text-primary' : 'text-zinc-700'}`}>
                 Бизнес
                 <span className="relative flex size-1.5">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
-                  <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75 animate-ping" />
+                  <span className="relative inline-flex size-1.5 rounded-full bg-violet-500" />
                 </span>
               </Link>
               <Link href="/b2b" className={`text-[14px] font-medium transition-colors hover:text-primary whitespace-nowrap ${pathname?.startsWith('/b2b') ? 'text-primary' : 'text-zinc-400'}`}>
@@ -141,8 +141,8 @@ export function Header() {
         >
           Бизнес
           <span className="relative flex size-1.5">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
-            <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
+            <span className="absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75 animate-ping" />
+            <span className="relative inline-flex size-1.5 rounded-full bg-violet-500" />
           </span>
         </Link>
 
