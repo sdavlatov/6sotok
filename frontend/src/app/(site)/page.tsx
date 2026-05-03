@@ -16,16 +16,24 @@ export default async function HomePage() {
 
   const countByType: Record<string, number> = {};
   const locSet = new Set<string>();
+  let minArea = Infinity;
+  let maxArea = 0;
   for (const l of allListings) {
     if (l.purpose) countByType[l.purpose] = (countByType[l.purpose] || 0) + 1;
     if (l.landType) countByType[l.landType] = (countByType[l.landType] || 0) + 1;
     if (l.location) locSet.add(l.location);
+    if (l.area) {
+      if (l.area < minArea) minArea = l.area;
+      if (l.area > maxArea) maxArea = l.area;
+    }
   }
   const locations = [...locSet];
+  const minSotok = minArea === Infinity ? 6 : Math.round(minArea);
+  const maxHa = maxArea === 0 ? 100 : Math.round(maxArea / 100);
 
   return (
     <>
-      <HeroSection count={allListings.length} />
+      <HeroSection count={allListings.length} minSotok={minSotok} maxHa={maxHa} />
       <SearchBar countByType={countByType} locations={locations} totalCount={allListings.length} />
 
       {/* Свежие объявления */}
