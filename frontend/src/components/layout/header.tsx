@@ -56,11 +56,11 @@ export function Header() {
               <Link href="/catalog" className={`text-[15px] font-semibold transition-colors hover:text-primary whitespace-nowrap ${pathname?.startsWith('/catalog') ? 'text-primary' : 'text-zinc-700'}`}>
                 Участки
               </Link>
-              <Link href="/business" className={`flex items-center gap-1.5 text-[15px] font-semibold transition-colors hover:text-primary whitespace-nowrap ${pathname?.startsWith('/business') ? 'text-primary' : 'text-zinc-700'}`}>
+              <Link href="/business" className={`relative text-[15px] font-semibold transition-colors hover:text-primary whitespace-nowrap ${pathname?.startsWith('/business') ? 'text-primary' : 'text-zinc-700'}`}>
                 Бизнес
-                <span className="relative flex size-1.5">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75 animate-ping" />
-                  <span className="relative inline-flex size-1.5 rounded-full bg-violet-500" />
+                <span className="absolute -top-1 -right-2 flex size-1.5">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75 animate-ping" />
+                  <span className="relative inline-flex size-1.5 rounded-full bg-amber-500" />
                 </span>
               </Link>
               <Link href="/b2b" className={`text-[14px] font-medium transition-colors hover:text-primary whitespace-nowrap ${pathname?.startsWith('/b2b') ? 'text-primary' : 'text-zinc-400'}`}>
@@ -137,12 +137,12 @@ export function Header() {
         <Link
           href="/business"
           onClick={() => setIsMenuOpen(false)}
-          className={`flex items-center gap-2 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${pathname?.startsWith('/business') ? 'bg-primary-soft/40 text-primary' : 'text-zinc-700 hover:bg-zinc-50 hover:text-primary'}`}
+          className={`relative flex items-center px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${pathname?.startsWith('/business') ? 'bg-primary-soft/40 text-primary' : 'text-zinc-700 hover:bg-zinc-50 hover:text-primary'}`}
         >
           Бизнес
-          <span className="relative flex size-1.5">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75 animate-ping" />
-            <span className="relative inline-flex size-1.5 rounded-full bg-violet-500" />
+          <span className="absolute top-2.5 right-3 flex size-1.5">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75 animate-ping" />
+            <span className="relative inline-flex size-1.5 rounded-full bg-amber-500" />
           </span>
         </Link>
 
