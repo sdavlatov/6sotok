@@ -2,7 +2,6 @@ import { Container } from '@/components/layout/container';
 import { HeroSection } from '@/components/home/hero-section';
 import { SearchBar } from '@/components/home/search-bar';
 import { ListingsGrid } from '@/components/listings/listings-grid';
-import { mockListings } from '@/lib/mock-data';
 import { getListings } from '@/lib/api';
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
@@ -10,8 +9,7 @@ import Link from 'next/link';
 export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
-  const apiListings = await getListings({ limit: '500' })
-  const allListings = apiListings.length > 0 ? apiListings : mockListings
+  const allListings = await getListings({ limit: '500' })
   const listings = allListings.slice(0, 6)
 
   const countByType: Record<string, number> = {};
