@@ -6,10 +6,12 @@ import { usePathname } from 'next/navigation';
 import { Container } from './container';
 import { Heart, User, Plus, Menu, X } from 'lucide-react';
 import { pushDataLayer } from '@/lib/analytics';
+import { useAuth } from '@/context/auth-context';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
+  const { user } = useAuth();
 
   const openMenu = () => {
     setIsMenuOpen(true);
@@ -78,7 +80,7 @@ export function Header() {
               <div className="w-px h-6 bg-zinc-200" />
               <Link href="/profile" className="flex items-center gap-2 text-[14px] font-bold text-zinc-700 hover:text-primary transition-colors">
                 <User className="w-5 h-5" strokeWidth={2.5} />
-                Войти
+                {user ? user.name.split(' ')[0] : 'Войти'}
               </Link>
             </div>
             <Link
@@ -162,7 +164,7 @@ export function Header() {
           className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold transition-colors ${pathname === '/profile' ? 'bg-primary-soft/40 text-primary' : 'text-zinc-700 hover:bg-zinc-50 hover:text-primary'}`}
         >
           <User className="w-5 h-5" strokeWidth={2} />
-          Войти
+          {user ? user.name.split(' ')[0] : 'Войти'}
         </Link>
 
         <div className="my-2 border-t border-zinc-100" />
