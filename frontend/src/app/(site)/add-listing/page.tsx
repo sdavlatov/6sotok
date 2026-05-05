@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Container } from '@/components/layout/container';
 import Link from 'next/link';
 import { pushDataLayer } from '@/lib/analytics';
 import { LAND_CATEGORIES, UTILITIES, LEGAL_FILTERS } from '@/lib/listing-constants';
 import { useAuth } from '@/context/auth-context';
+import { MapPin, Camera, Layers, ShieldCheck, User, ChevronLeft } from 'lucide-react';
 
 // ── форматирование цены ──────────────────────────────────────────────────────
 const fmtPrice = (v: string) => {
@@ -358,176 +359,120 @@ export default function AddListingPage() {
   const inputCls = (err?: string) =>
     `w-full rounded-2xl border bg-zinc-50 px-4 py-3.5 text-sm font-bold text-zinc-900 outline-none transition-colors focus:bg-white focus:ring-4 focus:ring-primary/10 placeholder:font-medium placeholder:text-zinc-400 ${err ? 'border-red-400 focus:border-red-400' : 'border-zinc-200 focus:border-primary'}`;
 
+  const SectionHead = ({ icon: Icon, title }: { icon: React.ElementType; title: string }) => (
+    <div className="flex items-center gap-3 mb-5">
+      <div className="w-8 h-8 rounded-xl bg-zinc-100 flex items-center justify-center shrink-0">
+        <Icon className="size-4 text-zinc-500" strokeWidth={2} />
+      </div>
+      <h2 className="text-base font-bold text-zinc-800">{title}</h2>
+    </div>
+  );
+
+  const Pill = ({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) => (
+    <button type="button" onClick={onClick}
+      className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all active:scale-95 ${
+        active
+          ? 'bg-primary border-primary text-white shadow-sm'
+          : 'bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:text-zinc-700'
+      }`}>
+      {label}
+    </button>
+  );
+
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-primary-soft">
-      <div className="py-10 lg:py-16 pb-32">
+    <div className="min-h-screen bg-zinc-50 text-zinc-900">
+      <div className="py-8 pb-28">
         <Container>
 
-          <div className="mb-8 max-w-3xl mx-auto">
-            <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold text-zinc-400 hover:text-zinc-600 transition-colors mb-6">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-              Назад
+          <div className="max-w-2xl mx-auto mb-7">
+            <Link href="/profile" className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-400 hover:text-zinc-600 transition-colors mb-5">
+              <ChevronLeft className="size-4" />
+              Личный кабинет
             </Link>
-            <h1 className="text-3xl font-black tracking-tight text-zinc-900 sm:text-4xl">Подать объявление</h1>
-            <p className="mt-3 text-lg font-medium text-zinc-500">Заполните детали, чтобы покупатели могли быстро вас найти.</p>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900">Новое объявление</h1>
+            <p className="mt-1.5 text-sm text-zinc-500">Земельный участок · Казахстан</p>
           </div>
 
-          <form onSubmit={e => { e.preventDefault(); submit('draft'); }} className="max-w-3xl mx-auto space-y-4">
+          <form onSubmit={e => { e.preventDefault(); submit('draft'); }} className="max-w-2xl mx-auto space-y-3">
 
-            {/* ── 1. Основная информация ─────────────────────────────────────── */}
-            <section className="bg-white rounded-2xl p-5 sm:p-8 border border-zinc-200 shadow-[0_2px_12px_rgb(0,0,0,0.04)] space-y-5">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Шаг 1</p>
-                <h2 className="text-lg font-extrabold text-zinc-900">Основная информация</h2>
-                {autoTitle && (
-                  <p className="mt-1.5 text-[12px] font-medium text-zinc-400">
-                    Заголовок: <span className="font-semibold text-zinc-600">{autoTitle}</span>
-                  </p>
-                )}
+            {/* ── 1. Основное ───────────────────────────────────────────────── */}
+            <section className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-5 sm:p-7 space-y-5">
+              <SectionHead icon={Layers} title="Основное" />
+
+              {/* Тип сделки — сегментированный контрол */}
+              <div className="flex rounded-2xl bg-zinc-100 p-1 gap-1">
+                {(['sale', 'rent'] as const).map(dt => (
+                  <button key={dt} type="button" onClick={() => set('dealType', dt)}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                      fd.dealType === dt
+                        ? 'bg-white text-zinc-900 shadow-sm'
+                        : 'text-zinc-400 hover:text-zinc-600'
+                    }`}>
+                    {dt === 'sale' ? 'Продажа' : 'Сдать в аренду'}
+                  </button>
+                ))}
               </div>
 
-              {/* Тип сделки */}
+              {/* Тип участка */}
               <div>
-                <label className="block text-sm font-semibold text-zinc-700 mb-2.5">Тип сделки <span className="text-red-500">*</span></label>
-                <div className="inline-flex rounded-xl border border-zinc-200 bg-zinc-50 p-1 gap-1">
-                  {(['sale', 'rent'] as const).map(dt => (
-                    <button key={dt} type="button" onClick={() => set('dealType', dt)}
-                      className={`px-5 py-2 rounded-lg text-sm font-bold transition-all min-h-[40px] ${fd.dealType === dt ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-500 hover:text-zinc-700'}`}>
-                      {dt === 'sale' ? 'Продажа' : 'Аренда'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-zinc-700 mb-2.5">Тип участка <span className="text-red-500">*</span></label>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-3">
+                  Тип участка <span className="text-red-400">*</span>
+                </label>
                 <div className="flex flex-wrap gap-2">
                   {LAND_CATEGORIES.map(cat => (
-                    <button key={cat} type="button" onClick={() => set('landType', fd.landType === cat ? '' : cat)}
-                      className={`px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 min-h-[44px] ${fd.landType === cat ? 'bg-primary border-primary text-white shadow-sm' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-white'}`}>
-                      {cat}
-                    </button>
+                    <Pill key={cat} label={cat}
+                      active={fd.landType === cat}
+                      onClick={() => set('landType', fd.landType === cat ? '' : cat)} />
                   ))}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              {/* Площадь + Цена */}
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Площадь <span className="text-red-500">*</span></label>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">
+                    Площадь <span className="text-red-400">*</span>
+                  </label>
                   <div className="relative">
                     <input type="number" min="1" placeholder="6"
                       value={fd.area} onChange={e => set('area', e.target.value)}
                       className={inputCls(errors.area)} />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-zinc-400 pointer-events-none">сот.</span>
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400 pointer-events-none">сот.</span>
                   </div>
-                  {errors.area && <p className="mt-1 text-xs font-medium text-red-500">{errors.area}</p>}
+                  {errors.area && <p className="mt-1 text-xs text-red-500">{errors.area}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-zinc-700 mb-2">
-                    {fd.dealType === 'rent' ? 'Цена аренды / мес.' : 'Цена'} <span className="text-red-500">*</span>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">
+                    {fd.dealType === 'rent' ? 'Аренда / мес.' : 'Цена'} <span className="text-red-400">*</span>
                   </label>
                   <div className="relative">
                     <input type="text" inputMode="numeric"
                       placeholder={fd.dealType === 'rent' ? '150 000' : '15 000 000'}
                       value={fd.price} onChange={e => set('price', fmtPrice(e.target.value))}
                       className={inputCls(errors.price)} />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-zinc-400 pointer-events-none">
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400 pointer-events-none">
                       {fd.dealType === 'rent' ? '₸/мес' : '₸'}
                     </span>
                   </div>
-                  {errors.price && <p className="mt-1 text-xs font-medium text-red-500">{errors.price}</p>}
+                  {errors.price && <p className="mt-1 text-xs text-red-500">{errors.price}</p>}
                 </div>
               </div>
+
+              {autoTitle && (
+                <p className="text-xs text-zinc-400">
+                  Заголовок: <span className="font-semibold text-zinc-600">{autoTitle}</span>
+                </p>
+              )}
             </section>
 
-            {/* ── 2. Расположение ────────────────────────────────────────────── */}
-            <section className="bg-white rounded-2xl p-5 sm:p-8 border border-zinc-200 shadow-[0_2px_12px_rgb(0,0,0,0.04)] space-y-5">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Шаг 2</p>
-                <h2 className="text-lg font-extrabold text-zinc-900">Расположение</h2>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-zinc-700 mb-1.5">Точка на карте</label>
-                <p className="text-[11px] font-medium text-zinc-400 mb-2">Нажмите — адрес заполнится автоматически</p>
-                <LocationPicker value={markerPos} onChange={setMarkerPos} />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Город / Населённый пункт</label>
-                  <div className="relative">
-                    <input type="text" list="kz-cities"
-                      placeholder="Алматы, Каскелен..."
-                      value={fd.location} onChange={e => set('location', e.target.value)}
-                      className={inputCls(errors.location)} />
-                    {isGeocoding && (
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-primary animate-pulse">Определяем...</span>
-                    )}
-                  </div>
-                  <datalist id="kz-cities">
-                    {KZ_CITIES.map(c => <option key={c} value={c} />)}
-                  </datalist>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Адрес или ориентир</label>
-                  <input type="text" placeholder="вдоль трассы БАК, поворот направо"
-                    value={fd.address} onChange={e => set('address', e.target.value)}
-                    className={inputCls()} />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-zinc-700 mb-2">Окружение <span className="text-zinc-400 font-normal text-xs">(можно несколько)</span></label>
-                <div className="flex flex-wrap gap-2">
-                  {LOCATION_TYPES.map(({ value, label }) => (
-                    <button key={value} type="button" onClick={() => toggleLocationType(value)}
-                      className={`px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 min-h-[44px] ${fd.locationType.includes(value) ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </section>
-
-            {/* ── 3. Фото и видео ────────────────────────────────────────────── */}
-            <section className="bg-white rounded-2xl p-5 sm:p-8 border border-zinc-200 shadow-[0_2px_12px_rgb(0,0,0,0.04)] space-y-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Шаг 3</p>
-                <h2 className="text-lg font-extrabold text-zinc-900">Фото и видео <span className="text-red-500">*</span></h2>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-primary/20 bg-primary/5 p-3.5 flex gap-3">
-                  <div className="shrink-0 w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="15" height="12" rx="2"/><path d="m17 9 5-3v12l-5-3V9Z"/></svg>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <p className="text-[12px] font-bold text-zinc-900">Видео</p>
-                      <span className="text-[9px] font-black uppercase tracking-widest text-primary bg-primary/10 px-1.5 py-0.5 rounded-full hidden sm:block">Топ</span>
-                    </div>
-                    <p className="text-[11px] text-zinc-500 leading-relaxed">9:16 · MP4/MOV · до 200 МБ</p>
-                  </div>
-                </div>
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3.5 flex gap-3">
-                  <div className="shrink-0 w-8 h-8 rounded-xl bg-zinc-200/70 flex items-center justify-center text-zinc-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[12px] font-bold text-zinc-900 mb-0.5">Фото</p>
-                    <p className="text-[11px] text-zinc-500 leading-relaxed">JPG/PNG · до 50 МБ</p>
-                  </div>
-                </div>
-              </div>
+            {/* ── 2. Фото ───────────────────────────────────────────────────── */}
+            <section className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-5 sm:p-7 space-y-4">
+              <SectionHead icon={Camera} title="Фото и видео" />
 
               {photoPreviews.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-[11px] font-semibold text-zinc-400 flex items-center gap-1.5">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 9h14M5 15h14"/></svg>
-                    Перетащите чтобы изменить порядок
-                  </p>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+                  <p className="text-[11px] text-zinc-400">Перетащите чтобы изменить порядок · первое — обложка</p>
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                     {photoPreviews.map((src, i) => {
                       const isVid = photos[i]?.type.startsWith('video/');
                       return (
@@ -536,12 +481,8 @@ export default function AddListingPage() {
                           onDragOver={e => { e.preventDefault(); setDragOver(i); }}
                           onDrop={e => { e.preventDefault(); if (dragIndex !== null) movePhoto(dragIndex, i); setDragIndex(null); setDragOver(null); }}
                           onDragEnd={() => { setDragIndex(null); setDragOver(null); }}
-                          className={`relative aspect-square rounded-xl overflow-hidden bg-zinc-100 group cursor-grab active:cursor-grabbing transition-all ${dragOver === i && dragIndex !== i ? 'ring-2 ring-primary scale-[1.02]' : ''} ${dragIndex === i ? 'opacity-40' : ''}`}>
-                          {i === 0 && (
-                            <div className="absolute top-1.5 left-1.5 z-10">
-                              <span className="bg-zinc-900/80 text-white text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full">Обложка</span>
-                            </div>
-                          )}
+                          className={`relative aspect-square rounded-xl overflow-hidden bg-zinc-100 group cursor-grab transition-all ${dragOver === i && dragIndex !== i ? 'ring-2 ring-primary' : ''} ${dragIndex === i ? 'opacity-40' : ''}`}>
+                          {i === 0 && <div className="absolute top-1 left-1 z-10 bg-primary text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">1</div>}
                           {isVid ? (
                             <>
                               <video src={src} className="w-full h-full object-cover" muted playsInline />
@@ -555,8 +496,8 @@ export default function AddListingPage() {
                             <img src={src} alt="" className="w-full h-full object-cover" />
                           )}
                           <button type="button" onClick={() => removePhoto(i)}
-                            className="absolute top-1 right-1 flex items-center justify-center w-6 h-6 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                            className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
                           </button>
                         </div>
                       );
@@ -565,139 +506,190 @@ export default function AddListingPage() {
                 </div>
               )}
 
-              <label className={`flex flex-col items-center justify-center w-full h-32 rounded-2xl border-2 border-dashed bg-zinc-50 hover:bg-zinc-100 cursor-pointer transition-colors group ${errors.photos ? 'border-red-400' : 'border-zinc-300 hover:border-primary/50'}`}>
-                <div className="h-10 w-10 rounded-full bg-white shadow-sm flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-primary"><path fillRule="evenodd" d="M11.47 2.47a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1-1.06 1.06l-3.22-3.22V16.5a.75.75 0 0 1-1.5 0V4.81L8.03 8.03a.75.75 0 0 1-1.06-1.06l4.5-4.5ZM3 15.75a.75.75 0 0 1 .75.75v2.25a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5V16.5a.75.75 0 0 1 1.5 0v2.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V16.5a.75.75 0 0 1 .75-.75Z" clipRule="evenodd"/></svg>
-                </div>
-                <span className="text-sm font-semibold text-zinc-700">{photos.length > 0 ? 'Добавить ещё' : 'Нажмите или перетащите файлы'}</span>
+              <label className={`flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed cursor-pointer transition-all group ${
+                errors.photos ? 'border-red-300 bg-red-50' : 'border-zinc-200 bg-zinc-50 hover:border-primary/40 hover:bg-primary-soft/30'
+              } ${photoPreviews.length > 0 ? 'h-20' : 'h-36'}`}>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={`mb-1.5 text-zinc-400 group-hover:text-primary transition-colors ${photoPreviews.length > 0 ? 'w-5 h-5' : 'w-7 h-7'}`}>
+                  <path fillRule="evenodd" d="M11.47 2.47a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1-1.06 1.06l-3.22-3.22V16.5a.75.75 0 0 1-1.5 0V4.81L8.03 8.03a.75.75 0 0 1-1.06-1.06l4.5-4.5ZM3 15.75a.75.75 0 0 1 .75.75v2.25a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5V16.5a.75.75 0 0 1 1.5 0v2.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V16.5a.75.75 0 0 1 .75-.75Z" clipRule="evenodd" />
+                </svg>
+                <span className="text-sm font-semibold text-zinc-500 group-hover:text-primary transition-colors">
+                  {photos.length > 0 ? 'Добавить ещё' : 'Загрузить фото или видео'}
+                </span>
+                {photos.length === 0 && <span className="text-xs text-zinc-400 mt-0.5">JPG, PNG, MP4, MOV · до 200 МБ</span>}
                 <input ref={fileInputRef} type="file" className="hidden" multiple
                   accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm"
                   onChange={handlePhotoChange} />
               </label>
-              {errors.photos && <p className="text-xs font-medium text-red-500">{errors.photos}</p>}
+              {errors.photos && <p className="text-xs text-red-500">{errors.photos}</p>}
             </section>
 
-            {/* ── 4. Коммуникации ────────────────────────────────────────────── */}
-            <section className="bg-white rounded-2xl p-5 sm:p-8 border border-zinc-200 shadow-[0_2px_12px_rgb(0,0,0,0.04)] space-y-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Шаг 4</p>
-                <h2 className="text-lg font-extrabold text-zinc-900">Коммуникации</h2>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {UTILITIES.map(({ key, icon: Icon, label, active }) => (
-                  <button key={key} type="button" onClick={() => toggle(key as keyof typeof fd)}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 min-h-[44px] ${boolVals[key] ? active : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:bg-white'}`}>
-                    <Icon className="w-4 h-4" strokeWidth={2.5} />
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            {/* ── 5. Характеристики участка ──────────────────────────────────── */}
-            <section className="bg-white rounded-2xl p-5 sm:p-8 border border-zinc-200 shadow-[0_2px_12px_rgb(0,0,0,0.04)] space-y-5">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Шаг 5</p>
-                <h2 className="text-lg font-extrabold text-zinc-900">Характеристики участка</h2>
-              </div>
+            {/* ── 3. Расположение ───────────────────────────────────────────── */}
+            <section className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-5 sm:p-7 space-y-4">
+              <SectionHead icon={MapPin} title="Расположение" />
 
               <div>
-                <label className="block text-sm font-semibold text-zinc-700 mb-2">Право собственности</label>
-                <div className="flex gap-2 flex-wrap">
-                  {OWNERSHIP_TYPES.map(t => (
-                    <button key={t} type="button" onClick={() => set('ownershipType', fd.ownershipType === t ? '' : t)}
-                      className={`px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 min-h-[44px] ${fd.ownershipType === t ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}>
-                      {t}
-                    </button>
+                <p className="text-xs text-zinc-400 mb-2">Нажмите на карту — город заполнится автоматически</p>
+                <LocationPicker value={markerPos} onChange={setMarkerPos} />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Город</label>
+                  <div className="relative">
+                    <input type="text" list="kz-cities" placeholder="Алматы, Каскелен..."
+                      value={fd.location} onChange={e => set('location', e.target.value)}
+                      className={inputCls()} />
+                    {isGeocoding && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-primary animate-pulse">Определяем...</span>}
+                  </div>
+                  <datalist id="kz-cities">{KZ_CITIES.map(c => <option key={c} value={c} />)}</datalist>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Адрес / ориентир</label>
+                  <input type="text" placeholder="вдоль трассы БАК..."
+                    value={fd.address} onChange={e => set('address', e.target.value)}
+                    className={inputCls()} />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Окружение</label>
+                <div className="flex flex-wrap gap-2">
+                  {LOCATION_TYPES.map(({ value, label }) => (
+                    <Pill key={value} label={label}
+                      active={fd.locationType.includes(value)}
+                      onClick={() => toggleLocationType(value)} />
                   ))}
                 </div>
               </div>
-
-              <div className="border-t border-zinc-100 pt-5 space-y-4">
-                <label className="block text-sm font-semibold text-zinc-700">Геометрия</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-zinc-500 mb-2">Рельеф</label>
-                    <div className="flex gap-2">
-                      {RELIEF_TYPES.map(r => (
-                        <button key={r} type="button" onClick={() => set('reliefType', fd.reliefType === r ? '' : r)}
-                          className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all min-h-[44px] ${fd.reliefType === r ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}>
-                          {r}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-zinc-500 mb-2">Форма участка</label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {PLOT_SHAPES.map(s => (
-                        <button key={s} type="button" onClick={() => set('plotShape', fd.plotShape === s ? '' : s)}
-                          className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all active:scale-95 min-h-[40px] ${fd.plotShape === s ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}>
-                          {s}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-zinc-500 mb-2">Ширина по фасаду, м</label>
-                    <input type="number" min="1" placeholder="20"
-                      value={fd.frontWidth} onChange={e => set('frontWidth', e.target.value)}
-                      className={inputCls()} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-zinc-500 mb-2">Глубина, м</label>
-                    <input type="number" min="1" placeholder="30"
-                      value={fd.depth} onChange={e => set('depth', e.target.value)}
-                      className={inputCls()} />
-                  </div>
-                </div>
-              </div>
             </section>
 
-            {/* ── 6. Юридика ─────────────────────────────────────────────────── */}
-            <section className="bg-white rounded-2xl p-5 sm:p-8 border border-zinc-200 shadow-[0_2px_12px_rgb(0,0,0,0.04)] space-y-5">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Шаг 6</p>
-                <h2 className="text-lg font-extrabold text-zinc-900">Юридические данные</h2>
-              </div>
+            {/* ── 4. Характеристики ─────────────────────────────────────────── */}
+            <section className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-5 sm:p-7 space-y-5">
+              <SectionHead icon={Layers} title="Характеристики" />
 
+              {/* Коммуникации */}
               <div>
-                <label className="block text-sm font-semibold text-zinc-700 mb-2">Статус документов</label>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Коммуникации</label>
                 <div className="flex flex-wrap gap-2">
-                  <button type="button" onClick={() => toggle('hasStateAct')}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 min-h-[44px] ${fd.hasStateAct ? 'border-primary/30 bg-primary-soft text-primary' : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:bg-white'}`}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                    Гос. акт
-                  </button>
-                  {LEGAL_FILTERS.map(({ key, icon: Icon, label, active }) => (
+                  {UTILITIES.map(({ key, icon: Icon, label, active }) => (
                     <button key={key} type="button" onClick={() => toggle(key as keyof typeof fd)}
-                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 min-h-[44px] ${boolVals[key] ? active : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:bg-white'}`}>
-                      <Icon className="w-4 h-4" strokeWidth={2.5} />
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border transition-all active:scale-95 ${
+                        boolVals[key] ? active : 'bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:text-zinc-700'
+                      }`}>
+                      <Icon className="w-3.5 h-3.5" strokeWidth={2.5} />
                       {label}
                     </button>
                   ))}
-                  <button type="button" onClick={() => toggle('hasEncumbrances')}
-                    className={`px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 min-h-[44px] ${fd.hasEncumbrances ? 'border-amber-300 bg-amber-50 text-amber-700' : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:bg-white'}`}>
-                    Обременения
-                  </button>
-                  <button type="button" onClick={() => toggle('canChangePurpose')}
-                    className={`px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 min-h-[44px] ${fd.canChangePurpose ? 'border-sky-300 bg-sky-50 text-sky-700' : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:bg-white'}`}>
-                    Можно сменить назначение
-                  </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-zinc-100 pt-5">
+              <div className="border-t border-zinc-100 pt-4 space-y-4">
+                {/* Право собственности */}
                 <div>
-                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Кадастровый номер</label>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Право собственности</label>
+                  <div className="flex gap-2 flex-wrap">
+                    <Pill label="Частная собственность"
+                      active={fd.ownershipType === 'Частная собственность'}
+                      onClick={() => set('ownershipType', fd.ownershipType === 'Частная собственность' ? '' : 'Частная собственность')} />
+                    <Pill label="Гос. аренда"
+                      active={fd.ownershipType === 'Аренда'}
+                      onClick={() => set('ownershipType', fd.ownershipType === 'Аренда' ? '' : 'Аренда')} />
+                  </div>
+                </div>
+
+                {/* Геометрия */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-3">Геометрия</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-zinc-400 mb-2">Рельеф</p>
+                      <div className="flex gap-2">
+                        {RELIEF_TYPES.map(r => (
+                          <button key={r} type="button" onClick={() => set('reliefType', fd.reliefType === r ? '' : r)}
+                            className={`flex-1 py-2 rounded-xl text-sm font-semibold border transition-all ${
+                              fd.reliefType === r ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300'
+                            }`}>
+                            {r}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-zinc-400 mb-2">Форма участка</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {PLOT_SHAPES.map(s => (
+                          <button key={s} type="button" onClick={() => set('plotShape', fd.plotShape === s ? '' : s)}
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all active:scale-95 ${
+                              fd.plotShape === s ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300'
+                            }`}>
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    <div>
+                      <p className="text-xs text-zinc-400 mb-2">Ширина по фасаду, м</p>
+                      <input type="number" min="1" placeholder="20"
+                        value={fd.frontWidth} onChange={e => set('frontWidth', e.target.value)}
+                        className={inputCls()} />
+                    </div>
+                    <div>
+                      <p className="text-xs text-zinc-400 mb-2">Глубина, м</p>
+                      <input type="number" min="1" placeholder="30"
+                        value={fd.depth} onChange={e => set('depth', e.target.value)}
+                        className={inputCls()} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* ── 5. Документы ──────────────────────────────────────────────── */}
+            <section className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-5 sm:p-7 space-y-4">
+              <SectionHead icon={ShieldCheck} title="Документы" />
+
+              <div className="flex flex-wrap gap-2">
+                <button type="button" onClick={() => toggle('hasStateAct')}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border transition-all active:scale-95 ${
+                    fd.hasStateAct ? 'bg-primary-soft border-primary/30 text-primary' : 'bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300'
+                  }`}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  Гос. акт
+                </button>
+                {LEGAL_FILTERS.map(({ key, icon: Icon, label, active }) => (
+                  <button key={key} type="button" onClick={() => toggle(key as keyof typeof fd)}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border transition-all active:scale-95 ${
+                      boolVals[key] ? active : 'bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300'
+                    }`}>
+                    <Icon className="w-3.5 h-3.5" strokeWidth={2.5} />
+                    {label}
+                  </button>
+                ))}
+                <button type="button" onClick={() => toggle('hasEncumbrances')}
+                  className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all active:scale-95 ${
+                    fd.hasEncumbrances ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300'
+                  }`}>
+                  Обременения
+                </button>
+                <button type="button" onClick={() => toggle('canChangePurpose')}
+                  className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all active:scale-95 ${
+                    fd.canChangePurpose ? 'bg-sky-50 border-sky-300 text-sky-700' : 'bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300'
+                  }`}>
+                  Смена назначения
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-zinc-100">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Кадастровый номер</label>
                   <input type="text" placeholder="20-315-094-111"
                     value={fd.cadastralNumber} onChange={e => set('cadastralNumber', e.target.value)}
                     className={inputCls()} />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Категория земли</label>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Категория земли</label>
                   <input type="text" placeholder="Земли населённых пунктов"
                     value={fd.landCategory} onChange={e => set('landCategory', e.target.value)}
                     className={inputCls()} />
@@ -705,72 +697,65 @@ export default function AddListingPage() {
               </div>
             </section>
 
-            {/* ── 7. Описание ────────────────────────────────────────────────── */}
-            <section className="bg-white rounded-2xl p-5 sm:p-8 border border-zinc-200 shadow-[0_2px_12px_rgb(0,0,0,0.04)] space-y-3">
-              <div className="flex items-end justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Шаг 7</p>
-                  <h2 className="text-lg font-extrabold text-zinc-900">Описание</h2>
-                </div>
-                <span className="text-xs font-medium text-zinc-400">{fd.description.length} / 2000</span>
-              </div>
-              <textarea rows={5} maxLength={2000}
-                placeholder="Расскажите о плюсах участка, окружении, истории..."
-                value={fd.description} onChange={e => set('description', e.target.value)}
-                className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3.5 text-sm font-medium text-zinc-900 outline-none transition-colors focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 placeholder:font-medium placeholder:text-zinc-400 resize-none" />
-            </section>
+            {/* ── 6. О вас ──────────────────────────────────────────────────── */}
+            <section className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-5 sm:p-7 space-y-4">
+              <SectionHead icon={User} title="О вас и участке" />
 
-            {/* ── 8. Контакты ────────────────────────────────────────────────── */}
-            <section className="bg-white rounded-2xl p-5 sm:p-8 border border-zinc-200 shadow-[0_2px_12px_rgb(0,0,0,0.04)] space-y-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Шаг 8</p>
-                <h2 className="text-lg font-extrabold text-zinc-900">Ваши контакты</h2>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Описание</label>
+                  <span className="text-xs text-zinc-400">{fd.description.length}/2000</span>
+                </div>
+                <textarea rows={4} maxLength={2000}
+                  placeholder="Расскажите о плюсах участка, особенностях, истории..."
+                  value={fd.description} onChange={e => set('description', e.target.value)}
+                  className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 placeholder:text-zinc-400 resize-none transition-all" />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+              <div className="border-t border-zinc-100 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Имя</label>
-                  <input type="text" placeholder="Ваше имя"
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Ваше имя</label>
+                  <input type="text" placeholder="Имя"
                     value={fd.name} onChange={e => set('name', e.target.value)}
                     className={inputCls()} />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Телефон <span className="text-red-500">*</span></label>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Телефон <span className="text-red-400">*</span></label>
                   <input type="tel" placeholder="+7 700 000 00 00"
                     value={fd.phone} onChange={e => set('phone', e.target.value)}
                     className={inputCls(errors.phone)} />
-                  {errors.phone && <p className="mt-1 text-xs font-medium text-red-500">{errors.phone}</p>}
+                  {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
                 </div>
               </div>
+
               <label className="flex items-center gap-3 cursor-pointer select-none w-fit">
                 <div onClick={() => toggle('hasWhatsApp')}
-                  className={`relative w-11 h-6 rounded-full transition-colors ${fd.hasWhatsApp ? 'bg-[#25D366]' : 'bg-zinc-200'}`}>
-                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${fd.hasWhatsApp ? 'translate-x-6' : 'translate-x-1'}`} />
+                  className={`relative w-10 h-5.5 rounded-full transition-colors ${fd.hasWhatsApp ? 'bg-[#25D366]' : 'bg-zinc-200'}`}>
+                  <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${fd.hasWhatsApp ? 'translate-x-5' : 'translate-x-0.5'}`} />
                 </div>
-                <span className="text-sm font-semibold text-zinc-600">Есть WhatsApp на этом номере</span>
+                <span className="text-sm font-medium text-zinc-600">WhatsApp есть на этом номере</span>
               </label>
             </section>
 
-            {/* ── Кнопки ─────────────────────────────────────────────────────── */}
-            <div className="space-y-3 pt-2">
-              {errors.submit && <p className="text-sm font-medium text-red-500 text-center">{errors.submit}</p>}
-              {isSubmitted ? (
-                <div className="rounded-2xl bg-primary-soft border border-primary/20 px-6 py-5 text-center">
-                  <p className="font-extrabold text-primary">Объявление отправлено на проверку</p>
-                  <p className="text-sm font-medium text-primary/70 mt-1">Мы свяжемся с вами в течение 24 часов</p>
-                </div>
-              ) : (
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <button type="button" onClick={() => submit('draft')} disabled={isSubmitting}
-                    className="flex-1 sm:flex-none rounded-2xl border border-zinc-200 px-8 py-4 text-sm font-extrabold text-zinc-700 hover:bg-zinc-100 transition-colors disabled:opacity-50 min-h-[56px]">
-                    Сохранить черновик
-                  </button>
-                  <button type="submit" disabled={isSubmitting}
-                    className="flex-1 rounded-2xl bg-primary px-8 py-4 text-sm font-extrabold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover hover:-translate-y-0.5 hover:shadow-xl active:scale-95 active:translate-y-0 disabled:opacity-60 disabled:pointer-events-none min-h-[56px]">
-                    {isSubmitting ? 'Отправка...' : 'Опубликовать объявление'}
-                  </button>
-                </div>
-              )}
-            </div>
+            {/* ── Кнопки ────────────────────────────────────────────────────── */}
+            {errors.submit && <p className="text-sm text-red-500 text-center">{errors.submit}</p>}
+            {isSubmitted ? (
+              <div className="rounded-2xl bg-primary-soft border border-primary/20 px-6 py-6 text-center">
+                <p className="font-bold text-primary text-base">Объявление отправлено на проверку</p>
+                <p className="text-sm text-primary/60 mt-1">Мы свяжемся с вами в течение 24 часов</p>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button type="button" onClick={() => submit('draft')} disabled={isSubmitting}
+                  className="sm:w-auto rounded-2xl border border-zinc-200 px-6 py-3.5 text-sm font-bold text-zinc-600 hover:bg-zinc-100 transition-colors disabled:opacity-50">
+                  Сохранить черновик
+                </button>
+                <button type="submit" disabled={isSubmitting}
+                  className="flex-1 rounded-2xl bg-primary py-3.5 text-sm font-bold text-white shadow-md shadow-primary/20 transition-all hover:bg-primary-hover hover:-translate-y-0.5 active:scale-95 disabled:opacity-60 disabled:pointer-events-none">
+                  {isSubmitting ? 'Отправка...' : 'Опубликовать'}
+                </button>
+              </div>
+            )}
 
           </form>
         </Container>
