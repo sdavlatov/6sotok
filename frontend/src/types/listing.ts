@@ -1,7 +1,9 @@
-export type LandType = 'ИЖС' | 'Дача' | 'Коммерция' | 'Сельхоз';
+export type LandType = 'ИЖС' | 'Дача' | 'Коммерция' | 'Сельхоз' | 'МЖС' | 'ЛПХ';
 export type Purpose = 'ИЖС' | 'ЛПХ' | 'Коммерция' | 'Сельхоз';
 export type OwnershipType = 'Частная собственность' | 'Аренда';
 export type ReliefType = 'Ровный' | 'Под уклон';
+export type ListingCategory = 'land' | 'business';
+export type BusinessType = 'cafe' | 'shop' | 'office' | 'warehouse' | 'production' | 'service' | 'hotel' | 'land' | 'other';
 
 export interface ListingSeller {
   name: string;
@@ -57,6 +59,9 @@ export interface Listing {
   views?: number;
   isNegotiable?: boolean;
   locationType?: string[];
+  listingCategory?: ListingCategory;
+  businessType?: BusinessType;
+  buildingArea?: number;
 
   // Координаты для карты
   lat?: number;

@@ -5,6 +5,7 @@ import { Container } from '@/components/layout/container';
 import Link from 'next/link';
 import { pushDataLayer } from '@/lib/analytics';
 import { LAND_CATEGORIES, UTILITIES, LEGAL_FILTERS } from '@/lib/listing-constants';
+import { useAuth } from '@/context/auth-context';
 
 // ── форматирование цены ──────────────────────────────────────────────────────
 const fmtPrice = (v: string) => {
@@ -142,8 +143,21 @@ const KZ_CITIES = [
 
 const RELIEF_TYPES = ['Ровный', 'Под уклон'];
 
+const OWNERSHIP_TYPES = ['Частная собственность', 'Аренда'] as const;
+const PURPOSES = ['ИЖС', 'ЛПХ', 'Коммерция', 'Сельхоз'] as const;
+const LOCATION_TYPES = [
+  { value: 'city', label: 'В городе' },
+  { value: 'suburb', label: 'В пригороде' },
+  { value: 'highway', label: 'Вдоль трассы' },
+  { value: 'water', label: 'Возле водоёма' },
+  { value: 'foothills', label: 'В предгорьях' },
+  { value: 'dacha', label: 'В дачном массиве' },
+] as const;
+const PLOT_SHAPES = ['Прямоугольный', 'Квадратный', 'Г-образный', 'Трапеция', 'Нестандартный'] as const;
+
 // ── Главный компонент ────────────────────────────────────────────────────────
 export default function AddListingPage() {
+  const { user } = useAuth();
   const [errors, setErrors]             = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted]   = useState(false);
@@ -157,20 +171,43 @@ export default function AddListingPage() {
 
   const [fd, setFd] = useState({
     landType: '', area: '', price: '',
-    location: '',
-    address: '',
+    location: '', address: '',
+    locationType: [] as string[],
     hasElectricity: false, hasGas: false, hasWater: false, hasSewer: false, hasRoadAccess: false,
     hasStateAct: true, isPledged: false, isDivisible: false, isOnRedLine: false,
-    reliefType: '', cadastralNumber: '',
+    hasEncumbrances: false, canChangePurpose: false,
+    ownershipType: '', purpose: '',
+    landCategory: '', cadastralNumber: '',
+    reliefType: '', plotShape: '', frontWidth: '', depth: '',
+    isNegotiable: false,
     description: '',
     name: '', phone: '', hasWhatsApp: false,
   });
 
-  const set = (k: keyof typeof fd, v: string | boolean) =>
+  // Заполнить контакты из аккаунта
+  useEffect(() => {
+    if (user) {
+      setFd(prev => ({
+        ...prev,
+        name: user.name || prev.name,
+        phone: user.phone || prev.phone,
+      }));
+    }
+  }, [user]);
+
+  const set = (k: keyof typeof fd, v: string | boolean | string[]) =>
     setFd(prev => ({ ...prev, [k]: v }));
 
   const toggle = (k: keyof typeof fd) =>
     setFd(prev => ({ ...prev, [k]: !prev[k] }));
+
+  const toggleLocationType = (val: string) =>
+    setFd(prev => ({
+      ...prev,
+      locationType: prev.locationType.includes(val)
+        ? prev.locationType.filter(v => v !== val)
+        : [...prev.locationType, val],
+    }));
 
   const autoTitle = [
     fd.landType || 'Участок',
@@ -264,19 +301,32 @@ export default function AddListingPage() {
       }
       const body = {
         title: autoTitle || 'Участок',
+        listingCategory: 'land',
         landType: fd.landType || 'ИЖС',
         area: Number(fd.area),
         price: rawPrice(fd.price),
+        isNegotiable: fd.isNegotiable,
         location: fd.location || 'Казахстан',
         address: fd.address || undefined,
-        cadastralNumber: fd.cadastralNumber || undefined,
-        reliefType: fd.reliefType || undefined,
+        locationType: fd.locationType.length ? fd.locationType : undefined,
         hasElectricity: fd.hasElectricity, hasGas: fd.hasGas,
         hasWater: fd.hasWater, hasSewer: fd.hasSewer, hasRoadAccess: fd.hasRoadAccess,
         hasStateAct: fd.hasStateAct, isPledged: fd.isPledged,
         isDivisible: fd.isDivisible, isOnRedLine: fd.isOnRedLine,
+        hasEncumbrances: fd.hasEncumbrances,
+        canChangePurpose: fd.canChangePurpose,
+        ownershipType: fd.ownershipType || undefined,
+        purpose: fd.purpose || undefined,
+        landCategory: fd.landCategory || undefined,
+        cadastralNumber: fd.cadastralNumber || undefined,
+        reliefType: fd.reliefType || undefined,
+        plotShape: fd.plotShape || undefined,
+        frontWidth: fd.frontWidth ? Number(fd.frontWidth) : undefined,
+        depth: fd.depth ? Number(fd.depth) : undefined,
         description: fd.description || undefined,
+        seller: user?.id || undefined,
         sellerName: fd.name, sellerPhone: fd.phone, sellerHasWhatsApp: fd.hasWhatsApp,
+        sellerIsAgency: user?.isAgency ?? false,
         lat: markerPos?.lat, lng: markerPos?.lng,
         status,
         images: mediaIds.map(id => ({ image: id })),
@@ -284,6 +334,7 @@ export default function AddListingPage() {
       const r = await fetch('/api/listings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(body),
       });
       if (!r.ok) {
@@ -576,6 +627,120 @@ export default function AddListingPage() {
                       </button>
                     ))}
                   </div>
+                </div>
+              </div>
+            </section>
+
+            {/* ── 5б. Расширенные параметры ─────────────────────────────────── */}
+            <section className="bg-white rounded-2xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-5">
+              <h2 className="text-xl font-extrabold text-zinc-900">Расширенные параметры</h2>
+
+              {/* Торг */}
+              <div className="flex items-center justify-between py-2 border-b border-zinc-100">
+                <div>
+                  <p className="text-sm font-bold text-zinc-700">Торг уместен</p>
+                  <p className="text-xs text-zinc-400 mt-0.5">Покупатели смогут предложить свою цену</p>
+                </div>
+                <div onClick={() => toggle('isNegotiable')}
+                  className={`relative w-11 h-6 rounded-full cursor-pointer transition-colors ${fd.isNegotiable ? 'bg-primary' : 'bg-zinc-200'}`}>
+                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${fd.isNegotiable ? 'translate-x-6' : 'translate-x-1'}`} />
+                </div>
+              </div>
+
+              {/* Право собственности */}
+              <div>
+                <label className="block text-sm font-bold text-zinc-700 mb-2">Право собственности</label>
+                <div className="flex gap-2 flex-wrap">
+                  {OWNERSHIP_TYPES.map(t => (
+                    <button key={t} type="button" onClick={() => set('ownershipType', fd.ownershipType === t ? '' : t)}
+                      className={`px-4 py-2.5 rounded-xl text-[13px] font-bold border transition-all active:scale-95 ${fd.ownershipType === t ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Назначение */}
+              <div>
+                <label className="block text-sm font-bold text-zinc-700 mb-2">Назначение участка</label>
+                <div className="flex gap-2 flex-wrap">
+                  {PURPOSES.map(p => (
+                    <button key={p} type="button" onClick={() => set('purpose', fd.purpose === p ? '' : p)}
+                      className={`px-4 py-2.5 rounded-xl text-[13px] font-bold border transition-all active:scale-95 ${fd.purpose === p ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}>
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Можно изменить назначение */}
+              <div className="flex items-center justify-between py-2 border-t border-zinc-100">
+                <p className="text-sm font-bold text-zinc-700">Можно изменить назначение</p>
+                <div onClick={() => toggle('canChangePurpose')}
+                  className={`relative w-11 h-6 rounded-full cursor-pointer transition-colors ${fd.canChangePurpose ? 'bg-primary' : 'bg-zinc-200'}`}>
+                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${fd.canChangePurpose ? 'translate-x-6' : 'translate-x-1'}`} />
+                </div>
+              </div>
+
+              {/* Тип местоположения */}
+              <div>
+                <label className="block text-sm font-bold text-zinc-700 mb-2">Тип местоположения <span className="text-zinc-400 font-normal">(несколько)</span></label>
+                <div className="flex flex-wrap gap-2">
+                  {LOCATION_TYPES.map(({ value, label }) => (
+                    <button key={value} type="button" onClick={() => toggleLocationType(value)}
+                      className={`px-3.5 py-2.5 rounded-xl text-[13px] font-bold border transition-all active:scale-95 ${fd.locationType.includes(value) ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Категория земли */}
+              <div>
+                <label className="block text-sm font-bold text-zinc-700 mb-2">Категория земли</label>
+                <input type="text" placeholder="Например: Земли населённых пунктов"
+                  value={fd.landCategory} onChange={e => set('landCategory', e.target.value)}
+                  className={inputCls()} />
+              </div>
+
+              {/* Геометрия участка */}
+              <div>
+                <label className="block text-sm font-bold text-zinc-700 mb-2">Форма участка</label>
+                <div className="flex flex-wrap gap-2">
+                  {PLOT_SHAPES.map(s => (
+                    <button key={s} type="button" onClick={() => set('plotShape', fd.plotShape === s ? '' : s)}
+                      className={`px-3.5 py-2.5 rounded-xl text-[13px] font-bold border transition-all active:scale-95 ${fd.plotShape === s ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Размеры */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-zinc-700 mb-2">Ширина по фасаду, м</label>
+                  <input type="number" min="1" placeholder="20"
+                    value={fd.frontWidth} onChange={e => set('frontWidth', e.target.value)}
+                    className={inputCls()} />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-zinc-700 mb-2">Глубина, м</label>
+                  <input type="number" min="1" placeholder="30"
+                    value={fd.depth} onChange={e => set('depth', e.target.value)}
+                    className={inputCls()} />
+                </div>
+              </div>
+
+              {/* Обременения */}
+              <div className="flex items-center justify-between py-2 border-t border-zinc-100">
+                <div>
+                  <p className="text-sm font-bold text-zinc-700">Есть обременения</p>
+                  <p className="text-xs text-zinc-400 mt-0.5">Сервитут, арест или другие ограничения</p>
+                </div>
+                <div onClick={() => toggle('hasEncumbrances')}
+                  className={`relative w-11 h-6 rounded-full cursor-pointer transition-colors ${fd.hasEncumbrances ? 'bg-amber-500' : 'bg-zinc-200'}`}>
+                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${fd.hasEncumbrances ? 'translate-x-6' : 'translate-x-1'}`} />
                 </div>
               </div>
             </section>

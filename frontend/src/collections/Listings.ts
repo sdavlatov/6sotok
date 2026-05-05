@@ -49,8 +49,32 @@ export const Listings: CollectionConfig = {
   access: {
     read: () => true,
     create: () => true,
+    update: ({ req: { user } }) => {
+      if (!user) return false
+      if ((user as { role?: string }).role === 'admin') return true
+      return { seller: { equals: user.id } }
+    },
+    delete: ({ req: { user } }) => {
+      if (!user) return false
+      if ((user as { role?: string }).role === 'admin') return true
+      return { seller: { equals: user.id } }
+    },
   },
   fields: [
+    // ─── Категория листинга ──────────────────────────────────────────────────
+    {
+      name: 'listingCategory',
+      type: 'select',
+      label: 'Категория',
+      defaultValue: 'land',
+      required: true,
+      options: [
+        { label: 'Земельный участок', value: 'land' },
+        { label: 'Бизнес', value: 'business' },
+      ],
+      admin: { position: 'sidebar' },
+    },
+
     // ─── Основное ────────────────────────────────────────────────────────────
     {
       name: 'title',
@@ -110,9 +134,30 @@ export const Listings: CollectionConfig = {
     {
       name: 'area',
       type: 'number',
-      required: true,
-      label: 'Площадь (соток)',
+      label: 'Площадь (соток) — для земли',
       min: 0,
+    },
+    {
+      name: 'buildingArea',
+      type: 'number',
+      label: 'Площадь (м²) — для бизнеса',
+      min: 0,
+    },
+    {
+      name: 'businessType',
+      type: 'select',
+      label: 'Тип бизнеса',
+      options: [
+        { label: 'Кафе / Ресторан', value: 'cafe' },
+        { label: 'Магазин / Торговля', value: 'shop' },
+        { label: 'Офис', value: 'office' },
+        { label: 'Склад', value: 'warehouse' },
+        { label: 'Производство', value: 'production' },
+        { label: 'АЗС / Сервис', value: 'service' },
+        { label: 'Отель / Хостел', value: 'hotel' },
+        { label: 'Земля под бизнес', value: 'land' },
+        { label: 'Другое', value: 'other' },
+      ],
     },
     {
       name: 'landType',

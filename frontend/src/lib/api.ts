@@ -43,6 +43,9 @@ interface PayloadListing {
   views?: number
   isNegotiable?: boolean
   locationType?: string[]
+  listingCategory?: string
+  businessType?: string
+  buildingArea?: number
   sellerName?: string
   sellerPhone?: string
   sellerHasWhatsApp?: boolean
@@ -77,6 +80,9 @@ function mapListing(p: PayloadListing): Listing {
     views: p.views ?? 0,
     isNegotiable: p.isNegotiable,
     locationType: p.locationType,
+    listingCategory: (p.listingCategory as Listing['listingCategory']) ?? 'land',
+    businessType: p.businessType as Listing['businessType'],
+    buildingArea: p.buildingArea,
     lat: p.lat,
     lng: p.lng,
     cadastralNumber: p.cadastralNumber,
