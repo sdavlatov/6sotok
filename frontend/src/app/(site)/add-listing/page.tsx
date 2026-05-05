@@ -144,7 +144,6 @@ const KZ_CITIES = [
 const RELIEF_TYPES = ['Ровный', 'Под уклон'];
 
 const OWNERSHIP_TYPES = ['Частная собственность', 'Аренда'] as const;
-const PURPOSES = ['ИЖС', 'ЛПХ', 'Коммерция', 'Сельхоз'] as const;
 const LOCATION_TYPES = [
   { value: 'city', label: 'В городе' },
   { value: 'suburb', label: 'В пригороде' },
@@ -598,19 +597,6 @@ export default function AddListingPage() {
                     <button key={t} type="button" onClick={() => set('ownershipType', fd.ownershipType === t ? '' : t)}
                       className={`px-4 py-2.5 rounded-xl text-[13px] font-bold border transition-all active:scale-95 ${fd.ownershipType === t ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}>
                       {t}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Назначение */}
-              <div>
-                <label className="block text-sm font-bold text-zinc-700 mb-2">Назначение участка</label>
-                <div className="flex gap-2 flex-wrap">
-                  {PURPOSES.map(p => (
-                    <button key={p} type="button" onClick={() => set('purpose', fd.purpose === p ? '' : p)}
-                      className={`px-4 py-2.5 rounded-xl text-[13px] font-bold border transition-all active:scale-95 ${fd.purpose === p ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}>
-                      {p}
                     </button>
                   ))}
                 </div>
