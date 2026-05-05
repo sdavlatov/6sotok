@@ -47,7 +47,6 @@ export default function AddBusinessPage() {
     price: '', buildingArea: '',
     location: '', address: '',
     description: '',
-    isNegotiable: false,
     name: '', phone: '', hasWhatsApp: false,
   });
 
@@ -132,7 +131,6 @@ export default function AddBusinessPage() {
         buildingArea: fd.buildingArea ? Number(fd.buildingArea) : undefined,
         location: fd.location,
         address: fd.address || undefined,
-        isNegotiable: fd.isNegotiable,
         description: fd.description || undefined,
         seller: user?.id || undefined,
         sellerName: fd.name, sellerPhone: fd.phone, sellerHasWhatsApp: fd.hasWhatsApp,
@@ -228,14 +226,6 @@ export default function AddBusinessPage() {
                 </div>
               </div>
 
-              {/* Торг */}
-              <label className="flex items-center gap-3 cursor-pointer select-none">
-                <div onClick={() => toggle('isNegotiable')}
-                  className={`relative w-11 h-6 rounded-full transition-colors ${fd.isNegotiable ? 'bg-primary' : 'bg-zinc-200'}`}>
-                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${fd.isNegotiable ? 'translate-x-6' : 'translate-x-1'}`} />
-                </div>
-                <span className="text-sm font-bold text-zinc-600">Торг уместен</span>
-              </label>
             </section>
 
             {/* ── 2. Фото ────────────────────────────────────────────────────── */}

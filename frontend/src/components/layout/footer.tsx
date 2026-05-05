@@ -61,9 +61,9 @@ export function Footer() {
             <h3 className="text-[12px] font-bold uppercase tracking-widest text-zinc-400 mb-4">Продавцам</h3>
             <ul className="space-y-3">
               {[
-                { label: 'Подать объявление', href: '/add-listing' },
+                { label: 'Подать объявление', href: '/profile' },
                 { label: 'Для агентств', href: '/b2b' },
-                { label: 'Для собственников', href: '/add-listing' },
+                { label: 'Для собственников', href: '/profile' },
                 { label: 'Личный кабинет', href: '/profile' },
                 { label: 'Правила размещения', href: '/rules' },
               ].map(link => (

@@ -41,7 +41,6 @@ interface PayloadListing {
   frontWidth?: number
   depth?: number
   views?: number
-  isNegotiable?: boolean
   locationType?: string[]
   listingCategory?: string
   businessType?: string
@@ -78,7 +77,6 @@ function mapListing(p: PayloadListing): Listing {
     description: typeof p.description === 'string' ? p.description : undefined,
     createdAt: p.createdAt,
     views: p.views ?? 0,
-    isNegotiable: p.isNegotiable,
     locationType: p.locationType,
     listingCategory: (p.listingCategory as Listing['listingCategory']) ?? 'land',
     businessType: p.businessType as Listing['businessType'],

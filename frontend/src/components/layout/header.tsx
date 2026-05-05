@@ -84,7 +84,7 @@ export function Header() {
               </Link>
             </div>
             <Link
-              href="/add-listing"
+              href="/profile"
               className="flex items-center gap-1 md:gap-1.5 rounded-xl bg-primary px-3 py-2.5 md:px-6 md:py-3 text-[12px] md:text-[14px] font-black text-white shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5 hover:bg-primary-hover active:scale-95 whitespace-nowrap md:uppercase md:tracking-wide"
             >
               <Plus className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" strokeWidth={3} />
@@ -181,7 +181,7 @@ export function Header() {
       {/* Drawer CTA */}
       <div className="px-4 pb-8 pt-3 shrink-0 border-t border-zinc-100">
         <Link
-          href="/add-listing"
+          href="/profile"
           onClick={() => setIsMenuOpen(false)}
           className="flex items-center justify-center gap-2 w-full rounded-xl bg-primary px-6 py-4 text-[14px] font-black uppercase tracking-wide text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover active:scale-95"
         >

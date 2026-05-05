@@ -125,13 +125,6 @@ export const Listings: CollectionConfig = {
       min: 0,
     },
     {
-      name: 'isNegotiable',
-      type: 'checkbox',
-      label: 'Торг уместен',
-      defaultValue: false,
-      admin: { position: 'sidebar' },
-    },
-    {
       name: 'area',
       type: 'number',
       label: 'Площадь (соток) — для земли',

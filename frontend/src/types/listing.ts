@@ -57,7 +57,6 @@ export interface Listing {
   canChangePurpose?: boolean;
 
   views?: number;
-  isNegotiable?: boolean;
   locationType?: string[];
   listingCategory?: ListingCategory;
   businessType?: BusinessType;
