@@ -169,6 +169,7 @@ export default function AddListingPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [fd, setFd] = useState({
+    dealType: 'sale' as 'sale' | 'rent',
     landType: '', area: '', price: '',
     location: '', address: '',
     locationType: [] as string[],
@@ -300,6 +301,7 @@ export default function AddListingPage() {
       const body = {
         title: autoTitle || 'Участок',
         listingCategory: 'land',
+        dealType: fd.dealType,
         landType: fd.landType || 'ИЖС',
         area: Number(fd.area),
         price: rawPrice(fd.price),
@@ -384,6 +386,19 @@ export default function AddListingPage() {
                 )}
               </div>
 
+              {/* Тип сделки */}
+              <div>
+                <label className="block text-sm font-semibold text-zinc-700 mb-2.5">Тип сделки <span className="text-red-500">*</span></label>
+                <div className="inline-flex rounded-xl border border-zinc-200 bg-zinc-50 p-1 gap-1">
+                  {(['sale', 'rent'] as const).map(dt => (
+                    <button key={dt} type="button" onClick={() => set('dealType', dt)}
+                      className={`px-5 py-2 rounded-lg text-sm font-bold transition-all min-h-[40px] ${fd.dealType === dt ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-500 hover:text-zinc-700'}`}>
+                      {dt === 'sale' ? 'Продажа' : 'Аренда'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-semibold text-zinc-700 mb-2.5">Тип участка <span className="text-red-500">*</span></label>
                 <div className="flex flex-wrap gap-2">
@@ -408,12 +423,17 @@ export default function AddListingPage() {
                   {errors.area && <p className="mt-1 text-xs font-medium text-red-500">{errors.area}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Цена <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-2">
+                    {fd.dealType === 'rent' ? 'Цена аренды / мес.' : 'Цена'} <span className="text-red-500">*</span>
+                  </label>
                   <div className="relative">
-                    <input type="text" inputMode="numeric" placeholder="15 000 000"
+                    <input type="text" inputMode="numeric"
+                      placeholder={fd.dealType === 'rent' ? '150 000' : '15 000 000'}
                       value={fd.price} onChange={e => set('price', fmtPrice(e.target.value))}
                       className={inputCls(errors.price)} />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-zinc-400 pointer-events-none">₸</span>
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-zinc-400 pointer-events-none">
+                      {fd.dealType === 'rent' ? '₸/мес' : '₸'}
+                    </span>
                   </div>
                   {errors.price && <p className="mt-1 text-xs font-medium text-red-500">{errors.price}</p>}
                 </div>

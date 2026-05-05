@@ -1,7 +1,7 @@
 import { Zap, Flame, Droplets, Waves, Route, ShieldCheck, Scissors } from 'lucide-react';
 
 // Единый список категорий — используется на главной и в каталоге
-export const LAND_CATEGORIES = ['ИЖС', 'МЖС', 'ЛПХ', 'Коммерция', 'Сельхоз', 'Дача'];
+export const LAND_CATEGORIES = ['ИЖС', 'МЖС', 'ЛПХ', 'Коммерция', 'Сельхоз', 'Дача', 'Промзона', 'Рекреация'];
 
 export const UTILITIES = [
   { key: 'hasElectricity', icon: Zap,      label: 'Свет',        active: 'border-amber-300 bg-amber-50 text-amber-700' },

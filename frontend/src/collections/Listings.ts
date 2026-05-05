@@ -74,6 +74,18 @@ export const Listings: CollectionConfig = {
       ],
       admin: { position: 'sidebar' },
     },
+    {
+      name: 'dealType',
+      type: 'select',
+      label: 'Тип сделки',
+      defaultValue: 'sale',
+      required: true,
+      options: [
+        { label: 'Продажа', value: 'sale' },
+        { label: 'Аренда', value: 'rent' },
+      ],
+      admin: { position: 'sidebar' },
+    },
 
     // ─── Основное ────────────────────────────────────────────────────────────
     {

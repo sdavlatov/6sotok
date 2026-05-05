@@ -40,6 +40,7 @@ interface PayloadListing {
   plotShape?: string
   frontWidth?: number
   depth?: number
+  dealType?: string
   views?: number
   locationType?: string[]
   listingCategory?: string
@@ -78,6 +79,7 @@ function mapListing(p: PayloadListing): Listing {
     createdAt: p.createdAt,
     views: p.views ?? 0,
     locationType: p.locationType,
+    dealType: (p.dealType as Listing['dealType']) ?? 'sale',
     listingCategory: (p.listingCategory as Listing['listingCategory']) ?? 'land',
     businessType: p.businessType as Listing['businessType'],
     buildingArea: p.buildingArea,

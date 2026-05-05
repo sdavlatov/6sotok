@@ -1,4 +1,5 @@
-export type LandType = 'ИЖС' | 'Дача' | 'Коммерция' | 'Сельхоз' | 'МЖС' | 'ЛПХ';
+export type LandType = 'ИЖС' | 'Дача' | 'Коммерция' | 'Сельхоз' | 'МЖС' | 'ЛПХ' | 'Промзона' | 'Рекреация';
+export type DealType = 'sale' | 'rent';
 export type Purpose = 'ИЖС' | 'ЛПХ' | 'Коммерция' | 'Сельхоз';
 export type OwnershipType = 'Частная собственность' | 'Аренда';
 export type ReliefType = 'Ровный' | 'Под уклон';
@@ -56,6 +57,7 @@ export interface Listing {
   purpose?: Purpose;
   canChangePurpose?: boolean;
 
+  dealType?: DealType;
   views?: number;
   locationType?: string[];
   listingCategory?: ListingCategory;
