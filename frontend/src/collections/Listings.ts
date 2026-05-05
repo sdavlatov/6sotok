@@ -309,8 +309,7 @@ export const Listings: CollectionConfig = {
           ],
         },
         { name: 'plotShape', type: 'text', label: 'Форма участка' },
-        { name: 'frontWidth', type: 'number', label: 'Ширина по фасаду (м)' },
-        { name: 'depth', type: 'number', label: 'Глубина (м)' },
+        { name: 'plotBoundary', type: 'text', label: 'Границы участка (JSON)', admin: { description: 'JSON: [{lat,lng},...] — рисуется пользователем на карте' } },
       ],
     },
 

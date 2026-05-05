@@ -38,8 +38,7 @@ interface PayloadListing {
   landCategory?: string
   reliefType?: string
   plotShape?: string
-  frontWidth?: number
-  depth?: number
+  plotBoundary?: string
   dealType?: string
   views?: number
   locationType?: string[]
@@ -102,8 +101,7 @@ function mapListing(p: PayloadListing): Listing {
     hasRoadAccess: p.hasRoadAccess,
     reliefType: p.reliefType as Listing['reliefType'],
     plotShape: p.plotShape,
-    frontWidth: p.frontWidth,
-    depth: p.depth,
+    plotBoundary: p.plotBoundary,
     seller: p.sellerName ? {
       name: p.sellerName,
       phone: p.sellerPhone ?? '',

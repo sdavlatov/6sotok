@@ -57,10 +57,8 @@ export default async function ListingPage({ params }: Props) {
     listing.purpose       && { k: 'Назначение',    v: listing.purpose },
     listing.landCategory  && { k: 'Категория',     v: listing.landCategory },
     listing.ownershipType && { k: 'Собственность', v: listing.ownershipType },
-    listing.reliefType    && { k: 'Рельеф',        v: listing.reliefType },
-    listing.plotShape     && { k: 'Форма',         v: listing.plotShape },
-    listing.frontWidth    && { k: 'Ширина фасада', v: `${listing.frontWidth} м` },
-    listing.depth         && { k: 'Глубина',       v: `${listing.depth} м` },
+    listing.reliefType    && { k: 'Рельеф',  v: listing.reliefType },
+    listing.plotShape     && { k: 'Форма',   v: listing.plotShape },
                              { k: 'Делимость',     v: listing.isDivisible ? 'Делимый' : 'Неделимый' },
   ].filter(Boolean).slice(0, 4) as { k: string; v: string }[];
 

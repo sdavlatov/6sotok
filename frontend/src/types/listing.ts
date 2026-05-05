@@ -50,8 +50,7 @@ export interface Listing {
   // Геометрия участка
   reliefType?: ReliefType;
   plotShape?: string;
-  frontWidth?: number; // meters
-  depth?: number; // meters
+  plotBoundary?: string; // JSON array of {lat,lng}
 
   // Градостроительные параметры
   purpose?: Purpose;

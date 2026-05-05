@@ -56,6 +56,8 @@ interface LeafletStatic {
   marker(latlng: [number, number], options?: object): LMarker;
   divIcon(options: object): object;
   latLngBounds(latlngs: [number, number][]): LLatLngBounds;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  polygon(latlngs: [number, number][], options?: object): any;
 }
 
 declare global {

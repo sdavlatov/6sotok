@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { pushDataLayer } from '@/lib/analytics';
 import { LAND_CATEGORIES, UTILITIES, LEGAL_FILTERS } from '@/lib/listing-constants';
 import { useAuth } from '@/context/auth-context';
-import { MapPin, Camera, Layers, ShieldCheck, User, ChevronLeft } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 
 // ── форматирование цены ──────────────────────────────────────────────────────
 const fmtPrice = (v: string) => {
@@ -39,21 +39,32 @@ function loadLeaflet(): Promise<void> {
   });
 }
 
-// ── Пикер точки на карте (ограничен Казахстаном) ────────────────────────────
-function LocationPicker({ value, onChange }: {
-  value: { lat: number; lng: number } | null;
-  onChange: (v: { lat: number; lng: number } | null) => void;
-}) {
-  const mapEl   = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mapRef  = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const pinRef  = useRef<any>(null);
-  const [ready, setReady] = useState(false);
+// ── Карта: точка + рисование границ участка ─────────────────────────────────
+type LatLng = { lat: number; lng: number };
 
-  useEffect(() => {
-    loadLeaflet().then(() => setReady(true)).catch(() => {});
-  }, []);
+function LocationPicker({ value, onChange, boundary, onBoundaryChange }: {
+  value: LatLng | null;
+  onChange: (v: LatLng | null) => void;
+  boundary: LatLng[] | null;
+  onBoundaryChange: (b: LatLng[] | null) => void;
+}) {
+  const mapEl = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pinRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const polygonRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const draftPolyRef = useRef<any>(null);
+  const drawPtsRef = useRef<[number, number][]>([]);
+  const modeRef = useRef<'pin' | 'draw'>('pin');
+  const [ready, setReady] = useState(false);
+  const [mode, setMode] = useState<'pin' | 'draw'>('pin');
+  const [drawCount, setDrawCount] = useState(0);
+
+  useEffect(() => { modeRef.current = mode; }, [mode]);
+  useEffect(() => { loadLeaflet().then(() => setReady(true)).catch(() => {}); }, []);
 
   useEffect(() => {
     if (!ready || !mapEl.current || mapRef.current || !window.L) return;
@@ -61,10 +72,8 @@ function LocationPicker({ value, onChange }: {
     const L = window.L;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const map: any = L.map(mapEl.current, {
-      zoomControl: true,
-      scrollWheelZoom: true,
-      maxBounds: KZ_BOUNDS,
-      maxBoundsViscosity: 1.0,
+      zoomControl: true, scrollWheelZoom: true,
+      maxBounds: KZ_BOUNDS, maxBoundsViscosity: 1.0, doubleClickZoom: false,
     });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap', maxZoom: 19,
@@ -74,56 +83,133 @@ function LocationPicker({ value, onChange }: {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     map.on('click', (e: any) => {
       const { lat, lng } = e.latlng;
-      onChange({ lat: +lat.toFixed(6), lng: +lng.toFixed(6) });
+      if (modeRef.current === 'pin') {
+        onChange({ lat: +lat.toFixed(6), lng: +lng.toFixed(6) });
+      } else {
+        drawPtsRef.current.push([+lat.toFixed(6), +lng.toFixed(6)]);
+        setDrawCount(drawPtsRef.current.length);
+        if (draftPolyRef.current) draftPolyRef.current.remove();
+        if (drawPtsRef.current.length >= 2) {
+          draftPolyRef.current = L.polygon(drawPtsRef.current, {
+            color: '#066F36', weight: 2, dashArray: '6 4', fillOpacity: 0.08,
+          }).addTo(map);
+        }
+      }
     });
     mapRef.current = map;
     return () => { map.remove(); mapRef.current = null; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
 
+  // Render saved boundary
+  useEffect(() => {
+    if (!ready || !mapRef.current || !window.L) return;
+    const L = window.L;
+    if (polygonRef.current) { polygonRef.current.remove(); polygonRef.current = null; }
+    if (boundary && boundary.length >= 3) {
+      polygonRef.current = L.polygon(boundary.map(p => [p.lat, p.lng]), {
+        color: '#066F36', weight: 2, fillOpacity: 0.15,
+      }).addTo(mapRef.current);
+      mapRef.current.fitBounds(polygonRef.current.getBounds(), { padding: [20, 20] });
+    }
+  }, [boundary, ready]);
+
+  // Render pin
   useEffect(() => {
     if (!ready || !mapRef.current || !window.L) return;
     const L = window.L;
     if (!value) { pinRef.current?.remove(); pinRef.current = null; return; }
     const icon = L.divIcon({
       className: '',
-      html: `<div style="width:20px;height:20px;background:#16a34a;border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.35)"></div>`,
-      iconAnchor: [10, 10],
+      html: `<div style="width:18px;height:18px;background:#066F36;border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.35)"></div>`,
+      iconAnchor: [9, 9],
     });
-    if (pinRef.current) {
-      pinRef.current.setLatLng([value.lat, value.lng]);
-    } else {
-      pinRef.current = L.marker([value.lat, value.lng], { icon }).addTo(mapRef.current);
-    }
+    if (pinRef.current) pinRef.current.setLatLng([value.lat, value.lng]);
+    else pinRef.current = L.marker([value.lat, value.lng], { icon }).addTo(mapRef.current);
   }, [value, ready]);
+
+  const finishDraw = () => {
+    if (drawPtsRef.current.length >= 3) {
+      onBoundaryChange(drawPtsRef.current.map(([lat, lng]) => ({ lat, lng })));
+    }
+    if (draftPolyRef.current) { draftPolyRef.current.remove(); draftPolyRef.current = null; }
+    drawPtsRef.current = []; setDrawCount(0); setMode('pin');
+  };
+  const cancelDraw = () => {
+    if (draftPolyRef.current) { draftPolyRef.current.remove(); draftPolyRef.current = null; }
+    drawPtsRef.current = []; setDrawCount(0); setMode('pin');
+  };
 
   return (
     <div className="space-y-2">
-      <div className="relative rounded-2xl overflow-hidden border border-zinc-200">
+      {/* Переключатель режима */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <button type="button" onClick={() => { cancelDraw(); setMode('pin'); }}
+          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${mode === 'pin' ? 'bg-zinc-900 text-white border-zinc-900' : 'bg-white text-zinc-500 border-zinc-200 hover:border-zinc-300'}`}>
+          Отметить точку
+        </button>
+        <button type="button" onClick={() => setMode('draw')}
+          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${mode === 'draw' ? 'bg-primary text-white border-primary' : 'bg-white text-zinc-500 border-zinc-200 hover:border-zinc-300'}`}>
+          Нарисовать границы участка
+        </button>
+        {boundary && (
+          <button type="button" onClick={() => onBoundaryChange(null)}
+            className="ml-auto text-xs font-semibold text-red-400 hover:text-red-600 transition-colors">
+            Очистить границу
+          </button>
+        )}
+      </div>
+
+      {/* Карта */}
+      <div className="relative rounded-2xl overflow-hidden border border-zinc-200" style={{ isolation: 'isolate' }}>
         {!ready && (
-          <div className="absolute inset-0 flex items-center justify-center bg-zinc-100 z-10 text-[12px] font-semibold text-zinc-400">
+          <div className="absolute inset-0 flex items-center justify-center bg-zinc-100 z-10 text-xs font-semibold text-zinc-400">
             Загрузка карты...
           </div>
         )}
         <div ref={mapEl} style={{ height: 280 }} />
-        {ready && !value && (
-          <div className="absolute inset-x-0 top-3 flex justify-center pointer-events-none z-[999]">
-            <span className="bg-black/60 text-white text-[11px] font-bold px-3 py-1.5 rounded-full backdrop-blur-sm">
-              Нажмите на карту чтобы указать точку
-            </span>
+        {ready && (
+          <div className="absolute inset-x-0 top-3 flex justify-center pointer-events-none z-[400]">
+            {mode === 'pin' && !value && !boundary && (
+              <span className="bg-black/60 text-white text-[11px] font-semibold px-3 py-1.5 rounded-full backdrop-blur-sm">
+                Нажмите чтобы поставить точку
+              </span>
+            )}
+            {mode === 'draw' && (
+              <span className="bg-primary text-white text-[11px] font-semibold px-3 py-1.5 rounded-full">
+                {drawCount === 0
+                  ? 'Кликайте по углам участка'
+                  : `${drawCount} точ${drawCount === 1 ? 'ка' : drawCount < 5 ? 'ки' : 'ек'} · минимум 3 для завершения`}
+              </span>
+            )}
           </div>
         )}
       </div>
-      {value && (
-        <div className="flex items-center justify-between px-1">
-          <span className="text-[12px] font-medium text-zinc-500">
-            {value.lat}, {value.lng}
-          </span>
+
+      {/* Кнопки рисования */}
+      {mode === 'draw' && (
+        <div className="flex gap-2">
+          <button type="button" onClick={finishDraw} disabled={drawCount < 3}
+            className="px-4 py-2 rounded-xl text-xs font-bold bg-primary text-white disabled:opacity-40 transition-all">
+            Сохранить границу ({drawCount} точек)
+          </button>
+          <button type="button" onClick={cancelDraw}
+            className="px-4 py-2 rounded-xl text-xs font-bold bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-all">
+            Отмена
+          </button>
+        </div>
+      )}
+
+      {value && mode === 'pin' && (
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-zinc-400">{value.lat}, {value.lng}</span>
           <button type="button" onClick={() => onChange(null)}
-            className="text-[12px] font-bold text-red-400 hover:text-red-600 transition-colors">
+            className="text-xs font-semibold text-red-400 hover:text-red-600 transition-colors">
             Убрать точку
           </button>
         </div>
       )}
+      {boundary && <p className="text-xs text-primary font-semibold">✓ Граница участка сохранена ({boundary.length} точек)</p>}
     </div>
   );
 }
@@ -165,7 +251,8 @@ export default function AddListingPage() {
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [dragIndex, setDragIndex]       = useState<number | null>(null);
   const [dragOver, setDragOver]         = useState<number | null>(null);
-  const [markerPos, setMarkerPos]       = useState<{ lat: number; lng: number } | null>(null);
+  const [markerPos, setMarkerPos]       = useState<LatLng | null>(null);
+  const [plotBoundary, setPlotBoundary] = useState<LatLng[] | null>(null);
   const [isGeocoding, setIsGeocoding]   = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -179,7 +266,7 @@ export default function AddListingPage() {
     hasEncumbrances: false, canChangePurpose: false,
     ownershipType: '', purpose: '',
     landCategory: '', cadastralNumber: '',
-    reliefType: '', plotShape: '', frontWidth: '', depth: '',
+    reliefType: '', plotShape: '',
     description: '',
     name: '', phone: '', hasWhatsApp: false,
   });
@@ -321,8 +408,7 @@ export default function AddListingPage() {
         cadastralNumber: fd.cadastralNumber || undefined,
         reliefType: fd.reliefType || undefined,
         plotShape: fd.plotShape || undefined,
-        frontWidth: fd.frontWidth ? Number(fd.frontWidth) : undefined,
-        depth: fd.depth ? Number(fd.depth) : undefined,
+        plotBoundary: plotBoundary ? JSON.stringify(plotBoundary) : undefined,
         description: fd.description || undefined,
         seller: user?.id || undefined,
         sellerName: fd.name, sellerPhone: fd.phone, sellerHasWhatsApp: fd.hasWhatsApp,
@@ -359,12 +445,15 @@ export default function AddListingPage() {
   const inputCls = (err?: string) =>
     `w-full rounded-2xl border bg-zinc-50 px-4 py-3.5 text-sm font-bold text-zinc-900 outline-none transition-colors focus:bg-white focus:ring-4 focus:ring-primary/10 placeholder:font-medium placeholder:text-zinc-400 ${err ? 'border-red-400 focus:border-red-400' : 'border-zinc-200 focus:border-primary'}`;
 
-  const SectionHead = ({ icon: Icon, title }: { icon: React.ElementType; title: string }) => (
-    <div className="flex items-center gap-3 mb-5">
-      <div className="w-8 h-8 rounded-xl bg-zinc-100 flex items-center justify-center shrink-0">
-        <Icon className="size-4 text-zinc-500" strokeWidth={2} />
+  const SectionHead = ({ n, title, hint }: { n: number; title: string; hint?: string }) => (
+    <div className="flex items-start gap-3 mb-5">
+      <div className="w-7 h-7 rounded-full bg-zinc-900 flex items-center justify-center shrink-0 mt-0.5">
+        <span className="text-[11px] font-black text-white">{n}</span>
       </div>
-      <h2 className="text-base font-bold text-zinc-800">{title}</h2>
+      <div>
+        <h2 className="text-base font-bold text-zinc-900 leading-snug">{title}</h2>
+        {hint && <p className="text-xs text-zinc-400 mt-0.5">{hint}</p>}
+      </div>
     </div>
   );
 
@@ -397,7 +486,7 @@ export default function AddListingPage() {
 
             {/* ── 1. Основное ───────────────────────────────────────────────── */}
             <section className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-5 sm:p-7 space-y-5">
-              <SectionHead icon={Layers} title="Основное" />
+              <SectionHead n={1} title="Основная информация" />
 
               {/* Тип сделки — сегментированный контрол */}
               <div className="flex rounded-2xl bg-zinc-100 p-1 gap-1">
@@ -467,7 +556,25 @@ export default function AddListingPage() {
 
             {/* ── 2. Фото ───────────────────────────────────────────────────── */}
             <section className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-5 sm:p-7 space-y-4">
-              <SectionHead icon={Camera} title="Фото и видео" />
+              <SectionHead n={2} title="Фото и видео" hint="Фото и видео увеличивают просмотры в 3–5 раз" />
+
+              {/* Подсказки форматов */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-xl border border-primary/20 bg-primary-soft p-3 flex gap-2.5 items-start">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-primary mt-0.5 shrink-0"><rect x="2" y="6" width="15" height="12" rx="2"/><path d="m17 9 5-3v12l-5-3V9Z"/></svg>
+                  <div>
+                    <p className="text-xs font-bold text-zinc-800">Видео 9:16</p>
+                    <p className="text-[11px] text-zinc-500 leading-relaxed">как Reels · MP4/MOV · до 200 МБ</p>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 flex gap-2.5 items-start">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400 mt-0.5 shrink-0"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                  <div>
+                    <p className="text-xs font-bold text-zinc-800">Фото</p>
+                    <p className="text-[11px] text-zinc-500 leading-relaxed">JPG · PNG · до 50 МБ</p>
+                  </div>
+                </div>
+              </div>
 
               {photoPreviews.length > 0 && (
                 <div className="space-y-2">
@@ -525,12 +632,12 @@ export default function AddListingPage() {
 
             {/* ── 3. Расположение ───────────────────────────────────────────── */}
             <section className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-5 sm:p-7 space-y-4">
-              <SectionHead icon={MapPin} title="Расположение" />
+              <SectionHead n={3} title="Расположение" />
 
-              <div>
-                <p className="text-xs text-zinc-400 mb-2">Нажмите на карту — город заполнится автоматически</p>
-                <LocationPicker value={markerPos} onChange={setMarkerPos} />
-              </div>
+              <LocationPicker
+                value={markerPos} onChange={setMarkerPos}
+                boundary={plotBoundary} onBoundaryChange={setPlotBoundary}
+              />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -565,7 +672,7 @@ export default function AddListingPage() {
 
             {/* ── 4. Характеристики ─────────────────────────────────────────── */}
             <section className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-5 sm:p-7 space-y-5">
-              <SectionHead icon={Layers} title="Характеристики" />
+              <SectionHead n={4} title="Характеристики участка" />
 
               {/* Коммуникации */}
               <div>
@@ -598,48 +705,29 @@ export default function AddListingPage() {
                 </div>
 
                 {/* Геометрия */}
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-3">Геометрия</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-xs text-zinc-400 mb-2">Рельеф</p>
-                      <div className="flex gap-2">
-                        {RELIEF_TYPES.map(r => (
-                          <button key={r} type="button" onClick={() => set('reliefType', fd.reliefType === r ? '' : r)}
-                            className={`flex-1 py-2 rounded-xl text-sm font-semibold border transition-all ${
-                              fd.reliefType === r ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300'
-                            }`}>
-                            {r}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs text-zinc-400 mb-2">Форма участка</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {PLOT_SHAPES.map(s => (
-                          <button key={s} type="button" onClick={() => set('plotShape', fd.plotShape === s ? '' : s)}
-                            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all active:scale-95 ${
-                              fd.plotShape === s ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300'
-                            }`}>
-                            {s}
-                          </button>
-                        ))}
-                      </div>
+                <div className="space-y-3">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400">Геометрия</label>
+                  <div>
+                    <p className="text-xs text-zinc-400 mb-2">Рельеф</p>
+                    <div className="flex gap-2">
+                      {RELIEF_TYPES.map(r => (
+                        <button key={r} type="button" onClick={() => set('reliefType', fd.reliefType === r ? '' : r)}
+                          className={`flex-1 py-2 rounded-xl text-sm font-semibold border transition-all ${
+                            fd.reliefType === r ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300'
+                          }`}>
+                          {r}
+                        </button>
+                      ))}
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 mt-3">
-                    <div>
-                      <p className="text-xs text-zinc-400 mb-2">Ширина по фасаду, м</p>
-                      <input type="number" min="1" placeholder="20"
-                        value={fd.frontWidth} onChange={e => set('frontWidth', e.target.value)}
-                        className={inputCls()} />
-                    </div>
-                    <div>
-                      <p className="text-xs text-zinc-400 mb-2">Глубина, м</p>
-                      <input type="number" min="1" placeholder="30"
-                        value={fd.depth} onChange={e => set('depth', e.target.value)}
-                        className={inputCls()} />
+                  <div>
+                    <p className="text-xs text-zinc-400 mb-2">Форма участка</p>
+                    <div className="flex flex-wrap gap-2">
+                      {PLOT_SHAPES.map(s => (
+                        <Pill key={s} label={s}
+                          active={fd.plotShape === s}
+                          onClick={() => set('plotShape', fd.plotShape === s ? '' : s)} />
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -648,7 +736,7 @@ export default function AddListingPage() {
 
             {/* ── 5. Документы ──────────────────────────────────────────────── */}
             <section className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-5 sm:p-7 space-y-4">
-              <SectionHead icon={ShieldCheck} title="Документы" />
+              <SectionHead n={5} title="Юридические данные" />
 
               <div className="flex flex-wrap gap-2">
                 <button type="button" onClick={() => toggle('hasStateAct')}
@@ -697,25 +785,25 @@ export default function AddListingPage() {
               </div>
             </section>
 
-            {/* ── 6. О вас ──────────────────────────────────────────────────── */}
-            <section className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-5 sm:p-7 space-y-4">
-              <SectionHead icon={User} title="О вас и участке" />
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Описание</label>
-                  <span className="text-xs text-zinc-400">{fd.description.length}/2000</span>
-                </div>
-                <textarea rows={4} maxLength={2000}
-                  placeholder="Расскажите о плюсах участка, особенностях, истории..."
-                  value={fd.description} onChange={e => set('description', e.target.value)}
-                  className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 placeholder:text-zinc-400 resize-none transition-all" />
+            {/* ── 6. Описание ───────────────────────────────────────────────── */}
+            <section className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-5 sm:p-7 space-y-3">
+              <div className="flex items-start justify-between">
+                <SectionHead n={6} title="Описание" hint="Необязательно, но помогает покупателям" />
+                <span className="text-xs text-zinc-400 mt-1">{fd.description.length}/2000</span>
               </div>
+              <textarea rows={4} maxLength={2000}
+                placeholder="Плюсы участка, особенности, история продажи, что рядом..."
+                value={fd.description} onChange={e => set('description', e.target.value)}
+                className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 placeholder:text-zinc-400 resize-none transition-all" />
+            </section>
 
-              <div className="border-t border-zinc-100 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* ── 7. Контакты ───────────────────────────────────────────────── */}
+            <section className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-5 sm:p-7 space-y-4">
+              <SectionHead n={7} title="Ваши контакты" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Ваше имя</label>
-                  <input type="text" placeholder="Имя"
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Имя</label>
+                  <input type="text" placeholder="Как к вам обращаться"
                     value={fd.name} onChange={e => set('name', e.target.value)}
                     className={inputCls()} />
                 </div>
@@ -727,13 +815,12 @@ export default function AddListingPage() {
                   {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
                 </div>
               </div>
-
               <label className="flex items-center gap-3 cursor-pointer select-none w-fit">
                 <div onClick={() => toggle('hasWhatsApp')}
-                  className={`relative w-10 h-5.5 rounded-full transition-colors ${fd.hasWhatsApp ? 'bg-[#25D366]' : 'bg-zinc-200'}`}>
-                  <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${fd.hasWhatsApp ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                  className={`relative w-10 h-6 rounded-full transition-colors ${fd.hasWhatsApp ? 'bg-[#25D366]' : 'bg-zinc-200'}`}>
+                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${fd.hasWhatsApp ? 'translate-x-5' : 'translate-x-1'}`} />
                 </div>
-                <span className="text-sm font-medium text-zinc-600">WhatsApp есть на этом номере</span>
+                <span className="text-sm font-medium text-zinc-600">Есть WhatsApp на этом номере</span>
               </label>
             </section>
 
