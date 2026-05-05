@@ -370,94 +370,133 @@ export default function AddListingPage() {
             <p className="mt-3 text-lg font-medium text-zinc-500">Заполните детали, чтобы покупатели могли быстро вас найти.</p>
           </div>
 
-          <form onSubmit={e => { e.preventDefault(); submit('draft'); }} className="max-w-3xl mx-auto space-y-6">
+          <form onSubmit={e => { e.preventDefault(); submit('draft'); }} className="max-w-3xl mx-auto space-y-4">
 
             {/* ── 1. Основная информация ─────────────────────────────────────── */}
-            <section className="bg-white rounded-2xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-6">
+            <section className="bg-white rounded-2xl p-5 sm:p-8 border border-zinc-200 shadow-[0_2px_12px_rgb(0,0,0,0.04)] space-y-5">
               <div>
-                <h2 className="text-xl font-extrabold text-zinc-900">Основная информация</h2>
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Шаг 1</p>
+                <h2 className="text-lg font-extrabold text-zinc-900">Основная информация</h2>
                 {autoTitle && (
-                  <p className="mt-2 text-[13px] font-medium text-zinc-400">
-                    Заголовок объявления: <span className="font-bold text-zinc-700">{autoTitle}</span>
+                  <p className="mt-1.5 text-[12px] font-medium text-zinc-400">
+                    Заголовок: <span className="font-semibold text-zinc-600">{autoTitle}</span>
                   </p>
                 )}
               </div>
 
-              {/* Тип участка */}
               <div>
-                <label className="block text-sm font-bold text-zinc-700 mb-3">Тип участка <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-semibold text-zinc-700 mb-2.5">Тип участка <span className="text-red-500">*</span></label>
                 <div className="flex flex-wrap gap-2">
                   {LAND_CATEGORIES.map(cat => (
                     <button key={cat} type="button" onClick={() => set('landType', fd.landType === cat ? '' : cat)}
-                      className={`px-4 py-2.5 rounded-xl text-[13px] font-bold border transition-all active:scale-95 ${fd.landType === cat ? 'bg-primary border-primary text-white shadow-sm' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-white'}`}>
+                      className={`px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 min-h-[44px] ${fd.landType === cat ? 'bg-primary border-primary text-white shadow-sm' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-white'}`}>
                       {cat}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Площадь + Цена */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-zinc-700 mb-2">Площадь, сот. <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Площадь <span className="text-red-500">*</span></label>
                   <div className="relative">
-                    <input type="number" min="1" placeholder="Например: 6"
+                    <input type="number" min="1" placeholder="6"
                       value={fd.area} onChange={e => set('area', e.target.value)}
                       className={inputCls(errors.area)} />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-zinc-400 pointer-events-none">сот.</span>
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-zinc-400 pointer-events-none">сот.</span>
                   </div>
-                  {errors.area && <p className="mt-1 text-sm font-medium text-red-500">{errors.area}</p>}
+                  {errors.area && <p className="mt-1 text-xs font-medium text-red-500">{errors.area}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-zinc-700 mb-2">Цена <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Цена <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <input type="text" inputMode="numeric" placeholder="15 000 000"
-                      value={fd.price}
-                      onChange={e => set('price', fmtPrice(e.target.value))}
+                      value={fd.price} onChange={e => set('price', fmtPrice(e.target.value))}
                       className={inputCls(errors.price)} />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-zinc-400 pointer-events-none">₸</span>
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-zinc-400 pointer-events-none">₸</span>
                   </div>
-                  {errors.price && <p className="mt-1 text-sm font-medium text-red-500">{errors.price}</p>}
+                  {errors.price && <p className="mt-1 text-xs font-medium text-red-500">{errors.price}</p>}
                 </div>
               </div>
             </section>
 
-            {/* ── 2. Фото и видео ────────────────────────────────────────────── */}
-            <section className="bg-white rounded-2xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-4">
+            {/* ── 2. Расположение ────────────────────────────────────────────── */}
+            <section className="bg-white rounded-2xl p-5 sm:p-8 border border-zinc-200 shadow-[0_2px_12px_rgb(0,0,0,0.04)] space-y-5">
               <div>
-                <h2 className="text-xl font-extrabold text-zinc-900">Фото и видео <span className="text-red-500">*</span></h2>
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Шаг 2</p>
+                <h2 className="text-lg font-extrabold text-zinc-900">Расположение</h2>
               </div>
 
-              {/* Подсказка по форматам */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Видео */}
-                <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 flex gap-3.5">
-                  <div className="shrink-0 w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="15" height="12" rx="2"/><path d="m17 9 5-3v12l-5-3V9Z"/></svg>
+              <div>
+                <label className="block text-sm font-semibold text-zinc-700 mb-1.5">Точка на карте</label>
+                <p className="text-[11px] font-medium text-zinc-400 mb-2">Нажмите — адрес заполнится автоматически</p>
+                <LocationPicker value={markerPos} onChange={setMarkerPos} />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Город / Населённый пункт</label>
+                  <div className="relative">
+                    <input type="text" list="kz-cities"
+                      placeholder="Алматы, Каскелен..."
+                      value={fd.location} onChange={e => set('location', e.target.value)}
+                      className={inputCls(errors.location)} />
+                    {isGeocoding && (
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-primary animate-pulse">Определяем...</span>
+                    )}
+                  </div>
+                  <datalist id="kz-cities">
+                    {KZ_CITIES.map(c => <option key={c} value={c} />)}
+                  </datalist>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Адрес или ориентир</label>
+                  <input type="text" placeholder="вдоль трассы БАК, поворот направо"
+                    value={fd.address} onChange={e => set('address', e.target.value)}
+                    className={inputCls()} />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-zinc-700 mb-2">Окружение <span className="text-zinc-400 font-normal text-xs">(можно несколько)</span></label>
+                <div className="flex flex-wrap gap-2">
+                  {LOCATION_TYPES.map(({ value, label }) => (
+                    <button key={value} type="button" onClick={() => toggleLocationType(value)}
+                      className={`px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 min-h-[44px] ${fd.locationType.includes(value) ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* ── 3. Фото и видео ────────────────────────────────────────────── */}
+            <section className="bg-white rounded-2xl p-5 sm:p-8 border border-zinc-200 shadow-[0_2px_12px_rgb(0,0,0,0.04)] space-y-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Шаг 3</p>
+                <h2 className="text-lg font-extrabold text-zinc-900">Фото и видео <span className="text-red-500">*</span></h2>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-3.5 flex gap-3">
+                  <div className="shrink-0 w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="15" height="12" rx="2"/><path d="m17 9 5-3v12l-5-3V9Z"/></svg>
                   </div>
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="text-[13px] font-bold text-zinc-900">Видео</p>
-                      <span className="text-[9px] font-black uppercase tracking-widest text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">Рекомендуем</span>
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <p className="text-[12px] font-bold text-zinc-900">Видео</p>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-primary bg-primary/10 px-1.5 py-0.5 rounded-full hidden sm:block">Топ</span>
                     </div>
-                    <p className="text-[12px] text-zinc-500 font-medium leading-relaxed">
-                      Снимайте вертикально (9:16) — как Reels или TikTok.<br/>
-                      MP4 · MOV · до 200 МБ
-                    </p>
+                    <p className="text-[11px] text-zinc-500 leading-relaxed">9:16 · MP4/MOV · до 200 МБ</p>
                   </div>
                 </div>
-
-                {/* Фото */}
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 flex gap-3.5">
-                  <div className="shrink-0 w-9 h-9 rounded-xl bg-zinc-200/70 flex items-center justify-center text-zinc-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3.5 flex gap-3">
+                  <div className="shrink-0 w-8 h-8 rounded-xl bg-zinc-200/70 flex items-center justify-center text-zinc-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[13px] font-bold text-zinc-900 mb-1">Фото</p>
-                    <p className="text-[12px] text-zinc-500 font-medium leading-relaxed">
-                      Снимайте с разных ракурсов — общий план, въезд, коммуникации.<br/>
-                      JPG · PNG · WEBP · до 50 МБ
-                    </p>
+                    <p className="text-[12px] font-bold text-zinc-900 mb-0.5">Фото</p>
+                    <p className="text-[11px] text-zinc-500 leading-relaxed">JPG/PNG · до 50 МБ</p>
                   </div>
                 </div>
               </div>
@@ -468,116 +507,66 @@ export default function AddListingPage() {
                     <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 9h14M5 15h14"/></svg>
                     Перетащите чтобы изменить порядок
                   </p>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 items-start">
-                  {photoPreviews.map((src, i) => {
-                    const isVid = photos[i]?.type.startsWith('video/');
-                    return (
-                      <div
-                        key={i}
-                        draggable
-                        onDragStart={() => setDragIndex(i)}
-                        onDragOver={e => { e.preventDefault(); setDragOver(i); }}
-                        onDrop={e => { e.preventDefault(); if (dragIndex !== null) movePhoto(dragIndex, i); setDragIndex(null); setDragOver(null); }}
-                        onDragEnd={() => { setDragIndex(null); setDragOver(null); }}
-                        className={`relative aspect-square rounded-2xl overflow-hidden bg-zinc-100 group cursor-grab active:cursor-grabbing transition-all ${dragOver === i && dragIndex !== i ? 'ring-2 ring-primary scale-[1.02]' : ''} ${dragIndex === i ? 'opacity-40' : ''}`}
-                      >
-                        {i === 0 && (
-                          <div className="absolute top-2 left-2 z-10">
-                            <span className="bg-zinc-900/80 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full">Обложка</span>
-                          </div>
-                        )}
-                        {isVid ? (
-                          <>
-                            <video src={src} className="w-full h-full object-cover" muted playsInline />
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                              <div className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
-                              </div>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+                    {photoPreviews.map((src, i) => {
+                      const isVid = photos[i]?.type.startsWith('video/');
+                      return (
+                        <div key={i} draggable
+                          onDragStart={() => setDragIndex(i)}
+                          onDragOver={e => { e.preventDefault(); setDragOver(i); }}
+                          onDrop={e => { e.preventDefault(); if (dragIndex !== null) movePhoto(dragIndex, i); setDragIndex(null); setDragOver(null); }}
+                          onDragEnd={() => { setDragIndex(null); setDragOver(null); }}
+                          className={`relative aspect-square rounded-xl overflow-hidden bg-zinc-100 group cursor-grab active:cursor-grabbing transition-all ${dragOver === i && dragIndex !== i ? 'ring-2 ring-primary scale-[1.02]' : ''} ${dragIndex === i ? 'opacity-40' : ''}`}>
+                          {i === 0 && (
+                            <div className="absolute top-1.5 left-1.5 z-10">
+                              <span className="bg-zinc-900/80 text-white text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full">Обложка</span>
                             </div>
-                          </>
-                        ) : (
-                          <img src={src} alt="" className="w-full h-full object-cover" />
-                        )}
-                        <button type="button" onClick={() => removePhoto(i)}
-                          className="absolute top-1.5 right-1.5 flex items-center justify-center w-6 h-6 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-                        </button>
-                      </div>
-                    );
-                  })}
+                          )}
+                          {isVid ? (
+                            <>
+                              <video src={src} className="w-full h-full object-cover" muted playsInline />
+                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <div className="w-7 h-7 rounded-full bg-black/50 flex items-center justify-center">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <img src={src} alt="" className="w-full h-full object-cover" />
+                          )}
+                          <button type="button" onClick={() => removePhoto(i)}
+                            className="absolute top-1 right-1 flex items-center justify-center w-6 h-6 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
-              <label className={`flex flex-col items-center justify-center w-full h-36 rounded-2xl border-2 border-dashed bg-zinc-50 hover:bg-zinc-100 cursor-pointer transition-colors group ${errors.photos ? 'border-red-400' : 'border-zinc-300 hover:border-primary/50'}`}>
-                <div className="h-11 w-11 rounded-full bg-white shadow-sm flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+              <label className={`flex flex-col items-center justify-center w-full h-32 rounded-2xl border-2 border-dashed bg-zinc-50 hover:bg-zinc-100 cursor-pointer transition-colors group ${errors.photos ? 'border-red-400' : 'border-zinc-300 hover:border-primary/50'}`}>
+                <div className="h-10 w-10 rounded-full bg-white shadow-sm flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-primary"><path fillRule="evenodd" d="M11.47 2.47a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1-1.06 1.06l-3.22-3.22V16.5a.75.75 0 0 1-1.5 0V4.81L8.03 8.03a.75.75 0 0 1-1.06-1.06l4.5-4.5ZM3 15.75a.75.75 0 0 1 .75.75v2.25a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5V16.5a.75.75 0 0 1 1.5 0v2.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V16.5a.75.75 0 0 1 .75-.75Z" clipRule="evenodd"/></svg>
                 </div>
-                <span className="text-sm font-bold text-zinc-700">{photos.length > 0 ? 'Добавить ещё' : 'Нажмите или перетащите файлы'}</span>
-                <span className="text-xs font-semibold text-zinc-400 mt-1">Фото JPG/PNG · Видео MP4/MOV до 200 МБ</span>
+                <span className="text-sm font-semibold text-zinc-700">{photos.length > 0 ? 'Добавить ещё' : 'Нажмите или перетащите файлы'}</span>
                 <input ref={fileInputRef} type="file" className="hidden" multiple
                   accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm"
                   onChange={handlePhotoChange} />
               </label>
-              {errors.photos && <p className="text-sm font-medium text-red-500">{errors.photos}</p>}
-            </section>
-
-            {/* ── 3. Расположение ────────────────────────────────────────────── */}
-            <section className="bg-white rounded-2xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-5">
-              <h2 className="text-xl font-extrabold text-zinc-900">Расположение</h2>
-
-              {/* Карта — только Казахстан, клик ставит точку и заполняет город */}
-              <div>
-                <label className="block text-sm font-bold text-zinc-700 mb-1">Точка на карте</label>
-                <p className="text-[12px] font-medium text-zinc-400 mb-2">
-                  Нажмите на карте — город заполнится автоматически
-                </p>
-                <LocationPicker value={markerPos} onChange={setMarkerPos} />
-              </div>
-
-              {/* Единое поле города с KZ автодополнением */}
-              <div>
-                <label className="block text-sm font-bold text-zinc-700 mb-2">
-                  Город / Населённый пункт
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    list="kz-cities"
-                    placeholder="Например: Алматы, Каскелен, Талдыкорган..."
-                    value={fd.location}
-                    onChange={e => set('location', e.target.value)}
-                    className={inputCls(errors.location)}
-                  />
-                  {isGeocoding && (
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-primary animate-pulse">
-                      Определяем...
-                    </span>
-                  )}
-                </div>
-                <datalist id="kz-cities">
-                  {KZ_CITIES.map(c => <option key={c} value={c} />)}
-                </datalist>
-                {errors.location && <p className="mt-1 text-sm font-medium text-red-500">{errors.location}</p>}
-              </div>
-
-              {/* Адрес */}
-              <div>
-                <label className="block text-sm font-bold text-zinc-700 mb-2">Адрес или ориентир</label>
-                <input type="text" placeholder="Например: вдоль трассы БАК, поворот направо"
-                  value={fd.address} onChange={e => set('address', e.target.value)}
-                  className={inputCls()} />
-              </div>
-
+              {errors.photos && <p className="text-xs font-medium text-red-500">{errors.photos}</p>}
             </section>
 
             {/* ── 4. Коммуникации ────────────────────────────────────────────── */}
-            <section className="bg-white rounded-2xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-4">
-              <h2 className="text-xl font-extrabold text-zinc-900">Коммуникации</h2>
+            <section className="bg-white rounded-2xl p-5 sm:p-8 border border-zinc-200 shadow-[0_2px_12px_rgb(0,0,0,0.04)] space-y-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Шаг 4</p>
+                <h2 className="text-lg font-extrabold text-zinc-900">Коммуникации</h2>
+              </div>
               <div className="flex flex-wrap gap-2">
                 {UTILITIES.map(({ key, icon: Icon, label, active }) => (
                   <button key={key} type="button" onClick={() => toggle(key as keyof typeof fd)}
-                    className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-[13px] font-bold border transition-all active:scale-95 ${boolVals[key] ? active : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:bg-white'}`}>
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 min-h-[44px] ${boolVals[key] ? active : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:bg-white'}`}>
                     <Icon className="w-4 h-4" strokeWidth={2.5} />
                     {label}
                   </button>
@@ -585,88 +574,34 @@ export default function AddListingPage() {
               </div>
             </section>
 
-            {/* ── 5. Параметры участка ───────────────────────────────────────── */}
-            <section className="bg-white rounded-2xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-6">
-              <h2 className="text-xl font-extrabold text-zinc-900">Параметры участка</h2>
-
-              {/* Право собственности */}
+            {/* ── 5. Характеристики участка ──────────────────────────────────── */}
+            <section className="bg-white rounded-2xl p-5 sm:p-8 border border-zinc-200 shadow-[0_2px_12px_rgb(0,0,0,0.04)] space-y-5">
               <div>
-                <label className="block text-sm font-bold text-zinc-700 mb-2">Право собственности</label>
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Шаг 5</p>
+                <h2 className="text-lg font-extrabold text-zinc-900">Характеристики участка</h2>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-zinc-700 mb-2">Право собственности</label>
                 <div className="flex gap-2 flex-wrap">
                   {OWNERSHIP_TYPES.map(t => (
                     <button key={t} type="button" onClick={() => set('ownershipType', fd.ownershipType === t ? '' : t)}
-                      className={`px-4 py-2.5 rounded-xl text-[13px] font-bold border transition-all active:scale-95 ${fd.ownershipType === t ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}>
+                      className={`px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 min-h-[44px] ${fd.ownershipType === t ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}>
                       {t}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Тип местоположения */}
-              <div>
-                <label className="block text-sm font-bold text-zinc-700 mb-2">Тип местоположения <span className="text-zinc-400 font-normal">(можно несколько)</span></label>
-                <div className="flex flex-wrap gap-2">
-                  {LOCATION_TYPES.map(({ value, label }) => (
-                    <button key={value} type="button" onClick={() => toggleLocationType(value)}
-                      className={`px-3.5 py-2.5 rounded-xl text-[13px] font-bold border transition-all active:scale-95 ${fd.locationType.includes(value) ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="border-t border-zinc-100 pt-5">
-                <label className="block text-sm font-bold text-zinc-700 mb-3">Юридическая чистота</label>
-                <div className="flex flex-wrap gap-2">
-                  <button type="button" onClick={() => toggle('hasStateAct')}
-                    className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-[13px] font-bold border transition-all active:scale-95 ${fd.hasStateAct ? 'border-primary/30 bg-primary-soft text-primary' : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:bg-white'}`}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                    Гос. акт
-                  </button>
-                  {LEGAL_FILTERS.map(({ key, icon: Icon, label, active }) => (
-                    <button key={key} type="button" onClick={() => toggle(key as keyof typeof fd)}
-                      className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-[13px] font-bold border transition-all active:scale-95 ${boolVals[key] ? active : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:bg-white'}`}>
-                      <Icon className="w-4 h-4" strokeWidth={2.5} />
-                      {label}
-                    </button>
-                  ))}
-                  <button type="button" onClick={() => toggle('hasEncumbrances')}
-                    className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-[13px] font-bold border transition-all active:scale-95 ${fd.hasEncumbrances ? 'border-amber-300 bg-amber-50 text-amber-700' : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:bg-white'}`}>
-                    Обременения
-                  </button>
-                  <button type="button" onClick={() => toggle('canChangePurpose')}
-                    className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-[13px] font-bold border transition-all active:scale-95 ${fd.canChangePurpose ? 'border-sky-300 bg-sky-50 text-sky-700' : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:bg-white'}`}>
-                    Можно сменить назначение
-                  </button>
-                </div>
-              </div>
-
-              {/* Кадастровый номер + Категория земли */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 border-t border-zinc-100 pt-5">
-                <div>
-                  <label className="block text-sm font-bold text-zinc-700 mb-2">Кадастровый номер</label>
-                  <input type="text" placeholder="20-315-094-111"
-                    value={fd.cadastralNumber} onChange={e => set('cadastralNumber', e.target.value)}
-                    className={inputCls()} />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-zinc-700 mb-2">Категория земли</label>
-                  <input type="text" placeholder="Земли населённых пунктов"
-                    value={fd.landCategory} onChange={e => set('landCategory', e.target.value)}
-                    className={inputCls()} />
-                </div>
-              </div>
-
-              {/* Геометрия */}
               <div className="border-t border-zinc-100 pt-5 space-y-4">
-                <label className="block text-sm font-bold text-zinc-700">Геометрия участка</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <label className="block text-sm font-semibold text-zinc-700">Геометрия</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-zinc-500 mb-2">Рельеф</label>
                     <div className="flex gap-2">
                       {RELIEF_TYPES.map(r => (
                         <button key={r} type="button" onClick={() => set('reliefType', fd.reliefType === r ? '' : r)}
-                          className={`flex-1 py-2.5 rounded-xl text-[13px] font-bold border transition-all ${fd.reliefType === r ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}>
+                          className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all min-h-[44px] ${fd.reliefType === r ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}>
                           {r}
                         </button>
                       ))}
@@ -677,7 +612,7 @@ export default function AddListingPage() {
                     <div className="flex flex-wrap gap-1.5">
                       {PLOT_SHAPES.map(s => (
                         <button key={s} type="button" onClick={() => set('plotShape', fd.plotShape === s ? '' : s)}
-                          className={`px-3 py-2 rounded-xl text-[12px] font-bold border transition-all active:scale-95 ${fd.plotShape === s ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}>
+                          className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all active:scale-95 min-h-[40px] ${fd.plotShape === s ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}>
                           {s}
                         </button>
                       ))}
@@ -701,64 +636,119 @@ export default function AddListingPage() {
               </div>
             </section>
 
-            {/* ── 6. Описание ────────────────────────────────────────────────── */}
-            <section className="bg-white rounded-2xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-3">
-              <div className="flex items-end justify-between">
-                <h2 className="text-xl font-extrabold text-zinc-900">Описание</h2>
-                <span className="text-xs font-bold text-zinc-400">{fd.description.length} / 2000</span>
+            {/* ── 6. Юридика ─────────────────────────────────────────────────── */}
+            <section className="bg-white rounded-2xl p-5 sm:p-8 border border-zinc-200 shadow-[0_2px_12px_rgb(0,0,0,0.04)] space-y-5">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Шаг 6</p>
+                <h2 className="text-lg font-extrabold text-zinc-900">Юридические данные</h2>
               </div>
-              <textarea rows={4} maxLength={2000}
-                placeholder="Расскажите подробнее: форма участка, плюсы, документы..."
+
+              <div>
+                <label className="block text-sm font-semibold text-zinc-700 mb-2">Статус документов</label>
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={() => toggle('hasStateAct')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 min-h-[44px] ${fd.hasStateAct ? 'border-primary/30 bg-primary-soft text-primary' : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:bg-white'}`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    Гос. акт
+                  </button>
+                  {LEGAL_FILTERS.map(({ key, icon: Icon, label, active }) => (
+                    <button key={key} type="button" onClick={() => toggle(key as keyof typeof fd)}
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 min-h-[44px] ${boolVals[key] ? active : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:bg-white'}`}>
+                      <Icon className="w-4 h-4" strokeWidth={2.5} />
+                      {label}
+                    </button>
+                  ))}
+                  <button type="button" onClick={() => toggle('hasEncumbrances')}
+                    className={`px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 min-h-[44px] ${fd.hasEncumbrances ? 'border-amber-300 bg-amber-50 text-amber-700' : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:bg-white'}`}>
+                    Обременения
+                  </button>
+                  <button type="button" onClick={() => toggle('canChangePurpose')}
+                    className={`px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 min-h-[44px] ${fd.canChangePurpose ? 'border-sky-300 bg-sky-50 text-sky-700' : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:bg-white'}`}>
+                    Можно сменить назначение
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-zinc-100 pt-5">
+                <div>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Кадастровый номер</label>
+                  <input type="text" placeholder="20-315-094-111"
+                    value={fd.cadastralNumber} onChange={e => set('cadastralNumber', e.target.value)}
+                    className={inputCls()} />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Категория земли</label>
+                  <input type="text" placeholder="Земли населённых пунктов"
+                    value={fd.landCategory} onChange={e => set('landCategory', e.target.value)}
+                    className={inputCls()} />
+                </div>
+              </div>
+            </section>
+
+            {/* ── 7. Описание ────────────────────────────────────────────────── */}
+            <section className="bg-white rounded-2xl p-5 sm:p-8 border border-zinc-200 shadow-[0_2px_12px_rgb(0,0,0,0.04)] space-y-3">
+              <div className="flex items-end justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Шаг 7</p>
+                  <h2 className="text-lg font-extrabold text-zinc-900">Описание</h2>
+                </div>
+                <span className="text-xs font-medium text-zinc-400">{fd.description.length} / 2000</span>
+              </div>
+              <textarea rows={5} maxLength={2000}
+                placeholder="Расскажите о плюсах участка, окружении, истории..."
                 value={fd.description} onChange={e => set('description', e.target.value)}
                 className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3.5 text-sm font-medium text-zinc-900 outline-none transition-colors focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 placeholder:font-medium placeholder:text-zinc-400 resize-none" />
             </section>
 
-            {/* ── 7. Контакты ────────────────────────────────────────────────── */}
-            <section className="bg-white rounded-2xl p-6 sm:p-10 border border-zinc-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-5">
-              <h2 className="text-xl font-extrabold text-zinc-900">Ваши контакты</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {/* ── 8. Контакты ────────────────────────────────────────────────── */}
+            <section className="bg-white rounded-2xl p-5 sm:p-8 border border-zinc-200 shadow-[0_2px_12px_rgb(0,0,0,0.04)] space-y-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Шаг 8</p>
+                <h2 className="text-lg font-extrabold text-zinc-900">Ваши контакты</h2>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-zinc-700 mb-2">Имя</label>
-                  <input type="text" placeholder="Иван"
+                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Имя</label>
+                  <input type="text" placeholder="Ваше имя"
                     value={fd.name} onChange={e => set('name', e.target.value)}
                     className={inputCls()} />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-zinc-700 mb-2">Телефон <span className="text-red-500">*</span></label>
-                  <input type="tel" placeholder="+7 (___) ___ __ __"
+                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Телефон <span className="text-red-500">*</span></label>
+                  <input type="tel" placeholder="+7 700 000 00 00"
                     value={fd.phone} onChange={e => set('phone', e.target.value)}
                     className={inputCls(errors.phone)} />
-                  {errors.phone && <p className="mt-1 text-sm font-medium text-red-500">{errors.phone}</p>}
-                  <label className="mt-3 flex items-center gap-2.5 cursor-pointer select-none w-fit">
-                    <div onClick={() => toggle('hasWhatsApp')}
-                      className={`relative w-10 h-6 rounded-full transition-colors ${fd.hasWhatsApp ? 'bg-[#25D366]' : 'bg-zinc-200'}`}>
-                      <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${fd.hasWhatsApp ? 'translate-x-5' : 'translate-x-1'}`} />
-                    </div>
-                    <span className="text-sm font-bold text-zinc-600">Есть WhatsApp на этом номере</span>
-                  </label>
+                  {errors.phone && <p className="mt-1 text-xs font-medium text-red-500">{errors.phone}</p>}
                 </div>
               </div>
+              <label className="flex items-center gap-3 cursor-pointer select-none w-fit">
+                <div onClick={() => toggle('hasWhatsApp')}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${fd.hasWhatsApp ? 'bg-[#25D366]' : 'bg-zinc-200'}`}>
+                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${fd.hasWhatsApp ? 'translate-x-6' : 'translate-x-1'}`} />
+                </div>
+                <span className="text-sm font-semibold text-zinc-600">Есть WhatsApp на этом номере</span>
+              </label>
             </section>
 
             {/* ── Кнопки ─────────────────────────────────────────────────────── */}
-            <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-4 pt-2 border-t border-zinc-200">
-              {errors.submit && <p className="w-full text-sm font-medium text-red-500 text-center">{errors.submit}</p>}
+            <div className="space-y-3 pt-2">
+              {errors.submit && <p className="text-sm font-medium text-red-500 text-center">{errors.submit}</p>}
               {isSubmitted ? (
-                <div className="w-full rounded-2xl bg-primary-soft border border-primary/20 px-8 py-5 text-center">
+                <div className="rounded-2xl bg-primary-soft border border-primary/20 px-6 py-5 text-center">
                   <p className="font-extrabold text-primary">Объявление отправлено на проверку</p>
                   <p className="text-sm font-medium text-primary/70 mt-1">Мы свяжемся с вами в течение 24 часов</p>
                 </div>
               ) : (
-                <>
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button type="button" onClick={() => submit('draft')} disabled={isSubmitting}
-                    className="w-full sm:w-auto rounded-2xl border border-zinc-200 px-8 py-4 text-sm font-extrabold text-zinc-700 hover:bg-zinc-100 transition-colors disabled:opacity-50">
+                    className="flex-1 sm:flex-none rounded-2xl border border-zinc-200 px-8 py-4 text-sm font-extrabold text-zinc-700 hover:bg-zinc-100 transition-colors disabled:opacity-50 min-h-[56px]">
                     Сохранить черновик
                   </button>
                   <button type="submit" disabled={isSubmitting}
-                    className="w-full sm:w-auto rounded-2xl bg-primary px-10 py-4 text-sm font-extrabold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover hover:-translate-y-0.5 hover:shadow-xl active:scale-95 active:translate-y-0 disabled:opacity-60 disabled:pointer-events-none">
-                    {isSubmitting ? 'Отправка...' : 'Опубликовать'}
+                    className="flex-1 rounded-2xl bg-primary px-8 py-4 text-sm font-extrabold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover hover:-translate-y-0.5 hover:shadow-xl active:scale-95 active:translate-y-0 disabled:opacity-60 disabled:pointer-events-none min-h-[56px]">
+                    {isSubmitting ? 'Отправка...' : 'Опубликовать объявление'}
                   </button>
-                </>
+                </div>
               )}
             </div>
 
