@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Container } from '@/components/layout/container';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { pushDataLayer } from '@/lib/analytics';
 import { LAND_CATEGORIES, UTILITIES, LEGAL_FILTERS } from '@/lib/listing-constants';
 import { useAuth } from '@/context/auth-context';
@@ -58,6 +59,8 @@ function LocationPicker({ value, onChange, boundary, onBoundaryChange }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const draftPolyRef = useRef<any>(null);
   const drawPtsRef = useRef<[number, number][]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dotMarkersRef = useRef<any[]>([]);
   const modeRef = useRef<'pin' | 'draw'>('pin');
   const [ready, setReady] = useState(false);
   const [mode, setMode] = useState<'pin' | 'draw'>('pin');
@@ -86,8 +89,15 @@ function LocationPicker({ value, onChange, boundary, onBoundaryChange }: {
       if (modeRef.current === 'pin') {
         onChange({ lat: +lat.toFixed(6), lng: +lng.toFixed(6) });
       } else {
-        drawPtsRef.current.push([+lat.toFixed(6), +lng.toFixed(6)]);
+        const pt: [number, number] = [+lat.toFixed(6), +lng.toFixed(6)];
+        drawPtsRef.current.push(pt);
         setDrawCount(drawPtsRef.current.length);
+        // Видимый маркер-точка
+        const dot = L.circleMarker(pt, {
+          radius: 6, color: '#ffffff', weight: 2,
+          fillColor: '#066F36', fillOpacity: 1,
+        }).addTo(map);
+        dotMarkersRef.current.push(dot);
         if (draftPolyRef.current) draftPolyRef.current.remove();
         if (drawPtsRef.current.length >= 2) {
           draftPolyRef.current = L.polygon(drawPtsRef.current, {
@@ -128,15 +138,22 @@ function LocationPicker({ value, onChange, boundary, onBoundaryChange }: {
     else pinRef.current = L.marker([value.lat, value.lng], { icon }).addTo(mapRef.current);
   }, [value, ready]);
 
+  const clearDots = () => {
+    dotMarkersRef.current.forEach(d => d.remove());
+    dotMarkersRef.current = [];
+  };
+
   const finishDraw = () => {
     if (drawPtsRef.current.length >= 3) {
       onBoundaryChange(drawPtsRef.current.map(([lat, lng]) => ({ lat, lng })));
     }
     if (draftPolyRef.current) { draftPolyRef.current.remove(); draftPolyRef.current = null; }
+    clearDots();
     drawPtsRef.current = []; setDrawCount(0); setMode('pin');
   };
   const cancelDraw = () => {
     if (draftPolyRef.current) { draftPolyRef.current.remove(); draftPolyRef.current = null; }
+    clearDots();
     drawPtsRef.current = []; setDrawCount(0); setMode('pin');
   };
 
@@ -244,9 +261,11 @@ const PLOT_SHAPES = ['Прямоугольный', 'Квадратный', 'Г-�
 // ── Главный компонент ────────────────────────────────────────────────────────
 export default function AddListingPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [errors, setErrors]             = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted]   = useState(false);
+  const [countdown, setCountdown]       = useState(5);
   const [photos, setPhotos]             = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [dragIndex, setDragIndex]       = useState<number | null>(null);
@@ -374,6 +393,10 @@ export default function AddListingPage() {
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
       pushDataLayer('add_listing_submit_error', { form: 'add_listing' });
+      setTimeout(() => {
+        const el = document.querySelector<HTMLElement>('[data-error="true"]');
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 50);
       return;
     }
     setErrors({});
@@ -429,6 +452,12 @@ export default function AddListingPage() {
       }
       pushDataLayer('add_listing_submit_success', { form: 'add_listing', status });
       setIsSubmitted(true);
+      let c = 5;
+      const timer = setInterval(() => {
+        c -= 1;
+        setCountdown(c);
+        if (c <= 0) { clearInterval(timer); router.push('/profile'); }
+      }, 1000);
     } catch (e) {
       setErrors({ submit: e instanceof Error ? e.message : 'Ошибка при отправке. Попробуйте ещё раз.' });
     } finally {
@@ -525,6 +554,7 @@ export default function AddListingPage() {
                   <div className="relative">
                     <input type="number" min="1" placeholder="6"
                       value={fd.area} onChange={e => set('area', e.target.value)}
+                      data-error={errors.area ? 'true' : undefined}
                       className={inputCls(errors.area)} />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400 pointer-events-none">сот.</span>
                   </div>
@@ -613,7 +643,7 @@ export default function AddListingPage() {
                 </div>
               )}
 
-              <label className={`flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed cursor-pointer transition-all group ${
+              <label data-error={errors.photos ? 'true' : undefined} className={`flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed cursor-pointer transition-all group ${
                 errors.photos ? 'border-red-300 bg-red-50' : 'border-zinc-200 bg-zinc-50 hover:border-primary/40 hover:bg-primary-soft/30'
               } ${photoPreviews.length > 0 ? 'h-20' : 'h-36'}`}>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={`mb-1.5 text-zinc-400 group-hover:text-primary transition-colors ${photoPreviews.length > 0 ? 'w-5 h-5' : 'w-7 h-7'}`}>
@@ -769,19 +799,11 @@ export default function AddListingPage() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-zinc-100">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Кадастровый номер</label>
-                  <input type="text" placeholder="20-315-094-111"
-                    value={fd.cadastralNumber} onChange={e => set('cadastralNumber', e.target.value)}
-                    className={inputCls()} />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Категория земли</label>
-                  <input type="text" placeholder="Земли населённых пунктов"
-                    value={fd.landCategory} onChange={e => set('landCategory', e.target.value)}
-                    className={inputCls()} />
-                </div>
+              <div className="pt-2 border-t border-zinc-100">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Кадастровый номер</label>
+                <input type="text" placeholder="20-315-094-111"
+                  value={fd.cadastralNumber} onChange={e => set('cadastralNumber', e.target.value)}
+                  className={inputCls()} />
               </div>
             </section>
 
@@ -811,6 +833,7 @@ export default function AddListingPage() {
                   <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Телефон <span className="text-red-400">*</span></label>
                   <input type="tel" placeholder="+7 700 000 00 00"
                     value={fd.phone} onChange={e => set('phone', e.target.value)}
+                    data-error={errors.phone ? 'true' : undefined}
                     className={inputCls(errors.phone)} />
                   {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
                 </div>
@@ -827,9 +850,17 @@ export default function AddListingPage() {
             {/* ── Кнопки ────────────────────────────────────────────────────── */}
             {errors.submit && <p className="text-sm text-red-500 text-center">{errors.submit}</p>}
             {isSubmitted ? (
-              <div className="rounded-2xl bg-primary-soft border border-primary/20 px-6 py-6 text-center">
-                <p className="font-bold text-primary text-base">Объявление отправлено на проверку</p>
-                <p className="text-sm text-primary/60 mt-1">Мы свяжемся с вами в течение 24 часов</p>
+              <div className="rounded-2xl bg-primary-soft border border-primary/20 px-6 py-8 text-center space-y-2">
+                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center mx-auto mb-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <p className="font-bold text-zinc-900 text-base">Объявление отправлено на проверку</p>
+                <p className="text-sm text-zinc-500">Публикация в течение 24 часов</p>
+                <p className="text-xs text-zinc-400 pt-1">Переход в личный кабинет через {countdown} сек...</p>
+                <button type="button" onClick={() => router.push('/profile')}
+                  className="mt-2 text-sm font-semibold text-primary hover:underline">
+                  Перейти сейчас →
+                </button>
               </div>
             ) : (
               <div className="flex flex-col sm:flex-row gap-2">

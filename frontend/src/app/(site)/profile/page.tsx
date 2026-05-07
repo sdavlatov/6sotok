@@ -47,8 +47,14 @@ function fmt(n: number) {
   return n.toLocaleString('ru-KZ') + ' ₸'
 }
 
-function ListingCard({ listing, onDelete }: { listing: MyListing; onDelete: (id: string) => void }) {
+function ListingCard({ listing, onDelete, onStatusChange }: {
+  listing: MyListing
+  onDelete: (id: string) => void
+  onStatusChange: (id: string, status: string) => void
+}) {
   const [deleting, setDeleting] = useState(false)
+  const [reminding, setReminding] = useState(false)
+  const [changingStatus, setChangingStatus] = useState(false)
   const thumb = listing.images?.[0]?.image?.url
 
   const handleDelete = async () => {
@@ -62,10 +68,44 @@ function ListingCard({ listing, onDelete }: { listing: MyListing; onDelete: (id:
     }
   }
 
+  const handleStatusChange = async (status: string) => {
+    setChangingStatus(true)
+    try {
+      const r = await fetch(`/api/listings/${listing.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ status }),
+      })
+      if (r.ok) onStatusChange(listing.id, status)
+    } finally {
+      setChangingStatus(false)
+    }
+  }
+
+  const handleRemind = async () => {
+    setReminding(true)
+    await fetch('/api/listings/bulk-publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ ids: [listing.id] }),
+    }).catch(() => {})
+    setTimeout(() => setReminding(false), 2000)
+  }
+
   const isBusiness = listing.listingCategory === 'business'
   const area = isBusiness
     ? (listing.buildingArea ? `${listing.buildingArea} м²` : null)
     : (listing.area ? `${listing.area} сот.` : null)
+
+  const isDraft = listing.status === 'draft'
+  const isSold = listing.status === 'sold'
+  const createdMs = new Date(listing.createdAt).getTime()
+  const elapsedHours = (Date.now() - createdMs) / 3_600_000
+  const hoursLeft = Math.max(0, 24 - elapsedHours)
+  const isExpired = isDraft && elapsedHours >= 24
+  const editHref = isBusiness ? `/edit-business/${listing.id}` : `/edit-listing/${listing.id}`
 
   return (
     <div className="bg-white rounded-2xl border border-zinc-100 shadow-[0_2px_8px_rgba(0,0,0,0.05)] overflow-hidden">
@@ -88,6 +128,11 @@ function ListingCard({ listing, onDelete }: { listing: MyListing; onDelete: (id:
         <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${STATUS_CLASS[listing.status] ?? STATUS_CLASS.draft}`}>
           {STATUS_LABEL[listing.status] ?? listing.status}
         </span>
+        {/* Edit button overlay */}
+        <Link href={editHref}
+          className="absolute top-2 right-2 size-7 flex items-center justify-center bg-white/90 backdrop-blur-sm rounded-lg shadow-sm hover:bg-white transition-colors">
+          <Edit3 className="size-3.5 text-zinc-600" />
+        </Link>
       </div>
 
       {/* Info */}
@@ -104,15 +149,45 @@ function ListingCard({ listing, onDelete }: { listing: MyListing; onDelete: (id:
             {new Date(listing.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
           </span>
         </div>
+
+        {/* 24h статус для черновиков */}
+        {isDraft && !isExpired && (
+          <div className="flex items-center gap-1.5 pt-1">
+            <div className="relative flex size-1.5">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-60 animate-ping" />
+              <span className="relative inline-flex size-1.5 rounded-full bg-amber-400" />
+            </div>
+            <span className="text-[10px] font-semibold text-amber-600">
+              На проверке — осталось {Math.ceil(hoursLeft)} ч
+            </span>
+          </div>
+        )}
+        {isExpired && (
+          <button onClick={handleRemind} disabled={reminding}
+            className="mt-1 w-full flex items-center justify-center gap-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 text-[11px] font-bold py-1.5 rounded-xl transition-colors disabled:opacity-60">
+            {reminding ? '✓ Напоминание отправлено' : '⏰ Напомнить модератору'}
+          </button>
+        )}
       </div>
 
       {/* Actions */}
-      <div className="px-4 pb-4 flex gap-2">
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          className="flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-red-500 transition-colors disabled:opacity-40"
-        >
+      <div className="px-4 pb-4 flex items-center gap-3 border-t border-zinc-50 pt-3">
+        {!isSold && (
+          <button onClick={() => handleStatusChange('sold')} disabled={changingStatus}
+            className="flex items-center gap-1 text-xs font-semibold text-zinc-400 hover:text-amber-600 transition-colors disabled:opacity-40">
+            <Tag className="size-3.5" />
+            Продано
+          </button>
+        )}
+        {isSold && (
+          <button onClick={() => handleStatusChange('draft')} disabled={changingStatus}
+            className="flex items-center gap-1 text-xs font-semibold text-zinc-400 hover:text-primary transition-colors disabled:opacity-40">
+            <CheckCircle2 className="size-3.5" />
+            Снять с продажи
+          </button>
+        )}
+        <button onClick={handleDelete} disabled={deleting}
+          className="ml-auto flex items-center gap-1.5 text-xs font-medium text-zinc-300 hover:text-red-500 transition-colors disabled:opacity-40">
           <Trash2 className="size-3.5" />
           Удалить
         </button>
@@ -322,7 +397,9 @@ export default function ProfilePage() {
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {landListings.map(l => (
-                      <ListingCard key={l.id} listing={l} onDelete={id => setListings(prev => prev.filter(x => x.id !== id))} />
+                      <ListingCard key={l.id} listing={l}
+                        onDelete={id => setListings(prev => prev.filter(x => x.id !== id))}
+                        onStatusChange={(id, status) => setListings(prev => prev.map(x => x.id === id ? { ...x, status } : x))} />
                     ))}
                   </div>
                 )
@@ -342,7 +419,9 @@ export default function ProfilePage() {
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {bizListings.map(l => (
-                      <ListingCard key={l.id} listing={l} onDelete={id => setListings(prev => prev.filter(x => x.id !== id))} />
+                      <ListingCard key={l.id} listing={l}
+                        onDelete={id => setListings(prev => prev.filter(x => x.id !== id))}
+                        onStatusChange={(id, status) => setListings(prev => prev.map(x => x.id === id ? { ...x, status } : x))} />
                     ))}
                   </div>
                 )

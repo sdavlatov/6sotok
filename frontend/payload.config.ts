@@ -31,7 +31,8 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URI as string,
     },
-    push: true,
+    // Локально всегда true. В prod — только если PAYLOAD_DB_PUSH=true (только для первого деплоя)
+    push: process.env.NODE_ENV !== 'production' || process.env.PAYLOAD_DB_PUSH === 'true',
   }),
 
   plugins: [
