@@ -58,6 +58,8 @@ interface LeafletStatic {
   latLngBounds(latlngs: [number, number][]): LLatLngBounds;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   polygon(latlngs: [number, number][], options?: object): any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  circleMarker(latlng: [number, number], options?: object): any;
 }
 
 declare global {
