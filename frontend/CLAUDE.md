@@ -8,14 +8,51 @@ Responses must be short and concise. No summaries at end of response.
 
 ---
 
-## Последние изменения (2026-04-23)
+## Последние изменения (2026-05-07)
 
-- **Vercel деплой**: https://6sotok.vercel.app — работает. Neon PostgreSQL (unpooled URL — pooler ломает search_path). Vercel Blob для медиафайлов.
-- **payload.config.ts**: `vercelBlobStorage` плагин (`enabled: !!process.env.BLOB_READ_WRITE_TOKEN`). `push: true` в postgres адаптере.
-- **importMap.ts**: Добавлен `VercelBlobClientUploadHandler` вручную (generate:importmap не работает локально).
-- **instrumentation.ts**: Инициализирует Payload при старте сервера.
-- **Инфраструктура**: Frontend перенесён из Docker в WSL2 systemd service (`6sotok-dev.service`). Docker используется только для Postgres.
+- **payload.config.ts**: `push: NODE_ENV !== 'production'` — в проде ВЫКЛЮЧЕН навсегда. Данные в Neon больше не будут теряться при деплое.
+- **Изменение схемы**: всегда через Neon SQL Editor — см. раздел ниже.
+- **profile/page.tsx**: кнопки "Продано" и редактирования, 24h countdown для черновиков.
+- **edit-listing/[id]/page.tsx**: страница редактирования с предзаполненной формой.
+- **add-listing/page.tsx**: scroll to error, видимые точки при рисовании, авто-редирект после сабмита.
+- **Vercel деплой**: https://6sotok.vercel.app. Neon PostgreSQL (unpooled URL). Vercel Blob для медиа.
 - **api.ts**: Payload JS API напрямую (`getPayload({config})`), не HTTP — устраняет Turbopack panic.
+
+---
+
+## ⚠️ Изменение схемы БД (обязательно читать)
+
+`push: true` в продакшене **стёр все данные** при деплое. Теперь `push` работает только локально.
+
+### Правило: любое изменение полей в `Listings.ts` (или других коллекциях) требует двух шагов:
+
+**Шаг 1 — локально** (автоматически через push):
+```bash
+systemctl --user restart 6sotok-dev.service
+```
+Payload сам применит изменения к локальному Docker Postgres.
+
+**Шаг 2 — Neon (вручную)** перед или после деплоя на Vercel:
+
+| Действие в коллекции | SQL на Neon |
+|---|---|
+| Добавить поле `myField` (text) | `ALTER TABLE listings ADD COLUMN IF NOT EXISTS my_field text;` |
+| Добавить поле `myFlag` (checkbox) | `ALTER TABLE listings ADD COLUMN IF NOT EXISTS my_flag boolean DEFAULT false;` |
+| Добавить поле `myNum` (number) | `ALTER TABLE listings ADD COLUMN IF NOT EXISTS my_num numeric;` |
+| Удалить поле | `ALTER TABLE listings DROP COLUMN IF EXISTS old_field;` |
+| Переименовать поле | `ALTER TABLE listings RENAME COLUMN old_name TO new_name;` |
+
+Neon SQL Editor: https://console.neon.tech → проект → SQL Editor
+
+### Маппинг имён: Payload (camelCase) → Postgres (snake_case)
+- `dealType` → `deal_type`
+- `listingCategory` → `listing_category`
+- `hasElectricity` → `has_electricity`
+- `sellerHasWhatsApp` → `seller_has_whats_app`
+
+### НИКОГДА не делать:
+- Не добавлять `PAYLOAD_DB_PUSH=true` в Vercel env vars — это опасно
+- Не менять `push: false` в prod на `push: true`
 
 ---
 
