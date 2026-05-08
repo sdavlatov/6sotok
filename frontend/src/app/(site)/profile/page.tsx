@@ -211,6 +211,12 @@ export default function ProfilePage() {
   const [saveError, setSaveError] = useState('')
 
   useEffect(() => {
+    if (!loading && !user) {
+      router.replace('/login?next=/profile')
+    }
+  }, [user, loading, router])
+
+  useEffect(() => {
     if (!user) return
     setListingsLoading(true)
     fetch(`/api/listings?where[seller][equals]=${user.id}&depth=1&limit=50`, { credentials: 'include' })
@@ -220,7 +226,7 @@ export default function ProfilePage() {
       .finally(() => setListingsLoading(false))
   }, [user])
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="min-h-[calc(100vh-80px)] bg-zinc-50 flex items-center justify-center">
         <div className="size-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
@@ -229,7 +235,6 @@ export default function ProfilePage() {
   }
 
   if (!user) {
-    router.replace('/login?next=/profile')
     return null
   }
 

@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation';
 import { pushDataLayer } from '@/lib/analytics';
 import { LAND_CATEGORIES, UTILITIES, LEGAL_FILTERS } from '@/lib/listing-constants';
 import { useAuth } from '@/context/auth-context';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, FileText } from 'lucide-react';
+import { AuthCard } from '@/components/auth/auth-card';
 
 // ── форматирование цены ──────────────────────────────────────────────────────
 const fmtPrice = (v: string) => {
@@ -258,9 +259,31 @@ const LOCATION_TYPES = [
 ] as const;
 const PLOT_SHAPES = ['Прямоугольный', 'Квадратный', 'Г-образный', 'Трапеция', 'Нестандартный'] as const;
 
+// ── Auth Gate ────────────────────────────────────────────────────────────────
+function AuthGate() {
+  return (
+    <div className="min-h-[calc(100vh-80px)] bg-zinc-50 flex items-center">
+      <Container>
+        <div className="mx-auto max-w-sm w-full py-12">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center bg-primary-soft p-3 rounded-2xl mb-4">
+              <FileText className="size-6 text-primary" />
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
+              Войдите, чтобы подать объявление
+            </h1>
+            <p className="mt-1.5 text-sm text-zinc-500">Бесплатное размещение для частных лиц</p>
+          </div>
+          <AuthCard />
+        </div>
+      </Container>
+    </div>
+  );
+}
+
 // ── Главный компонент ────────────────────────────────────────────────────────
 export default function AddListingPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const [errors, setErrors]             = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -496,6 +519,18 @@ export default function AddListingPage() {
       {label}
     </button>
   );
+
+  if (loading) {
+    return (
+      <div className="min-h-[calc(100vh-80px)] bg-zinc-50 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthGate />;
+  }
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
