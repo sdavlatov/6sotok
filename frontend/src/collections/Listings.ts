@@ -167,7 +167,6 @@ export const Listings: CollectionConfig = {
     {
       name: 'landType',
       type: 'select',
-      required: true,
       label: 'Тип участка',
       options: [
         { label: 'ИЖС', value: 'ИЖС' },
@@ -176,6 +175,34 @@ export const Listings: CollectionConfig = {
         { label: 'Сельхоз', value: 'Сельхоз' },
         { label: 'МЖС', value: 'МЖС' },
         { label: 'ЛПХ', value: 'ЛПХ' },
+      ],
+    },
+
+    // ─── Бизнес: характеристики объекта ─────────────────────────────────────
+    {
+      type: 'collapsible',
+      label: 'Характеристики объекта (бизнес)',
+      fields: [
+        { name: 'floor', type: 'number', label: 'Этаж', min: 0 },
+        { name: 'totalFloors', type: 'number', label: 'Этажей в здании', min: 1 },
+        { name: 'ceilingHeight', type: 'number', label: 'Высота потолков (м)', min: 0 },
+        { name: 'yearBuilt', type: 'number', label: 'Год постройки', min: 1900, max: 2100 },
+        {
+          name: 'condition',
+          type: 'select',
+          label: 'Состояние',
+          options: [
+            { label: 'Свежий ремонт', value: 'renovated' },
+            { label: 'Хорошее', value: 'good' },
+            { label: 'Требует ремонта', value: 'needs_repair' },
+            { label: 'Под чистовую', value: 'shell' },
+          ],
+        },
+        { name: 'electricPower', type: 'number', label: 'Выделенная мощность (кВт)', min: 0 },
+        { name: 'hasParking', type: 'checkbox', label: 'Собственная парковка', defaultValue: false },
+        { name: 'hasSeparateEntrance', type: 'checkbox', label: 'Отдельный вход', defaultValue: false },
+        { name: 'isOperational', type: 'checkbox', label: 'Действующий бизнес', defaultValue: false },
+        { name: 'isTenanted', type: 'checkbox', label: 'Есть арендаторы', defaultValue: false },
       ],
     },
 
