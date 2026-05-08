@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { HeroMap } from './hero-map';
 
 interface CarouselItem {
-  id: number;
+  id: string | number;
   slug: string;
   title: string;
   price?: number | null;
@@ -17,7 +17,7 @@ interface CarouselItem {
 }
 
 interface SmallItem {
-  id: number;
+  id: string | number;
   slug: string;
   title: string;
   price?: number | null;
