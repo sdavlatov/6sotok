@@ -62,6 +62,19 @@ export interface Listing {
   listingCategory?: ListingCategory;
   businessType?: BusinessType;
   buildingArea?: number;
+  address?: string;
+
+  // Бизнес: характеристики объекта
+  floor?: number;
+  totalFloors?: number;
+  ceilingHeight?: number;
+  yearBuilt?: number;
+  condition?: 'renovated' | 'good' | 'needs_repair' | 'shell';
+  electricPower?: number;
+  hasParking?: boolean;
+  hasSeparateEntrance?: boolean;
+  isOperational?: boolean;
+  isTenanted?: boolean;
 
   // Координаты для карты
   lat?: number;

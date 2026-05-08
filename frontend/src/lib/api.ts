@@ -45,6 +45,17 @@ interface PayloadListing {
   listingCategory?: string
   businessType?: string
   buildingArea?: number
+  address?: string
+  floor?: number
+  totalFloors?: number
+  ceilingHeight?: number
+  yearBuilt?: number
+  condition?: string
+  electricPower?: number
+  hasParking?: boolean
+  hasSeparateEntrance?: boolean
+  isOperational?: boolean
+  isTenanted?: boolean
   sellerName?: string
   sellerPhone?: string
   sellerHasWhatsApp?: boolean
@@ -82,6 +93,17 @@ function mapListing(p: PayloadListing): Listing {
     listingCategory: (p.listingCategory as Listing['listingCategory']) ?? 'land',
     businessType: p.businessType as Listing['businessType'],
     buildingArea: p.buildingArea,
+    address: p.address,
+    floor: p.floor,
+    totalFloors: p.totalFloors,
+    ceilingHeight: p.ceilingHeight,
+    yearBuilt: p.yearBuilt,
+    condition: p.condition as Listing['condition'],
+    electricPower: p.electricPower,
+    hasParking: p.hasParking,
+    hasSeparateEntrance: p.hasSeparateEntrance,
+    isOperational: p.isOperational,
+    isTenanted: p.isTenanted,
     lat: p.lat,
     lng: p.lng,
     cadastralNumber: p.cadastralNumber,
@@ -124,6 +146,26 @@ export async function getListings(params: Record<string, string> = {}): Promise<
       collection: 'listings',
       where: { status: { equals: 'published' } },
       limit,
+      depth: 1,
+    })
+    return (result.docs as unknown as PayloadListing[]).map(mapListing)
+  } catch {
+    return []
+  }
+}
+
+export async function getBusinessListings(): Promise<Listing[]> {
+  try {
+    const p = await payload()
+    const result = await p.find({
+      collection: 'listings',
+      where: {
+        and: [
+          { status: { equals: 'published' } },
+          { listingCategory: { equals: 'business' } },
+        ],
+      },
+      limit: 200,
       depth: 1,
     })
     return (result.docs as unknown as PayloadListing[]).map(mapListing)
