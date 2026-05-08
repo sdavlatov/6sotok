@@ -131,6 +131,12 @@ export function CatalogClient({
     onViewModeChange: setViewMode,
   };
 
+  const toggleCategory = (cat: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+    );
+  };
+
   const resetAll = () => {
     setSelectedCategories([]); setLocation('');
     setAreaFrom(''); setAreaTo(''); setPriceFrom(''); setPriceTo('');
