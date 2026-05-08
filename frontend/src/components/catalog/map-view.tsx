@@ -12,6 +12,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { listingUrl } from '@/lib/listing-url';
 
 export interface MapItem {
   id: string | number
@@ -20,6 +21,8 @@ export interface MapItem {
   price: number
   location: string
   image: string
+  landType?: string
+  purpose?: string
   lat?: number | null
   lng?: number | null
 }
@@ -295,7 +298,7 @@ export function MapView({ listings, onMarkerClick }: MapViewProps) {
                 </svg>
               </button>
               <Link
-                href={`/listing/${active.slug}`}
+                href={listingUrl(active)}
                 className="text-[11px] font-bold text-white bg-primary hover:bg-primary-hover rounded-xl px-3 py-1.5 transition-colors"
               >
                 Открыть →

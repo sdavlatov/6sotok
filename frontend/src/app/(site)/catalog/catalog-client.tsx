@@ -6,9 +6,9 @@ import { Container } from '@/components/layout/container';
 import { ListingsGrid } from '@/components/listings/listings-grid';
 import { ListingCard } from '@/components/listings/listing-card';
 import { CatalogFilters } from '@/components/catalog/filters';
-
 import { CatalogSort } from '@/components/catalog/sort';
 import { MapView, type MapItem } from '@/components/catalog/map-view';
+import { LAND_CATEGORIES } from '@/lib/listing-constants';
 import type { Listing } from '@/types/listing';
 
 type ViewMode = 'list' | 'map';
@@ -170,16 +170,60 @@ export function CatalogClient({
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-primary-soft overflow-x-hidden">
-      <div className="py-8 pb-20">
-        <Container>
 
-          <div className="mb-6">
-            <h1 className="text-3xl font-black tracking-tight text-zinc-900 sm:text-4xl">Каталог участков</h1>
-            <p className="mt-2 text-base font-medium text-zinc-500">
-              Найдено <span className="text-zinc-900 font-bold">{filteredListings.length}</span> объявлений в Казахстане
+      {/* Hero */}
+      <div className="bg-gradient-to-br from-white via-white to-primary-soft/20 border-b border-zinc-100">
+        <Container>
+          <div className="py-10 md:py-14">
+            <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-3">Земельные участки</p>
+            <h1 className="text-3xl md:text-5xl font-black tracking-tight text-zinc-900 mb-3">
+              Участки в Казахстане
+            </h1>
+            <p className="text-[15px] md:text-base text-zinc-500 max-w-xl">
+              {allListings.length > 0
+                ? `${allListings.length} объявлений — ИЖС, дача, коммерция и сельхоз`
+                : 'Покупка и продажа земельных участков'}
             </p>
           </div>
+        </Container>
+      </div>
 
+      {/* Category pills */}
+      <div className="bg-white border-b border-zinc-100 sticky top-[64px] z-30">
+        <Container>
+          <div className="flex items-center gap-2 py-3 overflow-x-auto scrollbar-none">
+            <button
+              onClick={() => setSelectedCategories([])}
+              className={`flex items-center px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all shrink-0 ${
+                selectedCategories.length === 0
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+              }`}
+            >
+              Все
+            </button>
+            {LAND_CATEGORIES.map(cat => {
+              const active = selectedCategories.includes(cat);
+              return (
+                <button
+                  key={cat}
+                  onClick={() => toggleCategory(cat)}
+                  className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all shrink-0 ${
+                    active
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                  }`}
+                >
+                  {cat}
+                </button>
+              );
+            })}
+          </div>
+        </Container>
+      </div>
+
+      <div className="py-8 pb-20">
+        <Container>
           <div className="flex flex-col items-start gap-8 lg:flex-row">
 
             {/* Desktop sidebar */}

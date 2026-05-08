@@ -303,7 +303,7 @@ export default async function ListingPage({ params }: Props) {
 
       </div>
 
-      <ViewTracker id={String(listing.id)} />
+      <ViewTracker id={String(listing.id)} slug={listing.slug} />
       <MobileContactBar
         price={listing.price}
         pricePerSotka={pricePerSotka}

@@ -13,8 +13,8 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: '6sotok.kz — Маркетплейс земельных участков Казахстана',
-  description: 'Покупка и продажа земельных участков в Казахстане. Напрямую от собственников и проверенных агентств.',
+  title: '6sotok.kz — Земля и бизнес в Казахстане',
+  description: 'Маркетплейс земельных участков и готового бизнеса в Казахстане. Напрямую от собственников и проверенных агентств.',
 }
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
