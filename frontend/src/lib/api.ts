@@ -45,7 +45,6 @@ interface PayloadListing {
   listingCategory?: string
   businessType?: string
   buildingArea?: number
-  address?: string
   floor?: number
   totalFloors?: number
   ceilingHeight?: number
