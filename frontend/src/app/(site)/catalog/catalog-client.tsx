@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { SlidersHorizontal, List, Map, X } from 'lucide-react';
+import { SlidersHorizontal, List, Map, X, Search, Bookmark } from 'lucide-react';
 import { MapView, type MapItem, type MapApi, type CompareItem, formatPrice } from '@/components/catalog/map-view';
 import { CatalogFilters } from '@/components/catalog/filters';
 import { CatalogSort } from '@/components/catalog/sort';
@@ -233,6 +233,7 @@ export function CatalogClient({
   // Compare + bookmark
   const [compareList, setCompareList] = useState<CompareItem[]>([]);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string | number>>(new Set());
+  const [showSaved, setShowSaved] = useState(false);
 
   const toggleCompare = useCallback((listing: Listing, e: React.MouseEvent) => {
     e.preventDefault();
@@ -300,10 +301,13 @@ export function CatalogClient({
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
+    if (showSaved) result = result.filter(l => bookmarkedIds.has(l.id));
+
     return result;
   }, [selectedCategories, location, areaFrom, areaTo, priceFrom, priceTo,
       sortOrder, isPledged, isOnRedLine, isDivisible,
-      hasElectricity, hasGas, hasWater, hasSewer, hasRoadAccess, allListings]);
+      hasElectricity, hasGas, hasWater, hasSewer, hasRoadAccess, allListings,
+      showSaved, bookmarkedIds]);
 
   const activeFilterCount = useMemo(() => [
     selectedCategories.length > 0, !!location,
@@ -420,6 +424,52 @@ export function CatalogClient({
 
   return (
     <div className="fixed inset-0 flex flex-col bg-white isolate" style={{ top: '64px', zIndex: 40 }}>
+
+      {/* ── Top bar: breadcrumbs + location search + saved ─────────────────── */}
+      <div className="h-11 bg-zinc-50 border-b border-zinc-200 flex items-center px-4 gap-3 shrink-0 relative z-10">
+        {/* Breadcrumbs */}
+        <nav className="flex items-center gap-1.5 text-[12px] text-zinc-500 shrink-0">
+          <Link href="/" className="hover:text-zinc-900 transition-colors">Главная</Link>
+          <span className="text-zinc-300">/</span>
+          <Link href="/catalog" className="hover:text-zinc-900 transition-colors">Каталог</Link>
+          {location && (
+            <>
+              <span className="text-zinc-300">/</span>
+              <span className="text-zinc-900 font-medium">{location}</span>
+            </>
+          )}
+        </nav>
+
+        <span className="w-px h-5 bg-zinc-200 shrink-0" />
+
+        {/* Location search */}
+        <div className="flex-1 max-w-xs relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 pointer-events-none" />
+          <input
+            type="text"
+            value={location}
+            onChange={e => setLocation(e.target.value)}
+            placeholder="Город, район или кадастровый номер"
+            className="w-full pl-8 pr-3 h-7 bg-white border border-zinc-200 rounded-lg text-[12px] placeholder:text-zinc-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/10 transition-all"
+          />
+        </div>
+
+        <div className="flex-1" />
+
+        {/* Saved toggle */}
+        <label className="flex items-center gap-2 cursor-pointer select-none shrink-0">
+          <div
+            className={`relative w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${showSaved ? 'bg-primary border-primary' : 'border-zinc-300 bg-white'}`}
+            onClick={() => setShowSaved(v => !v)}
+          >
+            {showSaved && <svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6L8 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+          </div>
+          <span className="text-[12px] text-zinc-700" onClick={() => setShowSaved(v => !v)}>
+            Сохранённые
+            {bookmarkedIds.size > 0 && <span className="ml-1 text-zinc-400">({bookmarkedIds.size})</span>}
+          </span>
+        </label>
+      </div>
 
       {/* ── Filter bar ─────────────────────────────────────────────────────── */}
       <div className="h-14 bg-white border-b border-zinc-200 flex items-center px-4 gap-2 overflow-x-auto shrink-0 scrollbar-none relative z-10">
