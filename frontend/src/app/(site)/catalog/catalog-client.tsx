@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { SlidersHorizontal, List, Map, X } from 'lucide-react';
-import { MapView, type MapItem, type MapApi, formatPrice } from '@/components/catalog/map-view';
+import { MapView, type MapItem, type MapApi, type CompareItem, formatPrice } from '@/components/catalog/map-view';
 import { CatalogFilters } from '@/components/catalog/filters';
 import { CatalogSort } from '@/components/catalog/sort';
 import { LAND_CATEGORIES } from '@/lib/listing-constants';
@@ -45,12 +45,16 @@ function relDate(dateStr: string): string {
 }
 
 // ── Compact sidebar card ─────────────────────────────────────────────────────
-function SidebarCard({ listing, active, onEnter, onLeave, cardRef }: {
+function SidebarCard({ listing, active, bookmarked, inCompare, onEnter, onLeave, cardRef, onBookmark, onCompare }: {
   listing: Listing;
   active: boolean;
+  bookmarked: boolean;
+  inCompare: boolean;
   onEnter: () => void;
   onLeave: () => void;
   cardRef: (el: HTMLDivElement | null) => void;
+  onBookmark: (e: React.MouseEvent) => void;
+  onCompare: (e: React.MouseEvent) => void;
 }) {
   const img = listing.images?.[0] ?? listing.image ?? null;
   const typeLabel = listing.purpose || listing.landType || '';
@@ -95,9 +99,19 @@ function SidebarCard({ listing, active, onEnter, onLeave, cardRef }: {
           </div>
 
           <div className="flex-1 min-w-0">
-            <p className="text-[10.5px] font-medium text-zinc-500 uppercase tracking-wider truncate">
-              {typeLabel}{typeLabel && listing.location ? ' · ' : ''}{listing.location}
-            </p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[10.5px] font-medium text-zinc-500 uppercase tracking-wider truncate">
+                {typeLabel}{typeLabel && listing.location ? ' · ' : ''}{listing.location}
+              </p>
+              <button
+                onClick={onBookmark}
+                className={`shrink-0 w-6 h-6 rounded flex items-center justify-center text-[13px] transition-colors ${
+                  bookmarked ? 'text-amber-500' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100'
+                }`}
+              >
+                {bookmarked ? '★' : '☆'}
+              </button>
+            </div>
             <h3 className="mt-0.5 font-semibold text-[14.5px] leading-snug text-zinc-900 line-clamp-2">
               {listing.title}
             </h3>
@@ -112,9 +126,22 @@ function SidebarCard({ listing, active, onEnter, onLeave, cardRef }: {
                   </div>
                 )}
               </div>
-              <span className="text-[10px] font-mono text-zinc-400 shrink-0" suppressHydrationWarning>
-                {relDate(listing.createdAt)}
-              </span>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-[10px] font-mono text-zinc-400" suppressHydrationWarning>
+                  {relDate(listing.createdAt)}
+                </span>
+                <button
+                  onClick={onCompare}
+                  title="Добавить к сравнению"
+                  className={`w-5 h-5 rounded border flex items-center justify-center text-[9px] font-bold transition-colors ${
+                    inCompare
+                      ? 'bg-primary border-primary text-white'
+                      : 'border-zinc-300 text-zinc-400 hover:border-primary hover:text-primary'
+                  }`}
+                >
+                  {inCompare ? '✓' : '+'}
+                </button>
+              </div>
             </div>
             {chips.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
@@ -204,6 +231,35 @@ export function CatalogClient({
   const cardRefs      = useRef<Record<string | number, HTMLDivElement | null>>({});
   const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mapApi        = useRef<MapApi | null>(null);
+
+  // Compare + bookmark
+  const [compareList, setCompareList] = useState<CompareItem[]>([]);
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string | number>>(new Set());
+
+  const toggleCompare = useCallback((listing: Listing, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCompareList(prev => {
+      if (prev.find(c => c.id === listing.id)) return prev.filter(c => c.id !== listing.id);
+      if (prev.length >= 4) return prev;
+      return [...prev, {
+        id: listing.id,
+        price: listing.price,
+        image: listing.images?.[0] ?? listing.image ?? '',
+        title: listing.title,
+      }];
+    });
+  }, []);
+
+  const toggleBookmark = useCallback((id: string | number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setBookmarkedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
 
   // Count by type
   const typeCountMap = useMemo(() => {
@@ -428,6 +484,32 @@ export function CatalogClient({
           </button>
         )}
 
+        {/* Quick-add filter shortcuts */}
+        {!hasUtilityFilter && (
+          <button
+            onClick={() => setIsFiltersOpen(true)}
+            className="shrink-0 h-9 px-3 rounded-lg border border-dashed border-zinc-300 bg-white text-[12.5px] font-medium text-zinc-600 hover:border-zinc-500 hover:text-zinc-900 transition whitespace-nowrap"
+          >
+            + Коммуникации
+          </button>
+        )}
+        {selectedCategories.length === 0 && (
+          <button
+            onClick={() => setIsFiltersOpen(true)}
+            className="shrink-0 h-9 px-3 rounded-lg border border-dashed border-zinc-300 bg-white text-[12.5px] font-medium text-zinc-600 hover:border-zinc-500 hover:text-zinc-900 transition whitespace-nowrap"
+          >
+            + Категория земли
+          </button>
+        )}
+        {!location && (
+          <button
+            onClick={() => setIsFiltersOpen(true)}
+            className="shrink-0 h-9 px-3 rounded-lg border border-dashed border-zinc-300 bg-white text-[12.5px] font-medium text-zinc-600 hover:border-zinc-500 hover:text-zinc-900 transition whitespace-nowrap hidden lg:block"
+          >
+            + От города
+          </button>
+        )}
+
         <div className="flex-1 min-w-2" />
 
         {/* Mobile list/map toggle */}
@@ -505,9 +587,13 @@ export function CatalogClient({
                   key={l.id}
                   listing={l}
                   active={hoveredId === l.id}
+                  bookmarked={bookmarkedIds.has(l.id)}
+                  inCompare={!!compareList.find(c => c.id === l.id)}
                   onEnter={() => setHoveredId(l.id)}
                   onLeave={() => setHoveredId(null)}
                   cardRef={el => { cardRefs.current[l.id] = el; }}
+                  onBookmark={e => toggleBookmark(l.id, e)}
+                  onCompare={e => toggleCompare(l, e)}
                 />
               ))
             )}
@@ -527,6 +613,9 @@ export function CatalogClient({
             statsPerSotka={avgPerSotka}
             searchAsMove={searchAsMove}
             onSearchAsMoveChange={setSearchAsMove}
+            compareList={compareList}
+            onRemoveCompare={id => setCompareList(prev => prev.filter(c => c.id !== id))}
+            onCompare={() => {/* TODO: open compare view */}}
           />
         </section>
 
@@ -542,9 +631,13 @@ export function CatalogClient({
                     key={l.id}
                     listing={l}
                     active={false}
+                    bookmarked={bookmarkedIds.has(l.id)}
+                    inCompare={!!compareList.find(c => c.id === l.id)}
                     onEnter={() => {}}
                     onLeave={() => {}}
                     cardRef={() => {}}
+                    onBookmark={e => toggleBookmark(l.id, e)}
+                    onCompare={e => toggleCompare(l, e)}
                   />
                 ))
               )}

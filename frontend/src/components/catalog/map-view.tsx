@@ -106,6 +106,13 @@ export interface MapApi {
   zoomOut: () => void;
 }
 
+export interface CompareItem {
+  id: string | number;
+  price: number;
+  image: string;
+  title: string;
+}
+
 // ─── Props ───────────────────────────────────────────────────────────────────
 export interface MapViewProps {
   listings: MapItem[];
@@ -120,6 +127,10 @@ export interface MapViewProps {
   // Search as move
   searchAsMove?: boolean;
   onSearchAsMoveChange?: (v: boolean) => void;
+  // Compare
+  compareList?: CompareItem[];
+  onRemoveCompare?: (id: string | number) => void;
+  onCompare?: () => void;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -134,6 +145,9 @@ export function MapView({
   statsPerSotka,
   searchAsMove,
   onSearchAsMoveChange,
+  compareList,
+  onRemoveCompare,
+  onCompare,
 }: MapViewProps) {
   const mapRef     = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<LMap | null>(null);
@@ -397,6 +411,73 @@ export function MapView({
                 <path d="M9 7l1.5 1.5M11 5l1.5 1.5M13 9l1.5 1.5M15 7l1.5 1.5" />
               </svg>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* BOTTOM-LEFT: Compare strip */}
+      {compareList && compareList.length > 0 && (
+        <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-white rounded-2xl border border-zinc-200 shadow-lg p-2" style={{ zIndex: 900 }}>
+          <div className="px-2.5 py-1.5 shrink-0">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">Сравнение</div>
+            <div className="text-[12.5px] font-bold text-zinc-900">{compareList.length} из 4</div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {compareList.map(item => (
+              <div key={item.id} className="relative w-12 h-12 rounded-lg bg-zinc-100 overflow-hidden ring-2 ring-primary ring-offset-1">
+                {item.image
+                  ? <img src={item.image} className="w-full h-full object-cover" alt="" loading="lazy" />
+                  : <div className="w-full h-full bg-gradient-to-br from-zinc-100 to-zinc-200" />
+                }
+                <button
+                  onClick={() => onRemoveCompare?.(item.id)}
+                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-zinc-900 text-white text-[9px] flex items-center justify-center"
+                  style={{ zIndex: 1 }}
+                >×</button>
+                <span className="absolute bottom-0 left-0 right-0 bg-zinc-900/80 text-white text-[8px] font-bold py-0.5 text-center rounded-b-lg">
+                  {fmtM(item.price)}м
+                </span>
+              </div>
+            ))}
+            {compareList.length < 4 && (
+              <div className="w-12 h-12 rounded-lg border-2 border-dashed border-zinc-300 flex items-center justify-center text-zinc-400 text-xl">+</div>
+            )}
+          </div>
+          <span className="w-px h-10 bg-zinc-200 shrink-0" />
+          <button
+            onClick={onCompare}
+            className="h-10 px-4 rounded-xl bg-zinc-900 text-white text-[12px] font-semibold hover:bg-primary transition-colors flex items-center gap-1.5 shrink-0"
+          >
+            Сравнить →
+          </button>
+        </div>
+      )}
+
+      {/* BOTTOM-RIGHT: Analytics card (hidden when active pin popup is shown) */}
+      {!active && showOverlays && (statsPerSotka ?? 0) > 0 && (
+        <div className="absolute bottom-4 right-4 w-[260px]" style={{ zIndex: 900 }}>
+          <div className="bg-white rounded-2xl border border-zinc-200 shadow-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-[10.5px] font-mono uppercase tracking-wider text-zinc-500">в окне карты</div>
+              <button className="text-[10.5px] font-mono text-primary font-bold hover:underline">Аналитика →</button>
+            </div>
+            <div className="font-black tracking-tight text-[26px] leading-none text-zinc-900">
+              {fmtM(statsPerSotka!)} млн ₸
+            </div>
+            <div className="text-[11px] text-zinc-500 mt-0.5">средняя цена за сотку</div>
+            <div className="mt-4 flex items-end gap-1 h-12">
+              {[30, 42, 38, 55, 48, 62, 70, 78, 88, 100].map((h, i) => (
+                <div
+                  key={i}
+                  className={`flex-1 rounded-sm ${i >= 8 ? 'bg-primary' : i >= 5 ? 'bg-zinc-300' : 'bg-zinc-200'}`}
+                  style={{ height: `${h}%` }}
+                />
+              ))}
+            </div>
+            <div className="mt-1.5 flex items-center justify-between font-mono text-[9.5px] text-zinc-400">
+              <span>авг&apos;25</span>
+              <span className="text-primary font-bold">↑ 18% / год</span>
+            </div>
           </div>
         </div>
       )}
