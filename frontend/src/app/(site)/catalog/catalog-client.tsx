@@ -423,7 +423,7 @@ export function CatalogClient({
   const hasLegalFilter   = isPledged || isOnRedLine || isDivisible;
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-white isolate" style={{ top: '64px', zIndex: 40 }}>
+    <div className="fixed inset-0 flex flex-col bg-white isolate" style={{ top: '52px', zIndex: 40 }}>
 
       {/* ── Top bar: breadcrumbs + location search + saved ─────────────────── */}
       <div className="h-11 bg-zinc-50 border-b border-zinc-200 flex items-center px-4 gap-3 shrink-0 relative z-10">
