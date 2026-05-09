@@ -157,7 +157,7 @@ export default async function HomePage() {
               </div>
               <div className="relative">
                 <div className="grid grid-cols-3 gap-4 mb-7">
-                  {[['01','Кадастровый номер'],['02','Фото и описание'],['03','Заявки в Telegram']].map(([n,t]) => (
+                  {[['01','Кадастровый номер'],['02','Фото и описание'],['03','WhatsApp и звонки']].map(([n,t]) => (
                     <div key={n} className="border-l-2 border-primary/40 pl-3">
                       <div className="font-mono text-[11.5px] font-bold text-primary">{n}</div>
                       <div className="mt-1 text-[13.5px] font-semibold leading-tight">{t}</div>
