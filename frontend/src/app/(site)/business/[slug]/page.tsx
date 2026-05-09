@@ -160,7 +160,15 @@ export default async function BusinessListingPage({ params }: Props) {
 
           {/* Right column — contact */}
           <div className="lg:sticky lg:top-24 space-y-4">
-            <ContactCard listing={listing} isNegotiable={false} />
+            <ContactCard
+              price={listing.price}
+              pricePerSotka={listing.area ? Math.round(listing.price / listing.area) : 0}
+              seller={listing.seller}
+              slug={listing.slug}
+              title={listing.title}
+              createdAt={listing.createdAt}
+              views={listing.views}
+            />
           </div>
         </div>
 
@@ -187,7 +195,13 @@ export default async function BusinessListingPage({ params }: Props) {
         )}
       </div>
 
-      <MobileContactBar listing={listing} />
+      <MobileContactBar
+        price={listing.price}
+        pricePerSotka={listing.area ? Math.round(listing.price / listing.area) : 0}
+        seller={listing.seller}
+        slug={listing.slug}
+        title={listing.title}
+      />
     </div>
   );
 }
