@@ -121,7 +121,7 @@ export default async function HomePage() {
               </div>
 
               <div className="relative">
-                <div className="font-mono text-[10.5px] uppercase tracking-widest text-primary">→ покупателям</div>
+                <div className="font-mono text-[12px] uppercase tracking-widest text-primary">→ покупателям</div>
                 <h3 className="mt-4 font-black tracking-[-0.04em] text-[52px] leading-[0.95] text-zinc-900">
                   Ищите участок<br />как на карте,<br />а не в ленте.
                 </h3>
@@ -150,7 +150,7 @@ export default async function HomePage() {
               <div className="drift absolute -bottom-32 -right-32 w-[420px] h-[420px] rounded-full pointer-events-none"
                 style={{ background: 'radial-gradient(circle, rgba(44,166,78,0.45) 0%, transparent 60%)' }} />
               <div className="relative">
-                <div className="font-mono text-[10.5px] uppercase tracking-widest" style={{ color: '#2CA64E' }}>→ продавцам</div>
+                <div className="font-mono text-[12px] uppercase tracking-widest" style={{ color: '#2CA64E' }}>→ продавцам</div>
                 <h3 className="mt-4 font-black tracking-[-0.04em] text-[52px] leading-[0.95]">
                   Разместите<br />участок<br />за&nbsp;3&nbsp;минуты.
                 </h3>
@@ -158,7 +158,7 @@ export default async function HomePage() {
               <div className="relative">
                 <div className="grid grid-cols-3 gap-3 mb-6">
                   {[['01','Кадастровый номер'],['02','Фото и документы'],['03','WhatsApp и звонки']].map(([n,t], i) => (
-                    <div key={n} className={`border-l pl-3 pt-3 ${i === 2 ? 'border-[#2CA64E]' : 'border-white/20'}`}>
+                    <div key={n} className={`border-l pl-3 ${i === 2 ? 'border-[#2CA64E]' : 'border-white/20'}`}>
                       <div className="font-mono text-[10px]" style={{ color: '#2CA64E' }}>{n}</div>
                       <div className="mt-0.5 text-[12.5px] font-semibold leading-tight">{t}</div>
                     </div>
@@ -168,7 +168,7 @@ export default async function HomePage() {
                   Бесплатное размещение, проверка кадастра по ИИН, в среднем 14 дней до сделки. Берём 0% с продавца.
                 </p>
                 <div className="mt-7">
-                  <span className="px-5 h-11 rounded-xl bg-white text-zinc-900 font-semibold text-[13.5px] tracking-tight inline-flex items-center gap-2 group-hover:bg-[#2CA64E] group-hover:text-white transition">
+                  <span className="px-5 h-11 rounded-xl bg-white text-zinc-900 font-semibold text-[13.5px] tracking-tight inline-flex items-center gap-2 group-hover:bg-primary group-hover:text-white transition">
                     Разместить объявление →
                   </span>
                 </div>
