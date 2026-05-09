@@ -10,14 +10,15 @@ export function HeroBadge() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
     >
-      {/* Medal badge */}
+      {/* №1 badge with pulse */}
       <motion.span
-        className="flex items-center justify-center w-7 h-7 rounded-full bg-amber-400 text-white font-black text-[13px] leading-none shadow-sm"
-        initial={{ scale: 0, rotate: -15 }}
-        animate={{ scale: 1, rotate: 0 }}
+        className="relative flex items-center justify-center w-8 h-8 rounded-full bg-primary text-white font-black text-[12px] leading-none flex-shrink-0"
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
         transition={{ delay: 0.2, duration: 0.4, type: 'spring', stiffness: 260, damping: 18 }}
       >
-        🥇
+        <span className="absolute inset-0 rounded-full bg-primary animate-ping opacity-30" />
+        №1
       </motion.span>
 
       <span className="text-[12.5px] font-semibold text-zinc-900 tracking-tight">
@@ -27,7 +28,7 @@ export function HeroBadge() {
       <span className="w-1 h-1 rounded-full bg-zinc-300 flex-shrink-0" />
 
       <span className="text-[12px] font-medium text-zinc-500 whitespace-nowrap">
-        с 2024 года
+        с 2021 года
       </span>
     </motion.div>
   );
