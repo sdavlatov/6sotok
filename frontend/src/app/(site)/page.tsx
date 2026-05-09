@@ -123,7 +123,7 @@ export default async function HomePage() {
               <div className="relative">
                 <div className="font-mono text-[12px] uppercase tracking-widest text-primary">→ покупателям</div>
                 <h3 className="mt-4 font-black tracking-[-0.04em] text-[52px] leading-[0.95] text-zinc-900">
-                  Ищите участки<br />прямо на карте.
+                  Ищите участки<br />прямо<br />на карте.
                 </h3>
               </div>
               <div className="relative">
