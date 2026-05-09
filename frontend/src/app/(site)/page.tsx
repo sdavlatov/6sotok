@@ -152,23 +152,23 @@ export default async function HomePage() {
               <div className="relative">
                 <div className="text-[11.5px] font-medium uppercase tracking-[0.12em] text-white/55">→ Продавцам</div>
                 <h3 className="mt-5 font-black tracking-[-0.04em] text-[48px] md:text-[52px] leading-[0.95]">
-                  Разместите<br />участок<br /><span className="text-primary">за 3 минуты.</span>
+                  Разместите<br />участок<br /><span style={{ color: '#2CA64E' }}>за 3 минуты.</span>
                 </h3>
               </div>
               <div className="relative">
                 <div className="grid grid-cols-3 gap-4 mb-8">
                   {[['01','Кадастровый номер'],['02','Фото и описание'],['03','WhatsApp и звонки']].map(([n,t]) => (
                     <div key={n} className="border-l border-white/20 pl-3.5 pt-3">
-                      <div className="font-mono text-[11px] font-medium text-white/55">{n}</div>
-                      <div className="mt-1.5 text-[13.5px] font-semibold leading-tight">{t}</div>
+                      <div className="font-mono text-[11px] font-medium text-white/45">{n}</div>
+                      <div className="mt-1.5 text-[13.5px] font-semibold leading-tight text-white/90">{t}</div>
                     </div>
                   ))}
                 </div>
-                <p className="text-[15px] text-white/60 leading-snug max-w-md">
+                <p className="text-[15px] text-white/55 leading-snug max-w-md">
                   Бесплатно, без скрытых комиссий. Покупатели находят через карту и поиск — в среднем 14 дней до сделки.
                 </p>
                 <div className="mt-7">
-                  <span className="px-5 h-11 rounded-xl bg-white text-zinc-900 font-semibold text-[13.5px] tracking-tight inline-flex items-center gap-2 group-hover:bg-primary group-hover:text-white transition">
+                  <span className="px-5 h-11 rounded-xl border border-white/25 bg-white/10 text-white font-semibold text-[13.5px] tracking-tight inline-flex items-center gap-2 hover:bg-white/20 transition backdrop-blur-sm">
                     Разместить объявление →
                   </span>
                 </div>
