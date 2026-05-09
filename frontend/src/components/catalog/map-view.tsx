@@ -51,6 +51,8 @@ interface LMarker {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   on(event: string, fn: (e: any) => void): LMarker;
   remove(): void;
+  setIcon(icon: object): LMarker;
+  getElement(): HTMLElement | null;
 }
 interface LTileLayer {
   addTo(map: LMap): LTileLayer;
@@ -128,6 +130,7 @@ export interface MapViewProps {
   tileLayer?: string;
   onTileLayerChange?: (layer: string) => void;
   mapApiRef?: React.MutableRefObject<MapApi | null>;
+  highlightedId?: string | number | null;
   // Stats overlay
   statsCount?: number;
   statsMedian?: number;
@@ -141,6 +144,34 @@ export interface MapViewProps {
   onCompare?: () => void;
 }
 
+// ─── Marker icon factory ─────────────────────────────────────────────────────
+function makeMarkerHtml(priceLabel: string, highlighted: boolean, active: boolean): string {
+  const bg = active ? '#066F36' : highlighted ? '#1a1a2e' : 'white';
+  const color = (active || highlighted) ? 'white' : '#09090b';
+  const border = active ? '#055a2b' : highlighted ? '#066F36' : '#e4e4e7';
+  const shadow = highlighted || active ? '0 4px 16px rgba(6,111,54,0.35)' : '0 2px 8px rgba(0,0,0,0.14)';
+  const scale = highlighted ? 'scale(1.15)' : 'scale(1)';
+  const pulse = highlighted ? `
+    <span style="
+      position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;
+      border-radius:20px;border:2px solid rgba(6,111,54,0.5);
+      animation:pulseRing 1.4s ease-out infinite;
+    "></span>` : '';
+  return `<span style="position:relative;display:inline-flex;align-items:center;">
+    ${pulse}
+    <span style="
+      position:relative;display:inline-flex;align-items:center;
+      background:${bg};color:${color};
+      border:1.5px solid ${border};border-radius:20px;
+      padding:5px 11px;font-size:11.5px;font-weight:800;
+      white-space:nowrap;box-shadow:${shadow};
+      cursor:pointer;font-family:system-ui,sans-serif;
+      transform:${scale};transition:transform 0.15s,box-shadow 0.15s;
+      letter-spacing:-0.02em;
+    ">${priceLabel}</span>
+  </span>`;
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 export function MapView({
   listings,
@@ -148,6 +179,7 @@ export function MapView({
   tileLayer = 'schema',
   onTileLayerChange,
   mapApiRef,
+  highlightedId,
   statsCount,
   statsMedian,
   statsPerSotka,
@@ -159,7 +191,7 @@ export function MapView({
 }: MapViewProps) {
   const mapRef     = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<LMap | null>(null);
-  const markersRef = useRef<LMarker[]>([]);
+  const markersMap = useRef<Map<string | number, { marker: LMarker; listing: MapItem }>>(new Map());
   const tileRef    = useRef<LTileLayer | null>(null);
 
   const [ready,       setReady]      = useState(false);
@@ -222,24 +254,17 @@ export function MapView({
     const L = window.L;
     const map = leafletMap.current;
 
-    markersRef.current.forEach(m => m.remove());
-    markersRef.current = [];
+    markersMap.current.forEach(({ marker }) => marker.remove());
+    markersMap.current.clear();
 
     const withCoords = listings.filter(l => l.lat != null && l.lng != null);
 
     withCoords.forEach(listing => {
       const priceLabel = formatPrice(listing.price);
+      const isHighlighted = highlightedId != null && String(highlightedId) === String(listing.id);
       const icon = L.divIcon({
         className: '',
-        html: `<span style="
-          display:inline-flex;align-items:center;
-          background:white;color:#09090b;
-          border:1.5px solid #e4e4e7;border-radius:20px;
-          padding:5px 11px;font-size:11.5px;font-weight:800;
-          white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.14);
-          cursor:pointer;font-family:system-ui,sans-serif;
-          transform:translateX(-50%);letter-spacing:-0.02em;
-        ">${priceLabel}</span>`,
+        html: `<div style="transform:translateX(-50%)">${makeMarkerHtml(priceLabel, isHighlighted, false)}</div>`,
         iconAnchor: [0, 32],
       });
 
@@ -252,7 +277,7 @@ export function MapView({
           onMarkerClick?.(listing);
         });
 
-      markersRef.current.push(marker);
+      markersMap.current.set(listing.id, { marker, listing });
     });
 
     if (withCoords.length > 0) {
@@ -263,7 +288,24 @@ export function MapView({
     } else {
       map.setView(KZ_CENTER, KZ_ZOOM);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listings, ready, onMarkerClick]);
+
+  // 4b. Update marker icons when highlightedId changes (no full re-render)
+  useEffect(() => {
+    if (!ready || !window.L) return;
+    const L = window.L;
+    markersMap.current.forEach(({ marker, listing }) => {
+      const isHighlighted = highlightedId != null && String(highlightedId) === String(listing.id);
+      const isActive = active != null && String(active.id) === String(listing.id);
+      const priceLabel = formatPrice(listing.price);
+      marker.setIcon(L.divIcon({
+        className: '',
+        html: `<div style="transform:translateX(-50%)">${makeMarkerHtml(priceLabel, isHighlighted, isActive)}</div>`,
+        iconAnchor: [0, 32],
+      }));
+    });
+  }, [highlightedId, active, ready]);
 
   // 5. Search-as-move indicator
   useEffect(() => {

@@ -231,6 +231,8 @@ export function CatalogClient({
   const cardRefs      = useRef<Record<string | number, HTMLDivElement | null>>({});
   const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mapApi        = useRef<MapApi | null>(null);
+  const sidebarScrollRef = useRef<HTMLDivElement>(null);
+  const observerRef   = useRef<IntersectionObserver | null>(null);
 
   // Compare + bookmark
   const [compareList, setCompareList] = useState<CompareItem[]>([]);
@@ -365,8 +367,36 @@ export function CatalogClient({
     const el = cardRefs.current[listing.id];
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setHoveredId(listing.id);
-    highlightTimer.current = setTimeout(() => setHoveredId(null), 2000);
+    highlightTimer.current = setTimeout(() => setHoveredId(null), 2500);
   }, []);
+
+  // IntersectionObserver: highlight map marker when card scrolls into view
+  useEffect(() => {
+    if (observerRef.current) observerRef.current.disconnect();
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        const best = entries
+          .filter(e => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (best) {
+          const id = (best.target as HTMLElement).dataset.listingId;
+          if (id) setHoveredId(id);
+        }
+      },
+      { root: sidebarScrollRef.current, threshold: 0.6 }
+    );
+
+    filteredListings.forEach(l => {
+      const el = cardRefs.current[l.id];
+      if (el) {
+        el.dataset.listingId = String(l.id);
+        observerRef.current!.observe(el);
+      }
+    });
+
+    return () => observerRef.current?.disconnect();
+  }, [filteredListings]);
 
   const mapListings = useMemo(
     () => filteredListings.filter(l => l.lat && l.lng),
@@ -576,6 +606,7 @@ export function CatalogClient({
           </div>
 
           <div
+            ref={sidebarScrollRef}
             className="flex-1 overflow-y-auto"
             style={{ scrollbarWidth: 'thin', scrollbarColor: '#d4d4d8 transparent' }}
           >
@@ -601,13 +632,14 @@ export function CatalogClient({
         </aside>
 
         {/* Map (desktop) */}
-        <section className="hidden lg:block flex-1 relative overflow-hidden">
+        <section className="hidden lg:block flex-1 relative">
           <MapView
             listings={mapListings}
             onMarkerClick={handleMarkerClick}
             tileLayer={tileLayer}
             onTileLayerChange={setTileLayer}
             mapApiRef={mapApi}
+            highlightedId={hoveredId}
             statsCount={filteredListings.length}
             statsMedian={medianPrice}
             statsPerSotka={avgPerSotka}
@@ -615,7 +647,7 @@ export function CatalogClient({
             onSearchAsMoveChange={setSearchAsMove}
             compareList={compareList}
             onRemoveCompare={id => setCompareList(prev => prev.filter(c => c.id !== id))}
-            onCompare={() => {/* TODO: open compare view */}}
+            onCompare={() => {}}
           />
         </section>
 
