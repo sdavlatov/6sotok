@@ -93,7 +93,7 @@ export default async function HomePage() {
         </div>
 
         {/* Marquee */}
-        <CityMarquee cities={locations} />
+        <CityMarquee />
       </section>
 
       {/* ═══ SPLIT VIEW ═══ */}
