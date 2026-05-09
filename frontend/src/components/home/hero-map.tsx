@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 
 interface Dot {
   lat: number;
@@ -12,6 +13,18 @@ interface Dot {
   landType?: string | null;
   location?: string | null;
   image?: string | null;
+}
+
+interface Selected {
+  slug: string;
+  title: string;
+  price?: number | null;
+  area?: number | null;
+  landType?: string | null;
+  location?: string | null;
+  image?: string | null;
+  isPremium: boolean;
+  isViewed: boolean;
 }
 
 const LEAFLET_CSS  = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
@@ -44,7 +57,6 @@ function loadCss(href: string) {
   document.head.appendChild(l);
 }
 
-// Only keyframes and popup styles go here — dot styles are inline to avoid CSS loading issues
 const MAP_STYLE = `
   @keyframes dot-pulse {
     0%   { transform: translate(-50%,-50%) scale(1);   opacity: 0.6; }
@@ -77,12 +89,6 @@ const MAP_STYLE = `
   .map-price-pin.tier-low:hover,    .map-price-pin.tier-low.active    { background:#066F36; color:#fff; border-color:#066F36; }
   .map-price-pin.tier-high:hover,   .map-price-pin.tier-high.active   { background:#066F36; border-color:#066F36; }
   .map-price-pin.tier-viewed:hover, .map-price-pin.tier-viewed.active { background:#52525b; color:#fff; border-color:#52525b; }
-  .map-listing-popup .leaflet-popup-content-wrapper {
-    border-radius: 16px; padding: 0; overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.18); border: 1px solid #e4e4e7;
-  }
-  .map-listing-popup .leaflet-popup-content { margin: 0; }
-  .map-listing-popup .leaflet-popup-tip-container { display: none; }
 `;
 
 function priceTier(price: number | null | undefined, viewed: boolean): string {
@@ -116,6 +122,11 @@ export function HeroMap({
   const onCountRef = useRef(onCountChange);
   onCountRef.current = onCountChange;
 
+  const [selected, setSelected] = useState<Selected | null>(null);
+  const [visibleCount, setVisibleCount] = useState(dots.length);
+  const setSelectedRef = useRef(setSelected);
+  const setVisibleRef = useRef(setVisibleCount);
+
   useEffect(() => {
     if (!tileRef.current || !mapRef.current) return;
     tileRef.current.setUrl(TILE_URLS[layer] ?? TILE_URLS.schema);
@@ -124,14 +135,11 @@ export function HeroMap({
   useEffect(() => {
     if (!ref.current || mapRef.current) return;
 
-    // Always overwrite so hot-reload picks up CSS changes
     const existing = document.getElementById('heromap-style');
-    if (existing) {
-      existing.textContent = MAP_STYLE;
-    } else {
+    if (existing) existing.textContent = MAP_STYLE;
+    else {
       const el = document.createElement('style');
-      el.id = 'heromap-style';
-      el.textContent = MAP_STYLE;
+      el.id = 'heromap-style'; el.textContent = MAP_STYLE;
       document.head.appendChild(el);
     }
 
@@ -143,7 +151,6 @@ export function HeroMap({
       const L = (window as any).L;
       if (!ref.current || mapRef.current) return;
 
-      // Read viewed slugs from localStorage
       let viewed: Set<string> = new Set();
       try {
         const raw = JSON.parse(localStorage.getItem(LS_KEY) ?? '[]');
@@ -155,6 +162,7 @@ export function HeroMap({
         zoomControl: false, attributionControl: false,
         scrollWheelZoom: true, dragging: true,
         doubleClickZoom: true, touchZoom: true,
+        fadeAnimation: false, markerZoomAnimation: false,
       });
       mapRef.current = map;
 
@@ -163,6 +171,7 @@ export function HeroMap({
 
       const clusterGroup = L.markerClusterGroup({
         maxClusterRadius: 80,
+        animate: false,
         iconCreateFunction: (cluster: any) => {
           const n = cluster.getChildCount();
           const lg = n > 100;
@@ -182,7 +191,6 @@ export function HeroMap({
         },
       });
 
-      // Icon factories — all dot styles are inline to avoid CSS class loading issues
       const mkDotIcon = (isViewed: boolean) => {
         const ringBg = isViewed ? 'rgba(113,113,122,0.25)' : 'rgba(6,111,54,0.35)';
         const coreBg = isViewed ? '#a1a1aa' : '#066F36';
@@ -219,38 +227,9 @@ export function HeroMap({
         const marker = L.marker([lat, lng], { icon: mkDotIcon(isViewed) });
 
         if (slug && title) {
-          const priceStr = price ? `${price.toLocaleString('ru-RU')} ₸` : '';
-          const perSotka = price && area ? `${Math.round(price / area).toLocaleString('ru-RU')} ₸ / сотка` : '';
-          const meta = `${landType ?? 'ИЖС'}${location ? ' · ' + location.toUpperCase() : ''}${area ? ' · ' + area + ' сот.' : ''}`;
-          const viewedBadge = isViewed ? `<div style="display:inline-block;margin-bottom:6px;font-size:10px;font-weight:700;color:#71717a;background:#f4f4f5;padding:2px 8px;border-radius:20px">Просмотрено</div>` : '';
-          const premiumBadge = isPremium ? `<div style="position:absolute;top:10px;left:10px;font-size:10px;font-weight:800;color:#fff;background:rgba(0,0,0,0.75);padding:3px 8px;border-radius:6px;letter-spacing:0.06em;text-transform:uppercase">★ Премиум</div>` : '';
-          const imgHtml = image
-            ? `<div style="position:relative;height:140px;overflow:hidden;background:#f4f4f5">
-                <img src="${image}" style="width:100%;height:100%;object-fit:cover" />
-                ${premiumBadge}
-               </div>`
-            : isPremium ? `<div style="position:relative;height:80px;background:linear-gradient(135deg,#021A0E,#066F36);display:flex;align-items:center;justify-content:center">
-                <span style="font-size:11px;font-weight:800;color:#fff;letter-spacing:0.08em">★ ПРЕМИУМ</span>
-               </div>` : '';
-
-          const popup = `
-            <div style="width:240px">
-              ${imgHtml}
-              <div style="padding:12px 14px 14px">
-                ${viewedBadge}
-                <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#a1a1aa;margin-bottom:4px">${meta}</div>
-                <div style="font-size:13px;font-weight:800;color:#111;line-height:1.25;letter-spacing:-0.02em">${title}</div>
-                ${priceStr ? `<div style="font-size:17px;font-weight:900;color:#111;letter-spacing:-0.03em;margin-top:8px">${priceStr}</div>` : ''}
-                ${perSotka ? `<div style="font-size:10px;color:#a1a1aa;margin-top:2px;font-family:monospace">${perSotka}</div>` : ''}
-                <a href="/listing/${slug}" style="display:flex;align-items:center;justify-content:center;margin-top:12px;padding:9px;background:#111827;color:#fff;border-radius:10px;text-decoration:none;font-size:12px;font-weight:700"
-                  onmouseover="this.style.background='#066F36'" onmouseout="this.style.background='#111827'">
-                  Открыть →
-                </a>
-              </div>
-            </div>`;
-          marker.bindPopup(popup, { className: 'map-listing-popup', maxWidth: 260, offset: [0, -8] });
-          marker.on('popupopen',  () => marker.getElement()?.querySelector('.map-price-pin')?.classList.add('active'));
-          marker.on('popupclose', () => marker.getElement()?.querySelector('.map-price-pin')?.classList.remove('active'));
+          marker.on('click', () => {
+            setSelectedRef.current({ slug, title, price, area, landType, location, image, isPremium, isViewed });
+          });
         }
 
         clusterGroup.addLayer(marker);
@@ -259,7 +238,9 @@ export function HeroMap({
 
       map.addLayer(clusterGroup);
 
-      // Zoom-based icon switch: dots → price labels
+      // Close panel on map click (not marker)
+      map.on('click', () => setSelectedRef.current(null));
+
       map.on('zoomend', () => {
         const zoom = map.getZoom();
         markerData.forEach(({ marker, price, area, isViewed, isPremium }) => {
@@ -267,10 +248,11 @@ export function HeroMap({
         });
       });
 
-      // Dynamic visible count
       const updateCount = () => {
         const bounds = map.getBounds();
-        onCountRef.current?.(dots.filter(d => bounds.contains([d.lat, d.lng])).length);
+        const n = dots.filter(d => bounds.contains([d.lat, d.lng])).length;
+        setVisibleRef.current(n);
+        onCountRef.current?.(n);
       };
       map.on('moveend zoomend', updateCount);
       updateCount();
@@ -283,5 +265,72 @@ export function HeroMap({
     };
   }, []);
 
-  return <div ref={ref} className="w-full h-full" />;
+  const sel = selected;
+  const priceStr = sel?.price ? sel.price.toLocaleString('ru-RU') + ' ₸' : '';
+  const perSotka = sel?.price && sel?.area ? Math.round(sel.price / sel.area).toLocaleString('ru-RU') + ' ₸ / сотка' : '';
+  const meta = sel ? [sel.landType ?? 'ИЖС', sel.location?.toUpperCase(), sel.area ? sel.area + ' сот.' : ''].filter(Boolean).join(' · ') : '';
+
+  return (
+    <div className="relative w-full h-full">
+      <div ref={ref} className="w-full h-full" />
+
+      {/* Counter badge — dimmed when panel open */}
+      <div className={`absolute top-4 left-4 z-[400] bg-white/95 backdrop-blur rounded-xl border border-zinc-200/60 px-3 py-2 shadow-sm pointer-events-none transition-opacity duration-200 ${sel ? 'opacity-30' : 'opacity-100'}`}>
+        <div className="text-[10.5px] font-mono uppercase tracking-wider text-zinc-500">в окне карты</div>
+        <div className="text-[15px] font-black tracking-[-0.035em] text-zinc-900">{visibleCount.toLocaleString('ru-RU')} участков</div>
+      </div>
+
+      {/* Bottom panel */}
+      {sel && (
+        <div className="absolute bottom-0 left-0 right-0 z-[500] pointer-events-auto">
+          <div className="bg-white rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.14)] overflow-hidden">
+            {/* Close */}
+            <button
+              onClick={() => setSelected(null)}
+              className="absolute top-3 right-3 z-10 w-7 h-7 bg-zinc-100 hover:bg-zinc-200 rounded-full flex items-center justify-center text-zinc-500 text-base leading-none transition-colors"
+            >×</button>
+
+            {/* Image */}
+            {sel.image ? (
+              <div className="relative h-32 overflow-hidden bg-zinc-100">
+                <img src={sel.image} alt={sel.title} className="w-full h-full object-cover" />
+                {sel.isPremium && (
+                  <span className="absolute top-2 left-2 bg-zinc-900/80 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md">★ Премиум</span>
+                )}
+                {sel.isViewed && (
+                  <span className="absolute top-2 right-10 bg-zinc-100/90 text-zinc-500 text-[10px] font-semibold px-2 py-1 rounded-md">Просмотрено</span>
+                )}
+              </div>
+            ) : sel.isPremium ? (
+              <div className="h-16 bg-gradient-to-r from-[#021A0E] to-[#066F36] flex items-center justify-center">
+                <span className="text-white text-[11px] font-bold tracking-widest">★ ПРЕМИУМ</span>
+              </div>
+            ) : null}
+
+            {/* Info row */}
+            <div className="px-4 pt-3 pb-4">
+              <div className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">{meta}</div>
+              <div className="flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-[14px] font-bold text-zinc-900 leading-snug line-clamp-2">{sel.title}</div>
+                  {priceStr && (
+                    <div className="mt-1.5 text-[17px] font-black text-zinc-900 tracking-tight leading-none">{priceStr}</div>
+                  )}
+                  {perSotka && (
+                    <div className="mt-0.5 text-[10px] font-mono text-zinc-400">{perSotka}</div>
+                  )}
+                </div>
+                <Link
+                  href={`/listing/${sel.slug}`}
+                  className="shrink-0 px-4 h-9 rounded-xl bg-zinc-900 hover:bg-primary text-white text-[12.5px] font-semibold flex items-center gap-1 transition-colors whitespace-nowrap"
+                >
+                  Открыть →
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

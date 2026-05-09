@@ -125,7 +125,6 @@ export function SplitViewSection({ carouselListings, cards1, cards2, cards3, map
   const [idx, setIdx] = useState(0);
   const [visible, setVisible] = useState(true);
   const [layer, setLayer] = useState<'schema' | 'satellite' | 'cadastre'>('schema');
-  const [visibleCount, setVisibleCount] = useState(landCount);
 
   useEffect(() => {
     if (carouselListings.length <= 1) return;
@@ -273,13 +272,7 @@ export function SplitViewSection({ carouselListings, cards1, cards2, cards3, map
           <div className="relative h-full w-full rounded-3xl overflow-hidden border border-zinc-200 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_30px_-10px_rgba(0,0,0,0.10)]">
 
             {/* Leaflet map */}
-            <HeroMap dots={mapDots} layer={layer} onCountChange={setVisibleCount} premiumSlugs={premiumSlugs} />
-
-            {/* Counter badge */}
-            <div className="absolute top-4 left-4 z-[400] bg-white/95 backdrop-blur rounded-xl border border-zinc-200/60 px-3 py-2 shadow-sm pointer-events-none">
-              <div className="text-[10.5px] font-mono uppercase tracking-wider text-zinc-500">в окне карты</div>
-              <div className="text-[15px] font-black tracking-[-0.035em] text-zinc-900">{visibleCount.toLocaleString('ru-RU')} участков</div>
-            </div>
+            <HeroMap dots={mapDots} layer={layer} premiumSlugs={premiumSlugs} />
 
             {/* Zoom controls */}
             <div className="absolute top-4 right-4 z-[400] hidden lg:flex flex-col gap-2">
