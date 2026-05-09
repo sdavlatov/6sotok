@@ -40,6 +40,7 @@ interface MapDot {
   area?: number | null;
   landType?: string | null;
   location?: string | null;
+  image?: string | null;
 }
 
 interface Props {
@@ -49,6 +50,7 @@ interface Props {
   cards3: SmallItem[];
   mapDots: MapDot[];
   landCount: number;
+  premiumSlugs?: string[];
 }
 
 const PLOT = ['plot-img','plot-img-2','plot-img-3','plot-img-4','plot-img-5','plot-img-6'];
@@ -119,7 +121,7 @@ const LAYERS = [
   { key: 'cadastre',  label: 'Кадастр' },
 ] as const;
 
-export function SplitViewSection({ carouselListings, cards1, cards2, cards3, mapDots, landCount }: Props) {
+export function SplitViewSection({ carouselListings, cards1, cards2, cards3, mapDots, landCount, premiumSlugs }: Props) {
   const [idx, setIdx] = useState(0);
   const [visible, setVisible] = useState(true);
   const [layer, setLayer] = useState<'schema' | 'satellite' | 'cadastre'>('schema');
@@ -271,7 +273,7 @@ export function SplitViewSection({ carouselListings, cards1, cards2, cards3, map
           <div className="relative h-full w-full rounded-3xl overflow-hidden border border-zinc-200 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_30px_-10px_rgba(0,0,0,0.10)]">
 
             {/* Leaflet map */}
-            <HeroMap dots={mapDots} layer={layer} onCountChange={setVisibleCount} />
+            <HeroMap dots={mapDots} layer={layer} onCountChange={setVisibleCount} premiumSlugs={premiumSlugs} />
 
             {/* Counter badge */}
             <div className="absolute top-4 left-4 z-[400] bg-white/95 backdrop-blur rounded-xl border border-zinc-200/60 px-3 py-2 shadow-sm pointer-events-none">

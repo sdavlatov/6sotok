@@ -24,8 +24,9 @@ export default async function HomePage() {
 
   const mapDots = landListings.filter(l => l.lat && l.lng).map(l => ({
     lat: l.lat!, lng: l.lng!, slug: l.slug, title: l.title,
-    price: l.price, area: l.area, landType: l.landType, location: l.location,
+    price: l.price, area: l.area, landType: l.landType, location: l.location, image: l.image,
   }));
+  const premiumSlugs = landListings.slice(0, 2).map(l => l.slug);
   const landCount = landListings.length;
   const filterData = landListings.map(l => ({
     landType: l.landType ?? '',
@@ -105,6 +106,7 @@ export default async function HomePage() {
         cards3={cards3}
         mapDots={mapDots}
         landCount={landCount}
+        premiumSlugs={premiumSlugs}
       />
 
       {/* ═══ AUDIENCE BLOCKS ═══ */}

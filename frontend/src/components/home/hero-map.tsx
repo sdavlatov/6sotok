@@ -11,6 +11,7 @@ interface Dot {
   area?: number | null;
   landType?: string | null;
   location?: string | null;
+  image?: string | null;
 }
 
 const LEAFLET_CSS  = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
@@ -102,10 +103,12 @@ export function HeroMap({
   dots,
   layer = 'schema',
   onCountChange,
+  premiumSlugs = [],
 }: {
   dots: Dot[];
   layer?: string;
   onCountChange?: (n: number) => void;
+  premiumSlugs?: string[];
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -194,47 +197,64 @@ export function HeroMap({
         });
       };
 
-      const mkPriceIcon = (price: number | null | undefined, area: number | null | undefined, isViewed: boolean) => {
+      const premiumSet = new Set(premiumSlugs);
+
+      const mkPriceIcon = (price: number | null | undefined, area: number | null | undefined, isViewed: boolean, isPremium: boolean) => {
         const text = price ? `${fmtShort(price)} ₸` : area ? `${area} сот.` : '•';
         const tier = priceTier(price, isViewed);
+        const prefix = isPremium ? '★ ' : '';
         return L.divIcon({
           className: 'map-pin-wrap',
-          html: `<div class="map-price-pin tier-${tier}">${text}</div>`,
+          html: `<div class="map-price-pin tier-${tier}">${prefix}${text}</div>`,
           iconSize: [1, 1],
           iconAnchor: [0, 0],
         });
       };
 
-      const markerData: { marker: any; price: number | null | undefined; area: number | null | undefined; isViewed: boolean }[] = [];
+      const markerData: { marker: any; price: number | null | undefined; area: number | null | undefined; isViewed: boolean; isPremium: boolean }[] = [];
 
-      dots.forEach(({ lat, lng, slug, title, price, area, landType, location }) => {
+      dots.forEach(({ lat, lng, slug, title, price, area, landType, location, image }) => {
         const isViewed = !!(slug && viewed.has(slug));
+        const isPremium = !!(slug && premiumSet.has(slug));
         const marker = L.marker([lat, lng], { icon: mkDotIcon(isViewed) });
 
         if (slug && title) {
-          const priceRow = price
-            ? `<div style="font-size:17px;font-weight:900;color:#111;letter-spacing:-0.03em;margin-top:6px">${price.toLocaleString('ru-RU')} ₸</div>${area ? `<div style="font-size:10px;color:#a1a1aa;margin-top:2px;font-family:monospace">${Math.round(price / area).toLocaleString('ru-RU')} ₸/сотка</div>` : ''}`
-            : '';
+          const priceStr = price ? `${price.toLocaleString('ru-RU')} ₸` : '';
+          const perSotka = price && area ? `${Math.round(price / area).toLocaleString('ru-RU')} ₸ / сотка` : '';
+          const meta = `${landType ?? 'ИЖС'}${location ? ' · ' + location.toUpperCase() : ''}${area ? ' · ' + area + ' сот.' : ''}`;
           const viewedBadge = isViewed ? `<div style="display:inline-block;margin-bottom:6px;font-size:10px;font-weight:700;color:#71717a;background:#f4f4f5;padding:2px 8px;border-radius:20px">Просмотрено</div>` : '';
-          const meta = `<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#a1a1aa">${landType ?? 'ИЖС'}${location ? ' · ' + location : ''}${area ? ' · ' + area + ' сот.' : ''}</div>`;
+          const premiumBadge = isPremium ? `<div style="position:absolute;top:10px;left:10px;font-size:10px;font-weight:800;color:#fff;background:rgba(0,0,0,0.75);padding:3px 8px;border-radius:6px;letter-spacing:0.06em;text-transform:uppercase">★ Премиум</div>` : '';
+          const imgHtml = image
+            ? `<div style="position:relative;height:140px;overflow:hidden;background:#f4f4f5">
+                <img src="${image}" style="width:100%;height:100%;object-fit:cover" />
+                ${premiumBadge}
+               </div>`
+            : isPremium ? `<div style="position:relative;height:80px;background:linear-gradient(135deg,#021A0E,#066F36);display:flex;align-items:center;justify-content:center">
+                <span style="font-size:11px;font-weight:800;color:#fff;letter-spacing:0.08em">★ ПРЕМИУМ</span>
+               </div>` : '';
+
           const popup = `
-            <div style="width:224px;padding:14px 14px 12px">
-              ${viewedBadge}
-              ${meta}
-              <div style="font-size:13px;font-weight:800;color:#111;line-height:1.2;margin-top:4px;letter-spacing:-0.02em">${title}</div>
-              ${priceRow}
-              <a href="/listing/${slug}" style="display:flex;align-items:center;justify-content:center;margin-top:12px;padding:9px;background:#111827;color:#fff;border-radius:10px;text-decoration:none;font-size:12px;font-weight:700"
-                onmouseover="this.style.background='#066F36'" onmouseout="this.style.background='#111827'">
-                Открыть объявление →
-              </a>
+            <div style="width:240px">
+              ${imgHtml}
+              <div style="padding:12px 14px 14px">
+                ${viewedBadge}
+                <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#a1a1aa;margin-bottom:4px">${meta}</div>
+                <div style="font-size:13px;font-weight:800;color:#111;line-height:1.25;letter-spacing:-0.02em">${title}</div>
+                ${priceStr ? `<div style="font-size:17px;font-weight:900;color:#111;letter-spacing:-0.03em;margin-top:8px">${priceStr}</div>` : ''}
+                ${perSotka ? `<div style="font-size:10px;color:#a1a1aa;margin-top:2px;font-family:monospace">${perSotka}</div>` : ''}
+                <a href="/listing/${slug}" style="display:flex;align-items:center;justify-content:center;margin-top:12px;padding:9px;background:#111827;color:#fff;border-radius:10px;text-decoration:none;font-size:12px;font-weight:700"
+                  onmouseover="this.style.background='#066F36'" onmouseout="this.style.background='#111827'">
+                  Открыть →
+                </a>
+              </div>
             </div>`;
-          marker.bindPopup(popup, { className: 'map-listing-popup', maxWidth: 248 });
+          marker.bindPopup(popup, { className: 'map-listing-popup', maxWidth: 260, offset: [0, -8] });
           marker.on('popupopen',  () => marker.getElement()?.querySelector('.map-price-pin')?.classList.add('active'));
           marker.on('popupclose', () => marker.getElement()?.querySelector('.map-price-pin')?.classList.remove('active'));
         }
 
         clusterGroup.addLayer(marker);
-        markerData.push({ marker, price, area, isViewed });
+        markerData.push({ marker, price, area, isViewed, isPremium });
       });
 
       map.addLayer(clusterGroup);
@@ -242,8 +262,8 @@ export function HeroMap({
       // Zoom-based icon switch: dots → price labels
       map.on('zoomend', () => {
         const zoom = map.getZoom();
-        markerData.forEach(({ marker, price, area, isViewed }) => {
-          marker.setIcon(zoom >= PRICE_ZOOM ? mkPriceIcon(price, area, isViewed) : mkDotIcon(isViewed));
+        markerData.forEach(({ marker, price, area, isViewed, isPremium }) => {
+          marker.setIcon(zoom >= PRICE_ZOOM ? mkPriceIcon(price, area, isViewed, isPremium) : mkDotIcon(isViewed));
         });
       });
 
