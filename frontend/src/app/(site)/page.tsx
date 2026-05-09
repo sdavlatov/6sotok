@@ -127,17 +127,25 @@ export default async function HomePage() {
                 </h3>
               </div>
               <div className="relative">
-                <p className="text-[15px] text-zinc-600 leading-snug max-w-md">
+                <div className="grid grid-cols-3 gap-4 mb-8">
+                  {[['01','Поиск по карте'],['02','Цены и площади'],['03','Звонок продавцу']].map(([n,t]) => (
+                    <div key={n} className="border-l border-zinc-200 pl-3.5 pt-3">
+                      <div className="font-mono text-[11px] font-medium text-zinc-400">{n}</div>
+                      <div className="mt-1.5 text-[13.5px] font-semibold leading-tight text-zinc-800">{t}</div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[15px] text-zinc-500 leading-snug max-w-md">
                   Все участки страны — на одной карте. Цены, площади и документы без звонков агентам и спама.
                 </p>
-                <div className="mt-8 flex items-center gap-3 flex-wrap">
-                  <span className="px-5 h-11 rounded-xl bg-zinc-900 text-white font-semibold text-[13.5px] tracking-tight flex items-center gap-2 group-hover:bg-primary transition">
+                <div className="mt-7 flex items-center gap-3 flex-wrap">
+                  <span className="px-5 h-11 rounded-xl border border-zinc-200 bg-zinc-900 text-white font-semibold text-[13.5px] tracking-tight flex items-center gap-2 group-hover:bg-primary transition">
                     Открыть карту →
                   </span>
-                  <div className="flex items-center gap-3 text-[12.5px] text-zinc-500 font-mono">
-                    <span><b className="text-zinc-900">{landCount.toLocaleString('ru-RU')}</b> объявлений</span>
+                  <div className="flex items-center gap-3 text-[12.5px] text-zinc-400 font-mono">
+                    <span><b className="text-zinc-700">{landCount.toLocaleString('ru-RU')}</b> объявлений</span>
                     <span className="text-zinc-300">·</span>
-                    <span><b className="text-zinc-900">{locations.length}</b> городов</span>
+                    <span><b className="text-zinc-700">{locations.length}</b> городов</span>
                   </div>
                 </div>
               </div>
