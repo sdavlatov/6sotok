@@ -235,6 +235,11 @@ export function CatalogClient({
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string | number>>(new Set());
   const [showSaved, setShowSaved] = useState(false);
 
+  // Location search with separate input state (breadcrumb only updates on confirm)
+  const [locationInput, setLocationInput] = useState(initialLocation);
+  const [locationFocus, setLocationFocus] = useState(false);
+  const locationRef = useRef<HTMLDivElement>(null);
+
   const toggleCompare = useCallback((listing: Listing, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -403,6 +408,47 @@ export function CatalogClient({
     [filteredListings]
   );
 
+  // Location suggestions from listings data
+  const locationSuggestions = useMemo(() => {
+    if (!locationInput.trim() || locationInput === location) return [];
+    const q = locationInput.trim().toLowerCase();
+    const seen = new Set<string>();
+    const results: string[] = [];
+    for (const l of allListings) {
+      const loc = l.location?.trim();
+      if (!loc) continue;
+      // Split by common separators and also try full location
+      const parts = [loc, ...loc.split(/[,·\s]+/).filter(p => p.length > 2)];
+      for (const part of parts) {
+        if (seen.has(part)) continue;
+        if (part.toLowerCase().includes(q)) {
+          seen.add(part);
+          results.push(part);
+          if (results.length >= 8) break;
+        }
+      }
+      if (results.length >= 8) break;
+    }
+    return results;
+  }, [locationInput, location, allListings]);
+
+  const confirmLocation = (val: string) => {
+    setLocation(val);
+    setLocationInput(val);
+    setLocationFocus(false);
+  };
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (locationRef.current && !locationRef.current.contains(e.target as Node)) {
+        setLocationFocus(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
   // Active filter chip labels
   const priceFromNum = priceFrom ? parseInt(priceFrom.replace(/\D/g, '')) || 0 : 0;
   const priceToNum   = priceTo   ? parseInt(priceTo.replace(/\D/g, ''))   || 0 : 0;
@@ -425,50 +471,92 @@ export function CatalogClient({
   return (
     <div className="fixed inset-0 flex flex-col bg-white isolate" style={{ top: '52px', zIndex: 40 }}>
 
-      {/* ── Top bar: breadcrumbs + location search + saved ─────────────────── */}
-      <div className="h-11 bg-zinc-50 border-b border-zinc-200 flex items-center px-4 gap-3 shrink-0 relative z-10">
-        {/* Breadcrumbs */}
-        <nav className="flex items-center gap-1.5 text-[12px] text-zinc-500 shrink-0">
-          <Link href="/" className="hover:text-zinc-900 transition-colors">Главная</Link>
+      {/* ── Top bar ────────────────────────────────────────────────────────── */}
+      <div className="h-11 bg-zinc-50 border-b border-zinc-200 flex items-center px-4 gap-3 shrink-0 relative z-20">
+        {/* Breadcrumbs — only updates when location filter is confirmed */}
+        <nav className="flex items-center gap-1.5 text-[12px] text-zinc-500 shrink-0 min-w-0">
+          <Link href="/" className="hover:text-zinc-900 transition-colors whitespace-nowrap">Главная</Link>
           <span className="text-zinc-300">/</span>
-          <Link href="/catalog" className="hover:text-zinc-900 transition-colors">Каталог</Link>
+          <Link href="/catalog" className="hover:text-zinc-900 transition-colors whitespace-nowrap">Каталог</Link>
           {location && (
             <>
               <span className="text-zinc-300">/</span>
-              <span className="text-zinc-900 font-medium">{location}</span>
+              <button
+                onClick={() => confirmLocation('')}
+                className="text-zinc-900 font-medium truncate max-w-[160px] hover:text-primary transition-colors"
+              >
+                {location}
+              </button>
             </>
           )}
         </nav>
 
         <span className="w-px h-5 bg-zinc-200 shrink-0" />
 
-        {/* Location search */}
-        <div className="flex-1 max-w-xs relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 pointer-events-none" />
+        {/* Smart location search */}
+        <div ref={locationRef} className="relative w-[280px] shrink-0">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 pointer-events-none z-10" />
           <input
             type="text"
-            value={location}
-            onChange={e => setLocation(e.target.value)}
+            value={locationInput}
+            onChange={e => setLocationInput(e.target.value)}
+            onFocus={() => setLocationFocus(true)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') confirmLocation(locationInput);
+              if (e.key === 'Escape') { setLocationFocus(false); setLocationInput(location); }
+            }}
             placeholder="Город, район или кадастровый номер"
-            className="w-full pl-8 pr-3 h-7 bg-white border border-zinc-200 rounded-lg text-[12px] placeholder:text-zinc-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/10 transition-all"
+            className="w-full pl-8 pr-8 h-7 bg-white border border-zinc-200 rounded-lg text-[12px] placeholder:text-zinc-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/10 transition-all"
           />
+          {locationInput && (
+            <button
+              onClick={() => confirmLocation('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 transition-colors"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
+
+          {/* Dropdown suggestions */}
+          {locationFocus && locationSuggestions.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-200 rounded-xl shadow-lg overflow-hidden z-50">
+              {locationSuggestions.map((s, i) => {
+                const q = locationInput.trim().toLowerCase();
+                const idx = s.toLowerCase().indexOf(q);
+                return (
+                  <button
+                    key={i}
+                    onMouseDown={e => { e.preventDefault(); confirmLocation(s); }}
+                    className="w-full text-left px-3 py-2 text-[12.5px] hover:bg-zinc-50 flex items-center gap-2 transition-colors"
+                  >
+                    <Search className="w-3 h-3 text-zinc-400 shrink-0" />
+                    <span className="truncate">
+                      {idx >= 0 ? (
+                        <>
+                          {s.slice(0, idx)}
+                          <span className="font-semibold text-zinc-900">{s.slice(idx, idx + q.length)}</span>
+                          {s.slice(idx + q.length)}
+                        </>
+                      ) : s}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <div className="flex-1" />
 
         {/* Saved toggle */}
-        <label className="flex items-center gap-2 cursor-pointer select-none shrink-0">
-          <div
-            className={`relative w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${showSaved ? 'bg-primary border-primary' : 'border-zinc-300 bg-white'}`}
-            onClick={() => setShowSaved(v => !v)}
-          >
-            {showSaved && <svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6L8 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-          </div>
-          <span className="text-[12px] text-zinc-700" onClick={() => setShowSaved(v => !v)}>
-            Сохранённые
-            {bookmarkedIds.size > 0 && <span className="ml-1 text-zinc-400">({bookmarkedIds.size})</span>}
-          </span>
-        </label>
+        <button
+          onClick={() => setShowSaved(v => !v)}
+          className={`flex items-center gap-2 shrink-0 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${showSaved ? 'bg-primary-soft text-primary' : 'text-zinc-600 hover:bg-zinc-100'}`}
+        >
+          <Bookmark className={`w-3.5 h-3.5 ${showSaved ? 'fill-primary' : ''}`} />
+          Сохранённые
+          {bookmarkedIds.size > 0 && <span className="text-[11px] opacity-70">({bookmarkedIds.size})</span>}
+        </button>
       </div>
 
       {/* ── Filter bar ─────────────────────────────────────────────────────── */}
