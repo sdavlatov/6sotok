@@ -156,7 +156,7 @@ export default async function HomePage() {
                 </h3>
               </div>
               <div className="relative">
-                <div className="grid grid-cols-3 gap-3 mb-6">
+                <div className="grid grid-cols-3 gap-3 mb-6 pt-4">
                   {[['01','Кадастровый номер'],['02','Фото и документы'],['03','WhatsApp и звонки']].map(([n,t], i) => (
                     <div key={n} className={`border-l pl-3 ${i === 2 ? 'border-[#2CA64E]' : 'border-white/20'}`}>
                       <div className="font-mono text-[10px]" style={{ color: '#2CA64E' }}>{n}</div>
