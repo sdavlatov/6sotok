@@ -158,40 +158,42 @@ export interface MapViewProps {
 }
 
 // ─── Marker icon factory ─────────────────────────────────────────────────────
-function makeMarkerHtml(priceLabel: string, highlighted: boolean, active: boolean, visited = false): string {
-  let bg: string, color: string, border: string, shadow: string;
+function makeMarkerHtml(priceLabel: string, highlighted: boolean, active: boolean, visited = false, zoom = 12): string {
+  let bg: string, border: string, shadow: string;
   if (active) {
-    bg = '#066F36'; color = 'white'; border = '#055a2b';
-    shadow = '0 4px 16px rgba(6,111,54,0.35)';
+    bg = '#066F36'; border = '#055a2b'; shadow = '0 4px 16px rgba(6,111,54,0.35)';
   } else if (highlighted) {
-    bg = '#1a1a2e'; color = 'white'; border = '#066F36';
-    shadow = '0 4px 16px rgba(6,111,54,0.35)';
+    bg = '#1a1a2e'; border = '#066F36'; shadow = '0 4px 16px rgba(6,111,54,0.35)';
   } else if (visited) {
-    bg = '#f4f4f5'; color = '#a1a1aa'; border = '#e4e4e7';
-    shadow = '0 2px 8px rgba(0,0,0,0.14)';
+    bg = '#d4d4d8'; border = '#a1a1aa'; shadow = '0 1px 4px rgba(0,0,0,0.14)';
   } else {
-    bg = 'white'; color = '#09090b'; border = '#e4e4e7';
-    shadow = '0 2px 8px rgba(0,0,0,0.14)';
+    bg = 'white'; border = '#d4d4d8'; shadow = '0 2px 8px rgba(0,0,0,0.14)';
   }
+
+  if (zoom < 9) {
+    // Large dot, no text
+    const size = active || highlighted ? 20 : 16;
+    const pulse = highlighted ? `<span style="position:absolute;inset:-5px;border-radius:50%;border:2px solid rgba(6,111,54,0.5);animation:pulseRing 1.4s ease-out infinite;"></span>` : '';
+    return `<span style="position:relative;display:inline-flex;align-items:center;justify-content:center;">
+      ${pulse}
+      <span style="width:${size}px;height:${size}px;border-radius:50%;background:${bg};border:2.5px solid ${border};box-shadow:${shadow};display:inline-block;"></span>
+    </span>`;
+  }
+
+  // Abbreviated label at mid zoom (9-11), full label at zoom >= 12
+  const label = zoom < 12
+    ? priceLabel.replace(' млн ₸', 'м').replace(' тыс ₸', 'к')
+    : priceLabel;
+  const fontSize  = zoom < 12 ? '10.5px' : '11.5px';
+  const padding   = zoom < 12 ? '3px 8px'  : '5px 11px';
+
+  const color = (active || highlighted) ? 'white' : visited ? '#a1a1aa' : '#09090b';
   const scale = highlighted ? 'scale(1.15)' : 'scale(1)';
   const pulse = highlighted ? `
-    <span style="
-      position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;
-      border-radius:20px;border:2px solid rgba(6,111,54,0.5);
-      animation:pulseRing 1.4s ease-out infinite;
-    "></span>` : '';
+    <span style="position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;border-radius:20px;border:2px solid rgba(6,111,54,0.5);animation:pulseRing 1.4s ease-out infinite;"></span>` : '';
   return `<span style="position:relative;display:inline-flex;align-items:center;">
     ${pulse}
-    <span style="
-      position:relative;display:inline-flex;align-items:center;
-      background:${bg};color:${color};
-      border:1.5px solid ${border};border-radius:20px;
-      padding:5px 11px;font-size:11.5px;font-weight:800;
-      white-space:nowrap;box-shadow:${shadow};
-      cursor:pointer;font-family:system-ui,sans-serif;
-      transform:${scale};transition:transform 0.15s,box-shadow 0.15s;
-      letter-spacing:-0.02em;
-    ">${priceLabel}</span>
+    <span style="position:relative;display:inline-flex;align-items:center;background:${bg};color:${color};border:1.5px solid ${border};border-radius:20px;padding:${padding};font-size:${fontSize};font-weight:800;white-space:nowrap;box-shadow:${shadow};cursor:pointer;font-family:system-ui,sans-serif;transform:${scale};transition:transform 0.15s,box-shadow 0.15s;letter-spacing:-0.02em;">${label}</span>
   </span>`;
 }
 
@@ -228,9 +230,14 @@ export function MapView({
   const [isMoving,    setIsMoving]   = useState(false);
   const [heatPoints,  setHeatPoints] = useState<{ x: number; y: number; price: number }[]>([]);
   const [drawMode, setDrawMode] = useState<'none' | 'polygon' | 'radius'>('none');
+  const [mapZoom, setMapZoom] = useState(KZ_ZOOM);
+  const mapZoomRef = useRef(KZ_ZOOM);
   const drawPointsRef = useRef<[number, number][]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const drawLayerRef = useRef<any>(null);
+  const onBoundsChangeRef = useRef(onBoundsChange);
+  const initialFitDone = useRef(false);
+  useEffect(() => { onBoundsChangeRef.current = onBoundsChange; }, [onBoundsChange]);
 
   const showOverlays = statsCount !== undefined || onTileLayerChange !== undefined;
 
@@ -289,14 +296,16 @@ export function MapView({
 
     const withCoords = listings.filter(l => l.lat != null && l.lng != null);
 
+    const zl = mapZoomRef.current;
+    const anchorY = zl < 9 ? 10 : zl < 12 ? 16 : 32;
     withCoords.forEach(listing => {
       const priceLabel = formatPrice(listing.price);
       const isHighlighted = highlightedId != null && String(highlightedId) === String(listing.id);
       const isVisited = visitedIds?.has(listing.id) ?? false;
       const icon = L.divIcon({
         className: '',
-        html: `<div style="transform:translateX(-50%)">${makeMarkerHtml(priceLabel, isHighlighted, false, isVisited)}</div>`,
-        iconAnchor: [0, 32],
+        html: `<div style="transform:translateX(-50%)">${makeMarkerHtml(priceLabel, isHighlighted, false, isVisited, zl)}</div>`,
+        iconAnchor: [0, anchorY],
       });
 
       const marker = L.marker([listing.lat!, listing.lng!], { icon })
@@ -311,21 +320,31 @@ export function MapView({
       markersMap.current.set(listing.id, { marker, listing });
     });
 
-    if (withCoords.length > 0) {
-      const bounds = L.latLngBounds(withCoords.map(l => [l.lat!, l.lng!]));
-      if (bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [60, 60], maxZoom: 10 });
+    // Only auto-fit on first load — after that user controls zoom
+    if (!initialFitDone.current) {
+      if (withCoords.length === 1) {
+        map.setView([withCoords[0].lat!, withCoords[0].lng!], 14);
+        initialFitDone.current = true;
+      } else if (withCoords.length > 1) {
+        const bounds = L.latLngBounds(withCoords.map(l => [l.lat!, l.lng!]));
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, { padding: [60, 60], maxZoom: 11 });
+          initialFitDone.current = true;
+        }
+      } else {
+        map.setView(KZ_CENTER, KZ_ZOOM);
+        initialFitDone.current = true;
       }
-    } else {
-      map.setView(KZ_CENTER, KZ_ZOOM);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listings, ready, onMarkerClick]);
 
-  // 4b. Update marker icons when highlightedId changes (no full re-render)
+  // 4b. Update marker icons when highlight/active/visited/zoom changes
   useEffect(() => {
     if (!ready || !window.L) return;
     const L = window.L;
+    const zl = mapZoom;
+    const anchorY = zl < 9 ? 10 : zl < 12 ? 16 : 32;
     markersMap.current.forEach(({ marker, listing }) => {
       const isHighlighted = highlightedId != null && String(highlightedId) === String(listing.id);
       const isActive = active != null && String(active.id) === String(listing.id);
@@ -333,11 +352,24 @@ export function MapView({
       const priceLabel = formatPrice(listing.price);
       marker.setIcon(L.divIcon({
         className: '',
-        html: `<div style="transform:translateX(-50%)">${makeMarkerHtml(priceLabel, isHighlighted, isActive, isVisited)}</div>`,
-        iconAnchor: [0, 32],
+        html: `<div style="transform:translateX(-50%)">${makeMarkerHtml(priceLabel, isHighlighted, isActive, isVisited, zl)}</div>`,
+        iconAnchor: [0, anchorY],
       }));
     });
-  }, [highlightedId, active, ready, visitedIds]);
+  }, [highlightedId, active, ready, visitedIds, mapZoom]);
+
+  // 4c. Track zoom level for compact markers
+  useEffect(() => {
+    if (!ready || !leafletMap.current) return;
+    const map = leafletMap.current;
+    const onZoom = () => {
+      const z = map.getZoom();
+      mapZoomRef.current = z;
+      setMapZoom(z);
+    };
+    map.on('zoomend', onZoom);
+    return () => { map.off('zoomend', onZoom); };
+  }, [ready]);
 
   // 5. Heat map points — recompute when map moves or listings change
   useEffect(() => {
@@ -353,12 +385,11 @@ export function MapView({
       setHeatPoints(pts);
     };
     const emitBounds = () => {
-      if (!onBoundsChange) return;
+      if (!onBoundsChangeRef.current) return;
       const b = map.getBounds();
-      onBoundsChange({ n: b.getNorth(), s: b.getSouth(), e: b.getEast(), w: b.getWest() });
+      onBoundsChangeRef.current({ n: b.getNorth(), s: b.getSouth(), e: b.getEast(), w: b.getWest() });
     };
     compute();
-    emitBounds();
     map.on('moveend', compute);
     map.on('zoomend', compute);
     map.on('moveend', emitBounds);
@@ -369,7 +400,7 @@ export function MapView({
       map.off('moveend', emitBounds);
       map.off('zoomend', emitBounds);
     };
-  }, [ready, listings, onBoundsChange]);
+  }, [ready, listings]);
 
   // 6. Search-as-move indicator
   useEffect(() => {

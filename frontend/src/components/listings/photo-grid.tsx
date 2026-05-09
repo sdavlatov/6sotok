@@ -89,35 +89,38 @@ export function PhotoGrid({ images, title }: PhotoGridProps) {
           ))}
         </div>
       ) : (
-        <div className="hidden sm:grid grid-cols-4 grid-rows-2 gap-2 rounded-2xl overflow-hidden" style={{ height: '440px' }}>
-          {/* Большое фото — занимает 2 строки */}
-          <div className="col-span-2 row-span-2 relative cursor-zoom-in group" onClick={() => open(0)}>
+        <div className="hidden sm:grid grid-cols-4 grid-rows-2 gap-2 rounded-3xl overflow-hidden" style={{ height: '520px' }}>
+          {/* Большое фото — 2 колонки, 2 строки */}
+          <div className="col-span-2 row-span-2 relative cursor-zoom-in group overflow-hidden" onClick={() => open(0)}>
             {isVideo(shown[0]) ? (
               <video src={shown[0]} className="w-full h-full object-cover" muted playsInline />
             ) : (
-              <img src={shown[0]} alt={title} className="w-full h-full object-cover group-hover:brightness-95 transition-all duration-300" />
+              <img src={shown[0]} alt={title} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
             )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
           </div>
 
-          {/* до 4 маленьких фото — только реальные */}
+          {/* 4 малых ячейки */}
           {[1, 2, 3, 4].map(i => shown[i] ? (
-            <div key={i} className="relative cursor-zoom-in group overflow-hidden" onClick={() => open(i)}>
+            <div key={i} className="relative cursor-zoom-in group overflow-hidden bg-zinc-100" onClick={() => open(i)}>
               {isVideo(shown[i]) ? (
                 <video src={shown[i]} className="w-full h-full object-cover" muted playsInline />
               ) : (
-                <img src={shown[i]} alt={`${title} ${i + 1}`} className="w-full h-full object-cover group-hover:brightness-95 transition-all duration-300" />
+                <img src={shown[i]} alt={`${title} ${i + 1}`} className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-300" />
               )}
               {i === 4 && total > 5 && (
                 <button
                   onClick={e => { e.stopPropagation(); open(0); }}
-                  className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center gap-2 text-white font-semibold text-sm hover:bg-black/50 transition-colors"
+                  className="absolute inset-0 bg-zinc-900/50 backdrop-blur-sm flex flex-col items-center justify-center gap-1 text-white hover:bg-zinc-900/60 transition-colors"
                 >
-                  <Grid2x2 className="size-4" />
-                  Все фото · {total}
+                  <span className="font-black tracking-tight text-[28px] leading-none">+{total - 4}</span>
+                  <span className="font-mono text-[10px] uppercase tracking-widest opacity-80">фото · съёмки</span>
                 </button>
               )}
             </div>
-          ) : null)}
+          ) : (
+            <div key={i} className="bg-zinc-100" />
+          ))}
         </div>
       )}
 
