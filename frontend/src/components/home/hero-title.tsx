@@ -10,7 +10,7 @@ export function HeroTitle() {
       <span className="word" style={{ animationDelay: '0.25s' }}>земельный участок</span>
       <br />
       <span className="word text-zinc-400" style={{ animationDelay: '0.35s' }}>для жизни</span>{' '}
-      <span className="word text-zinc-400" style={{ animationDelay: '0.45s' }}>и бизнеса</span>
+      <span className="word text-zinc-400" style={{ animationDelay: '0.45s' }}>и бизнеса.</span>
     </h1>
   );
 }
