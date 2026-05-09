@@ -123,12 +123,12 @@ export default async function HomePage() {
               <div className="relative">
                 <div className="font-mono text-[12px] uppercase tracking-widest text-primary">→ покупателям</div>
                 <h3 className="mt-4 font-black tracking-[-0.04em] text-[52px] leading-[0.95] text-zinc-900">
-                  Ищите участок<br />как на карте,<br />а не в ленте.
+                  Ищите участки<br />прямо на карте.
                 </h3>
               </div>
               <div className="relative">
                 <p className="text-[14.5px] text-zinc-600 leading-snug max-w-md">
-                  Каждое объявление привязано к точке на карте Казахстана. Фильтруйте по площади, цене за сотку, документам и категории земли — без посредников и спама.
+                  Каждое объявление привязано к точке на карте. Фильтруйте участки по площади, цене, документам и категории земли.
                 </p>
                 <div className="mt-7 flex items-center gap-3 flex-wrap">
                   <span className="px-5 h-11 rounded-xl bg-zinc-900 text-white font-semibold text-[13.5px] tracking-tight flex items-center gap-2 group-hover:bg-primary transition">
@@ -165,7 +165,7 @@ export default async function HomePage() {
                   ))}
                 </div>
                 <p className="text-[14.5px] text-white/60 leading-snug max-w-md">
-                  Бесплатное размещение, проверка кадастра по ИИН, в среднем 14 дней до сделки. Берём 0% с продавца.
+                  Публикация бесплатна, а заявки от покупателей приходят напрямую в WhatsApp и по звонку.
                 </p>
                 <div className="mt-7">
                   <span className="px-5 h-11 rounded-xl bg-white text-zinc-900 font-semibold text-[13.5px] tracking-tight inline-flex items-center gap-2 group-hover:bg-primary group-hover:text-white transition">
