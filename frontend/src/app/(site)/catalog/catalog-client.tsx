@@ -1,15 +1,14 @@
 'use client';
 
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { List, Map, SlidersHorizontal } from 'lucide-react';
-import { Container } from '@/components/layout/container';
-import { ListingsGrid } from '@/components/listings/listings-grid';
-import { ListingCard } from '@/components/listings/listing-card';
+import { SlidersHorizontal, List, Map, X } from 'lucide-react';
+import { MapView, type MapItem } from '@/components/catalog/map-view';
 import { CatalogFilters } from '@/components/catalog/filters';
 import { CatalogSort } from '@/components/catalog/sort';
-import { MapView, type MapItem } from '@/components/catalog/map-view';
 import { LAND_CATEGORIES } from '@/lib/listing-constants';
 import type { Listing } from '@/types/listing';
+import { listingUrl } from '@/lib/listing-url';
+import Link from 'next/link';
 
 type ViewMode = 'list' | 'map';
 
@@ -28,10 +27,131 @@ interface CatalogClientProps {
   initialIsPledged: boolean;
   initialIsOnRedLine: boolean;
   initialIsDivisible: boolean;
-  initialViewMode?: 'list' | 'map';
+  initialViewMode?: ViewMode;
   allListings: Listing[];
 }
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+const fmtM = (n: number) => (n / 1_000_000).toFixed(1).replace(/\.0$/, '');
+
+function relDate(dateStr: string): string {
+  const d = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86_400_000);
+  if (d === 0) return 'сегодня';
+  if (d === 1) return 'вчера';
+  if (d < 7)  return `${d} дн`;
+  if (d < 30) return `${Math.floor(d / 7)} нед`;
+  return `${Math.floor(d / 30)} мес`;
+}
+
+// ── Compact sidebar card ─────────────────────────────────────────────────────
+function SidebarCard({ listing, active, onEnter, onLeave, cardRef }: {
+  listing: Listing;
+  active: boolean;
+  onEnter: () => void;
+  onLeave: () => void;
+  cardRef: (el: HTMLDivElement | null) => void;
+}) {
+  const img = listing.images?.[0] ?? listing.image ?? null;
+  const typeLabel = listing.purpose || listing.landType || '';
+  const perSotka = listing.area > 0 ? Math.round(listing.price / listing.area) : 0;
+
+  const chips = [
+    listing.hasElectricity && 'Свет',
+    listing.hasGas && 'Газ',
+    listing.hasWater && 'Вода',
+    listing.hasRoadAccess && 'Дорога',
+    (listing as Listing & { hasStateAct?: boolean }).hasStateAct && 'Госакт',
+  ].filter((x): x is string => typeof x === 'string');
+
+  return (
+    <div ref={cardRef}>
+      <Link
+        href={listingUrl(listing)}
+        onMouseEnter={onEnter}
+        onMouseLeave={onLeave}
+        className={[
+          'block px-5 py-4 border-b border-zinc-100 transition-colors border-l-2',
+          active ? 'bg-zinc-50 border-l-primary' : 'border-l-transparent hover:bg-zinc-50',
+        ].join(' ')}
+      >
+        <div className="flex gap-3">
+          {/* Thumbnail */}
+          <div className="relative w-[120px] h-[88px] rounded-xl overflow-hidden shrink-0 bg-zinc-100">
+            {img ? (
+              <img src={img} alt={listing.title} className="w-full h-full object-cover" loading="lazy" />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-zinc-100 to-zinc-200" />
+            )}
+            {(listing as Listing & { isNegotiable?: boolean }).isNegotiable && (
+              <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-amber-500 text-white text-[9px] font-bold uppercase tracking-wide">
+                Торг
+              </span>
+            )}
+            {listing.area > 0 && (
+              <span className="absolute bottom-1.5 left-1.5 font-mono text-[9px] text-zinc-700 bg-white/80 px-1 rounded">
+                {listing.area} со
+              </span>
+            )}
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <p className="text-[10.5px] font-medium text-zinc-500 uppercase tracking-wider truncate">
+              {typeLabel}{typeLabel && listing.location ? ' · ' : ''}{listing.location}
+            </p>
+            <h3 className="mt-0.5 font-semibold text-[14.5px] leading-snug text-zinc-900 line-clamp-2">
+              {listing.title}
+            </h3>
+            <div className="mt-2 flex items-end justify-between gap-2">
+              <div>
+                <div className="font-black tracking-tight text-[17px] text-zinc-900 leading-none">
+                  {fmtM(listing.price)} млн ₸
+                </div>
+                {perSotka > 0 && (
+                  <div className="mt-0.5 text-[10.5px] font-mono text-zinc-500">
+                    {new Intl.NumberFormat('ru-RU').format(perSotka)} ₸/со
+                  </div>
+                )}
+              </div>
+              <span className="text-[10px] font-mono text-zinc-400 shrink-0">
+                {relDate(listing.createdAt)}
+              </span>
+            </div>
+            {chips.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {chips.map(c => (
+                  <span key={c} className="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-600 text-[10px] font-medium">
+                    {c}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </Link>
+    </div>
+  );
+}
+
+// ── Empty state ───────────────────────────────────────────────────────────────
+function EmptyState({ onReset }: { onReset: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full py-20 px-5 text-center">
+      <div className="rounded-2xl bg-zinc-100 p-4 mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400">
+          <path d="m21 21-4.3-4.3" /><circle cx="11" cy="11" r="8" />
+        </svg>
+      </div>
+      <p className="text-base font-semibold text-zinc-700 mb-1">Ничего не найдено</p>
+      <p className="text-sm text-zinc-400 mb-4">Попробуйте изменить параметры фильтра</p>
+      <button onClick={onReset} className="text-sm font-medium text-primary hover:underline">
+        Сбросить фильтры
+      </button>
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 export function CatalogClient({
   initialType, initialLocation,
   initialPriceFrom, initialPriceTo,
@@ -42,11 +162,23 @@ export function CatalogClient({
   initialViewMode = 'list',
   allListings,
 }: CatalogClientProps) {
-  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  // Lock body scroll for full-screen split layout
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  // Drawer state
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
-  const [sortOrder, setSortOrder] = useState('Сначала новые');
+
+  // Mobile view mode
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
 
+  // Sort
+  const [sortOrder, setSortOrder] = useState('Сначала новые');
+
+  // Filter states
   const [selectedCategories, setSelectedCategories] = useState<string[]>(initialType ? [initialType] : []);
   const [location, setLocation] = useState(initialLocation);
   const [areaFrom, setAreaFrom] = useState(initialAreaFrom);
@@ -63,24 +195,37 @@ export function CatalogClient({
   const [isDivisible, setIsDivisible] = useState(initialIsDivisible);
 
   useEffect(() => {
-    if (isMobileFiltersOpen) {
-      document.body.style.overflow = 'hidden';
+    if (isFiltersOpen) {
       requestAnimationFrame(() => setDrawerVisible(true));
     } else {
-      document.body.style.overflow = '';
       setDrawerVisible(false);
     }
-    return () => { document.body.style.overflow = ''; };
-  }, [isMobileFiltersOpen]);
+  }, [isFiltersOpen]);
 
-  const cardRefs       = useRef<Record<string, HTMLDivElement | null>>({});
+  // Sidebar hover sync
+  const [hoveredId, setHoveredId] = useState<string | number | null>(null);
+  const cardRefs = useRef<Record<string | number, HTMLDivElement | null>>({});
   const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Count by type
+  const typeCountMap = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const l of allListings) {
+      const key = l.landType ?? l.purpose ?? '';
+      if (key) counts[key] = (counts[key] ?? 0) + 1;
+    }
+    return counts;
+  }, [allListings]);
+
+  // Filtered listings
   const filteredListings = useMemo(() => {
     let result = [...allListings];
 
     if (selectedCategories.length > 0)
-      result = result.filter(l => selectedCategories.includes(l.landType) || (l.purpose != null && selectedCategories.includes(l.purpose)));
+      result = result.filter(l =>
+        selectedCategories.includes(l.landType) ||
+        (l.purpose != null && selectedCategories.includes(l.purpose))
+      );
     if (location.trim())
       result = result.filter(l => l.location.toLowerCase().includes(location.trim().toLowerCase()));
     if (areaFrom) { const v = parseFloat(areaFrom); if (v > 0) result = result.filter(l => l.area >= v); }
@@ -106,7 +251,7 @@ export function CatalogClient({
     return result;
   }, [selectedCategories, location, areaFrom, areaTo, priceFrom, priceTo,
       sortOrder, isPledged, isOnRedLine, isDivisible,
-      hasElectricity, hasGas, hasWater, hasSewer, hasRoadAccess]);
+      hasElectricity, hasGas, hasWater, hasSewer, hasRoadAccess, allListings]);
 
   const activeFilterCount = useMemo(() => [
     selectedCategories.length > 0, !!location,
@@ -131,11 +276,10 @@ export function CatalogClient({
     onViewModeChange: setViewMode,
   };
 
-  const toggleCategory = (cat: string) => {
+  const toggleCategory = (cat: string) =>
     setSelectedCategories(prev =>
       prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
     );
-  };
 
   const resetAll = () => {
     setSelectedCategories([]); setLocation('');
@@ -149,218 +293,273 @@ export function CatalogClient({
     if (highlightTimer.current) {
       clearTimeout(highlightTimer.current);
       highlightTimer.current = null;
-      Object.values(cardRefs.current).forEach(el => {
-        if (el) { el.style.outline = ''; el.style.outlineOffset = ''; }
-      });
     }
-    requestAnimationFrame(() => {
-      const el = cardRefs.current[listing.id];
-      if (!el) return;
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      el.style.outline = '3px solid var(--color-primary)';
-      el.style.outlineOffset = '4px';
-      el.style.borderRadius = '16px';
-      highlightTimer.current = setTimeout(() => {
-        el.style.outline = '';
-        el.style.outlineOffset = '';
-        highlightTimer.current = null;
-      }, 2000);
-    });
+    const el = cardRefs.current[listing.id];
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setHoveredId(listing.id);
+    highlightTimer.current = setTimeout(() => setHoveredId(null), 2000);
   }, []);
 
-  const handleViewModeChange = (mode: ViewMode) => {
-    setViewMode(mode);
-    // Закрываем фильтры при переключении на карту с мобильного
-    if (isMobileFiltersOpen) setIsMobileFiltersOpen(false);
-  };
+  const mapListings = useMemo(
+    () => filteredListings.filter(l => l.lat && l.lng),
+    [filteredListings]
+  );
+
+  // Active filter chip labels
+  const priceFromNum = priceFrom ? parseInt(priceFrom.replace(/\D/g, '')) || 0 : 0;
+  const priceToNum   = priceTo   ? parseInt(priceTo.replace(/\D/g, ''))   || 0 : 0;
+  const areaFromNum  = areaFrom  ? parseFloat(areaFrom)  || 0 : 0;
+  const areaToNum    = areaTo    ? parseFloat(areaTo)    || 0 : 0;
+
+  const priceChipLabel = (priceFromNum || priceToNum)
+    ? priceFromNum && priceToNum
+      ? `${fmtM(priceFromNum)}–${fmtM(priceToNum)} млн ₸`
+      : priceToNum ? `до ${fmtM(priceToNum)} млн ₸` : `от ${fmtM(priceFromNum)} млн ₸`
+    : null;
+
+  const areaChipLabel = (areaFromNum || areaToNum)
+    ? areaFromNum && areaToNum
+      ? `${areaFromNum}–${areaToNum} соток`
+      : areaToNum ? `до ${areaToNum} соток` : `от ${areaFromNum} соток`
+    : null;
+
+  const hasUtilityFilter = hasElectricity || hasGas || hasWater || hasSewer || hasRoadAccess;
+  const hasLegalFilter   = isPledged || isOnRedLine || isDivisible;
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-primary-soft overflow-x-hidden">
+    <div className="flex flex-col bg-white overflow-hidden" style={{ height: 'calc(100svh - 64px)' }}>
 
-      {/* Hero */}
-      <div className="bg-gradient-to-br from-white via-white to-primary-soft/20 border-b border-zinc-100">
-        <Container>
-          <div className="py-10 md:py-14">
-            <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-3">Земельные участки</p>
-            <h1 className="text-3xl md:text-5xl font-black tracking-tight text-zinc-900 mb-3">
-              Участки в Казахстане
-            </h1>
-            <p className="text-[15px] md:text-base text-zinc-500 max-w-xl">
-              {allListings.length > 0
-                ? `${allListings.length} объявлений — ИЖС, дача, коммерция и сельхоз`
-                : 'Покупка и продажа земельных участков'}
-            </p>
-          </div>
-        </Container>
-      </div>
+      {/* ── Filter bar ─────────────────────────────────────────────────────── */}
+      <div className="h-14 bg-white border-b border-zinc-200 flex items-center px-4 gap-2 overflow-x-auto shrink-0 scrollbar-none">
 
-      {/* Category pills */}
-      <div className="bg-white border-b border-zinc-100 sticky top-[64px] z-30">
-        <Container>
-          <div className="flex items-center gap-2 py-3 overflow-x-auto scrollbar-none">
+        {/* Type toggles */}
+        <div className="shrink-0 flex items-center bg-zinc-100 rounded-lg p-0.5 text-[12.5px] font-medium gap-px">
+          <button
+            onClick={() => setSelectedCategories([])}
+            className={`px-3 h-8 rounded-md flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+              selectedCategories.length === 0
+                ? 'bg-white text-zinc-900 shadow-sm'
+                : 'text-zinc-600 hover:text-zinc-900'
+            }`}
+          >
+            {selectedCategories.length === 0 && (
+              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            )}
+            Все
+            <span className="text-zinc-400 font-mono text-[10.5px]">{allListings.length}</span>
+          </button>
+          {LAND_CATEGORIES.map(cat => (
             <button
-              onClick={() => setSelectedCategories([])}
-              className={`flex items-center px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all shrink-0 ${
-                selectedCategories.length === 0
-                  ? 'bg-primary text-white shadow-sm'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+              key={cat}
+              onClick={() => toggleCategory(cat)}
+              className={`px-3 h-8 rounded-md transition-colors whitespace-nowrap ${
+                selectedCategories.includes(cat)
+                  ? 'bg-white text-zinc-900 shadow-sm'
+                  : 'text-zinc-600 hover:text-zinc-900'
               }`}
             >
-              Все
+              {cat}
+              {typeCountMap[cat] ? (
+                <span className="ml-1 text-zinc-400 font-mono text-[10.5px]">{typeCountMap[cat]}</span>
+              ) : null}
             </button>
-            {LAND_CATEGORIES.map(cat => {
-              const active = selectedCategories.includes(cat);
-              return (
-                <button
-                  key={cat}
-                  onClick={() => toggleCategory(cat)}
-                  className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all shrink-0 ${
-                    active
-                      ? 'bg-primary text-white shadow-sm'
-                      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-                  }`}
-                >
-                  {cat}
-                </button>
-              );
-            })}
-          </div>
-        </Container>
+          ))}
+        </div>
+
+        <span className="shrink-0 w-px h-6 bg-zinc-200 mx-1" />
+
+        {/* Active filter chips */}
+        {priceChipLabel && (
+          <button
+            onClick={() => { setPriceFrom(''); setPriceTo(''); }}
+            className="shrink-0 group h-9 pl-3 pr-2 rounded-lg border border-zinc-200 bg-white text-[12.5px] hover:border-zinc-400 transition flex items-center gap-2 whitespace-nowrap"
+          >
+            <span className="text-zinc-400">Цена</span>
+            <span className="font-semibold text-zinc-900">{priceChipLabel}</span>
+            <X className="w-3.5 h-3.5 text-zinc-400 group-hover:text-zinc-900" />
+          </button>
+        )}
+
+        {areaChipLabel && (
+          <button
+            onClick={() => { setAreaFrom(''); setAreaTo(''); }}
+            className="shrink-0 group h-9 pl-3 pr-2 rounded-lg border border-zinc-200 bg-white text-[12.5px] hover:border-zinc-400 transition flex items-center gap-2 whitespace-nowrap"
+          >
+            <span className="text-zinc-400">Площадь</span>
+            <span className="font-semibold text-zinc-900">{areaChipLabel}</span>
+            <X className="w-3.5 h-3.5 text-zinc-400 group-hover:text-zinc-900" />
+          </button>
+        )}
+
+        {hasUtilityFilter && (
+          <button
+            onClick={() => { setHasElectricity(false); setHasGas(false); setHasWater(false); setHasSewer(false); setHasRoadAccess(false); }}
+            className="shrink-0 group h-9 pl-3 pr-2 rounded-lg border border-primary bg-primary-soft text-[12.5px] flex items-center gap-2 whitespace-nowrap"
+          >
+            <span className="text-primary/80">Коммуникации</span>
+            <X className="w-3.5 h-3.5 text-primary/60 group-hover:text-primary" />
+          </button>
+        )}
+
+        {hasLegalFilter && (
+          <button
+            onClick={() => { setIsPledged(false); setIsOnRedLine(false); setIsDivisible(false); }}
+            className="shrink-0 group h-9 pl-3 pr-2 rounded-lg border border-primary bg-primary-soft text-[12.5px] flex items-center gap-2 whitespace-nowrap"
+          >
+            <span className="text-primary/80">Юридика</span>
+            <X className="w-3.5 h-3.5 text-primary/60 group-hover:text-primary" />
+          </button>
+        )}
+
+        {location && (
+          <button
+            onClick={() => setLocation('')}
+            className="shrink-0 group h-9 pl-3 pr-2 rounded-lg border border-zinc-200 bg-white text-[12.5px] hover:border-zinc-400 transition flex items-center gap-2"
+          >
+            <span className="text-zinc-400">Район</span>
+            <span className="font-semibold text-zinc-900 max-w-[120px] truncate">{location}</span>
+            <X className="w-3.5 h-3.5 text-zinc-400 group-hover:text-zinc-900" />
+          </button>
+        )}
+
+        {/* Spacer */}
+        <div className="flex-1 min-w-2" />
+
+        {/* Mobile list/map toggle */}
+        <div className="lg:hidden flex items-center rounded-lg border border-zinc-200 bg-zinc-50 p-0.5 shrink-0 gap-px">
+          <button
+            onClick={() => setViewMode('list')}
+            className={`flex items-center justify-center rounded-md w-8 h-8 transition-all ${
+              viewMode === 'list' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-400'
+            }`}
+          >
+            <List className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setViewMode('map')}
+            className={`flex items-center justify-center rounded-md w-8 h-8 transition-all ${
+              viewMode === 'map' ? 'bg-primary text-white shadow-sm' : 'text-zinc-400'
+            }`}
+          >
+            <Map className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* All filters */}
+        <button
+          onClick={() => setIsFiltersOpen(true)}
+          className="shrink-0 h-9 px-3 rounded-lg bg-zinc-900 text-white text-[12.5px] font-medium hover:bg-zinc-800 transition flex items-center gap-2 whitespace-nowrap"
+        >
+          <SlidersHorizontal className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Фильтры</span>
+          {activeFilterCount > 0 && (
+            <span className="w-4 h-4 rounded bg-white/20 text-[10px] font-bold flex items-center justify-center">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+
+        {activeFilterCount > 0 && (
+          <button
+            onClick={resetAll}
+            className="shrink-0 h-9 px-3 rounded-lg text-[12.5px] font-medium text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition whitespace-nowrap"
+          >
+            Сбросить
+          </button>
+        )}
       </div>
 
-      <div className="py-8 pb-20">
-        <Container>
-          <div className="flex flex-col items-start gap-8 lg:flex-row">
+      {/* ── Main split ─────────────────────────────────────────────────────── */}
+      <main className="flex flex-1 overflow-hidden">
 
-            {/* Desktop sidebar */}
-            <aside className="w-full shrink-0 lg:w-80 hidden lg:block">
-              <CatalogFilters {...filterProps} />
-            </aside>
+        {/* Sidebar (desktop) */}
+        <aside className="hidden lg:flex w-[440px] shrink-0 flex-col border-r border-zinc-200">
 
-            <div className="flex-1 w-full min-w-0">
-
-              {/* Mobile control bar — одна строка */}
-              <div className="lg:hidden mb-4 flex items-center gap-2">
-
-                {/* Фильтры */}
-                <button
-                  onClick={() => setIsMobileFiltersOpen(true)}
-                  className="flex items-center gap-2 rounded-xl bg-white border border-zinc-200 px-3.5 py-2.5 text-[13px] font-bold text-zinc-900 shadow-sm active:scale-95 transition-transform shrink-0"
-                >
-                  <SlidersHorizontal className="w-4 h-4" strokeWidth={2.5} />
-                  Фильтры
-                  {activeFilterCount > 0 && (
-                    <span className="flex items-center justify-center h-5 w-5 rounded-full bg-primary text-white text-[10px] font-black leading-none">
-                      {activeFilterCount}
-                    </span>
-                  )}
-                </button>
-
-                {/* Список / Карта */}
-                <div className="flex items-center rounded-xl border border-zinc-200 bg-white shadow-sm p-0.5 gap-0.5 shrink-0">
-                  <button
-                    onClick={() => handleViewModeChange('list')}
-                    title="Список"
-                    className={`flex items-center justify-center rounded-lg w-9 h-9 transition-all ${
-                      viewMode === 'list' ? 'bg-zinc-900 text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-700'
-                    }`}
-                  >
-                    <List className="w-4 h-4" strokeWidth={2} />
-                  </button>
-                  <button
-                    onClick={() => handleViewModeChange('map')}
-                    title="Карта"
-                    className={`flex items-center justify-center rounded-lg w-9 h-9 transition-all ${
-                      viewMode === 'map' ? 'bg-primary text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-700'
-                    }`}
-                  >
-                    <Map className="w-4 h-4" strokeWidth={2} />
-                  </button>
-                </div>
-
-                {/* Сортировка */}
-                {viewMode === 'list' && (
-                  <div className="ml-auto shrink-0">
-                    <CatalogSort value={sortOrder} onChange={setSortOrder} mobile />
-                  </div>
-                )}
+          {/* Sidebar header */}
+          <div className="h-[68px] px-5 border-b border-zinc-100 flex items-end justify-between pb-3 shrink-0">
+            <div>
+              <div className="font-black tracking-tight text-[22px] leading-none text-zinc-900">
+                {filteredListings.length.toLocaleString('ru-RU')} участков
               </div>
+              <div className="mt-1 flex items-center gap-1.5 text-[11.5px] font-mono text-zinc-500 uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                в каталоге
+              </div>
+            </div>
+            <CatalogSort value={sortOrder} onChange={setSortOrder} />
+          </div>
 
-              {/* Desktop sort bar */}
-              {viewMode === 'list' && (
-                <div className="hidden lg:flex items-center justify-end mb-6">
-                  <CatalogSort value={sortOrder} onChange={setSortOrder} />
-                </div>
-              )}
+          {/* Scrollable list */}
+          <div
+            className="flex-1 overflow-y-auto"
+            style={{ scrollbarWidth: 'thin', scrollbarColor: '#d4d4d8 transparent' }}
+          >
+            {filteredListings.length === 0 ? (
+              <EmptyState onReset={resetAll} />
+            ) : (
+              filteredListings.map(l => (
+                <SidebarCard
+                  key={l.id}
+                  listing={l}
+                  active={hoveredId === l.id}
+                  onEnter={() => setHoveredId(l.id)}
+                  onLeave={() => setHoveredId(null)}
+                  cardRef={el => { cardRefs.current[l.id] = el; }}
+                />
+              ))
+            )}
+          </div>
+        </aside>
 
-              {/* Map mode */}
-              {viewMode === 'map' && (
-                <div
-                  className="flex flex-col gap-8"
-                  style={isMobileFiltersOpen ? { pointerEvents: 'none' } : undefined}
-                >
-                  <MapView listings={filteredListings} />
-                  {filteredListings.length > 0 && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-                      {filteredListings.map(listing => (
-                        <div
-                          key={listing.id}
-                          ref={el => { cardRefs.current[listing.id] = el; }}
-                        >
-                          <ListingCard listing={listing} />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+        {/* Map (desktop) */}
+        <section className="hidden lg:block flex-1 relative">
+          <div className="absolute inset-0">
+            <MapView listings={mapListings} onMarkerClick={handleMarkerClick} />
+          </div>
+        </section>
 
-              {/* List mode */}
-              {viewMode === 'list' && (
-                <>
-                  {filteredListings.length > 0 ? (
-                    <ListingsGrid listings={filteredListings} columns={3} />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center rounded-2xl border border-zinc-200 bg-white py-20 px-4 text-center">
-                      <div className="rounded-full bg-zinc-100 p-4 text-zinc-400">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <path d="m21 21-4.3-4.3"/><circle cx="11" cy="11" r="8"/>
-                        </svg>
-                      </div>
-                      <h3 className="mt-6 text-xl font-bold text-zinc-900">Ничего не найдено</h3>
-                      <p className="mt-2 text-zinc-500">Попробуйте изменить параметры фильтра</p>
-                      {activeFilterCount > 0 && (
-                        <button onClick={resetAll}
-                          className="mt-6 rounded-2xl border border-zinc-200 bg-white px-6 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors">
-                          Сбросить все фильтры
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </>
+        {/* Mobile content */}
+        <div className="lg:hidden flex-1 overflow-hidden">
+          {viewMode === 'list' ? (
+            <div className="h-full overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+              {filteredListings.length === 0 ? (
+                <EmptyState onReset={resetAll} />
+              ) : (
+                filteredListings.map(l => (
+                  <SidebarCard
+                    key={l.id}
+                    listing={l}
+                    active={false}
+                    onEnter={() => {}}
+                    onLeave={() => {}}
+                    cardRef={() => {}}
+                  />
+                ))
               )}
             </div>
-          </div>
-        </Container>
-      </div>
+          ) : (
+            <div className="h-full relative">
+              <MapView listings={mapListings} onMarkerClick={() => {}} />
+            </div>
+          )}
+        </div>
+      </main>
 
-      {/* Mobile filter drawer */}
-      {isMobileFiltersOpen && (
+      {/* ── Filter drawer ──────────────────────────────────────────────────── */}
+      {isFiltersOpen && (
         <>
-          {/* Overlay */}
           <div
-            className={`fixed inset-0 lg:hidden transition-opacity duration-300 ${drawerVisible ? 'opacity-100' : 'opacity-0'}`}
-            style={{ zIndex: 1050, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
-            onClick={() => setIsMobileFiltersOpen(false)}
+            className={`fixed inset-0 z-[1050] transition-opacity duration-300 ${drawerVisible ? 'opacity-100' : 'opacity-0'}`}
+            style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+            onClick={() => setIsFiltersOpen(false)}
           />
-          {/* Drawer */}
           <div
-            className={`fixed inset-x-0 bottom-0 flex flex-col rounded-t-3xl bg-white shadow-2xl lg:hidden transition-transform duration-300 ease-out ${drawerVisible ? 'translate-y-0' : 'translate-y-full'}`}
-            style={{ zIndex: 1100, maxHeight: '92dvh' }}
+            className={`fixed inset-x-0 bottom-0 flex flex-col rounded-t-3xl bg-white shadow-2xl z-[1100] transition-transform duration-300 ease-out ${drawerVisible ? 'translate-y-0' : 'translate-y-full'}`}
+            style={{ maxHeight: '92dvh' }}
           >
             <CatalogFilters
               {...{ ...filterProps, onViewModeChange: undefined }}
-              onClose={() => setIsMobileFiltersOpen(false)}
+              onClose={() => setIsFiltersOpen(false)}
             />
           </div>
         </>
