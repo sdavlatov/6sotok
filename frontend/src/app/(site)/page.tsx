@@ -121,14 +121,14 @@ export default async function HomePage() {
               </div>
 
               <div className="relative">
-                <div className="text-[11.5px] font-medium uppercase tracking-[0.12em] text-zinc-400">→ Покупателям</div>
+                <div className="text-[11.5px] font-medium uppercase tracking-[0.12em] text-primary">→ Покупателям</div>
                 <h3 className="mt-5 font-black tracking-[-0.04em] text-[48px] md:text-[52px] leading-[0.95] text-zinc-900">
-                  Вся земля<br />Казахстана —<br /><span className="text-zinc-400">на одной карте.</span>
+                  Ищите участок<br />как на карте,<br />а не в ленте.
                 </h3>
               </div>
               <div className="relative">
                 <p className="text-[15px] text-zinc-500 leading-snug max-w-md">
-                  Все участки страны — на одной карте. Цены, площади и документы без звонков агентам и спама.
+                  Каждое объявление привязано к точке на карте Казахстана. Фильтруйте по площади, цене за сотку, документам и категории земли — без посредников и спама.
                 </p>
                 <div className="mt-8 flex items-center gap-3 flex-wrap">
                   <span className="px-5 h-11 rounded-xl bg-zinc-900 text-white font-semibold text-[13.5px] tracking-tight flex items-center gap-2 group-hover:bg-primary transition">
@@ -137,7 +137,7 @@ export default async function HomePage() {
                   <div className="flex items-center gap-3 text-[12.5px] text-zinc-400 font-mono">
                     <span><b className="text-zinc-700">{landCount.toLocaleString('ru-RU')}</b> объявлений</span>
                     <span className="text-zinc-300">·</span>
-                    <span><b className="text-zinc-700">{locations.length}</b> городов</span>
+                    <span><b className="text-zinc-700">{locations.length}</b> областей</span>
                   </div>
                 </div>
               </div>
@@ -150,14 +150,14 @@ export default async function HomePage() {
               <div className="drift absolute -bottom-32 -right-32 w-[420px] h-[420px] rounded-full pointer-events-none"
                 style={{ background: 'radial-gradient(circle, rgba(44,166,78,0.45) 0%, transparent 60%)' }} />
               <div className="relative">
-                <div className="text-[11.5px] font-medium uppercase tracking-[0.12em] text-white/55">→ Продавцам</div>
+                <div className="text-[11.5px] font-medium uppercase tracking-[0.12em] text-primary">→ Продавцам</div>
                 <h3 className="mt-5 font-black tracking-[-0.04em] text-[48px] md:text-[52px] leading-[0.95]">
-                  Разместите<br />участок<br /><span style={{ color: '#2CA64E' }}>за 3 минуты.</span>
+                  Разместите<br />участок<br />за 3 минуты.
                 </h3>
               </div>
               <div className="relative">
                 <div className="grid grid-cols-3 gap-4 mb-8">
-                  {[['01','Кадастровый номер'],['02','Фото и описание'],['03','WhatsApp и звонки']].map(([n,t]) => (
+                  {[['01','Кадастровый номер'],['02','Фото и документы'],['03','WhatsApp и звонки']].map(([n,t]) => (
                     <div key={n} className="border-l border-white/20 pl-3.5 pt-3">
                       <div className="font-mono text-[11px] font-medium text-white/45">{n}</div>
                       <div className="mt-1.5 text-[13.5px] font-semibold leading-tight text-white/90">{t}</div>
@@ -165,10 +165,10 @@ export default async function HomePage() {
                   ))}
                 </div>
                 <p className="text-[15px] text-white/55 leading-snug max-w-md">
-                  Бесплатно, без скрытых комиссий. Покупатели находят через карту и поиск — в среднем 14 дней до сделки.
+                  Бесплатное размещение, проверка кадастра по ИИН, в среднем 14 дней до сделки. Берём 0% с продавца.
                 </p>
                 <div className="mt-7">
-                  <span className="px-5 h-11 rounded-xl bg-white text-zinc-900 font-semibold text-[13.5px] tracking-tight inline-flex items-center gap-2 group-hover:bg-primary group-hover:text-white transition">
+                  <span className="px-5 h-11 rounded-xl border border-white/30 bg-transparent text-white font-semibold text-[13.5px] tracking-tight inline-flex items-center gap-2 group-hover:bg-primary group-hover:border-primary transition">
                     Разместить объявление →
                   </span>
                 </div>
