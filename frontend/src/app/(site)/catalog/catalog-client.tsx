@@ -11,7 +11,7 @@ import { listingUrl } from '@/lib/listing-url';
 import Link from 'next/link';
 
 type ViewMode = 'list' | 'map';
-type TileLayer = 'schema' | 'satellite';
+type TileLayer = string;
 
 interface CatalogClientProps {
   initialType: string;
@@ -146,127 +146,6 @@ function EmptyState({ onReset }: { onReset: () => void }) {
       <button onClick={onReset} className="text-sm font-medium text-primary hover:underline">
         Сбросить фильтры
       </button>
-    </div>
-  );
-}
-
-// ── Map overlay controls ──────────────────────────────────────────────────────
-function MapStatsOverlay({ count, median, perSotka }: {
-  count: number;
-  median: number;
-  perSotka: number;
-}) {
-  return (
-    <div className="absolute top-4 left-4 z-[400] pointer-events-none">
-      <div className="bg-white/95 backdrop-blur-sm rounded-xl border border-zinc-200 shadow-sm overflow-hidden flex divide-x divide-zinc-100 text-[12px] pointer-events-auto">
-        <div className="px-3 py-2">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">видимо</div>
-          <div className="font-black tracking-tight text-[15px] text-zinc-900">{count.toLocaleString('ru-RU')}</div>
-        </div>
-        {median > 0 && (
-          <div className="px-3 py-2">
-            <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">медиана</div>
-            <div className="font-black tracking-tight text-[15px] text-zinc-900">{fmtM(median)}&nbsp;млн</div>
-          </div>
-        )}
-        {perSotka > 0 && (
-          <div className="px-3 py-2">
-            <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">за сотку</div>
-            <div className="font-black tracking-tight text-[15px] text-primary">{fmtM(perSotka)}&nbsp;млн</div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function MapRightControls({
-  tileLayer,
-  onTileLayer,
-  onZoomIn,
-  onZoomOut,
-}: {
-  tileLayer: TileLayer;
-  onTileLayer: (l: TileLayer) => void;
-  onZoomIn: () => void;
-  onZoomOut: () => void;
-}) {
-  return (
-    <div className="absolute top-4 right-4 z-[400] flex flex-col gap-2 items-end">
-      {/* Layer tabs */}
-      <div className="bg-white/95 backdrop-blur-sm rounded-xl border border-zinc-200 shadow-sm p-1 flex gap-0.5 text-[12px] font-medium">
-        {(['schema', 'satellite'] as TileLayer[]).map(layer => {
-          const label = layer === 'schema' ? 'Схема' : 'Спутник';
-          return (
-            <button
-              key={layer}
-              onClick={() => onTileLayer(layer)}
-              className={`px-3 h-7 rounded-lg transition-colors ${
-                tileLayer === layer
-                  ? 'bg-zinc-900 text-white'
-                  : 'text-zinc-600 hover:bg-zinc-100'
-              }`}
-            >
-              {label}
-            </button>
-          );
-        })}
-        {/* Non-functional tabs, visual only */}
-        <button className="px-3 h-7 rounded-lg text-zinc-400 cursor-default" title="Скоро">Кадастр</button>
-        <button className="px-3 h-7 rounded-lg text-zinc-400 cursor-default" title="Скоро">Тепло цен</button>
-      </div>
-
-      {/* Zoom controls */}
-      <div className="bg-white/95 backdrop-blur-sm rounded-xl border border-zinc-200 shadow-sm p-1 flex flex-col gap-0.5">
-        <button
-          onClick={onZoomIn}
-          className="w-9 h-9 rounded-lg hover:bg-zinc-100 text-zinc-700 font-bold text-[18px] flex items-center justify-center transition-colors"
-        >+</button>
-        <span className="h-px bg-zinc-100 mx-1.5" />
-        <button
-          onClick={onZoomOut}
-          className="w-9 h-9 rounded-lg hover:bg-zinc-100 text-zinc-700 font-bold text-[18px] flex items-center justify-center transition-colors"
-        >−</button>
-        <span className="h-px bg-zinc-100 mx-1.5" />
-        <button
-          className="w-9 h-9 rounded-lg hover:bg-zinc-100 text-zinc-700 flex items-center justify-center font-mono text-[12px] transition-colors"
-          title="Моё местоположение"
-          onClick={() => {
-            navigator.geolocation?.getCurrentPosition(pos => {
-              // noop — map instance not exposed here
-            });
-          }}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Drawing tools (UI only) */}
-      <div className="bg-white/95 backdrop-blur-sm rounded-xl border border-zinc-200 shadow-sm p-1 flex flex-col gap-0.5">
-        <button className="w-9 h-9 rounded-lg hover:bg-zinc-100 text-zinc-600 flex items-center justify-center transition-colors" title="Нарисовать область">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 17l6-6 4 4 8-8" />
-            <circle cx="3" cy="17" r="1.5" fill="currentColor" />
-            <circle cx="9" cy="11" r="1.5" fill="currentColor" />
-            <circle cx="13" cy="15" r="1.5" fill="currentColor" />
-            <circle cx="21" cy="7" r="1.5" fill="currentColor" />
-          </svg>
-        </button>
-        <button className="w-9 h-9 rounded-lg hover:bg-zinc-100 text-zinc-600 flex items-center justify-center transition-colors" title="Радиус от точки">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="9" strokeDasharray="3 3" />
-            <circle cx="12" cy="12" r="2" fill="currentColor" />
-          </svg>
-        </button>
-        <button className="w-9 h-9 rounded-lg hover:bg-zinc-100 text-zinc-600 flex items-center justify-center transition-colors" title="Линейка">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20.6 6.6l-3.2-3.2a2 2 0 0 0-2.8 0L3.4 14.6a2 2 0 0 0 0 2.8l3.2 3.2a2 2 0 0 0 2.8 0L20.6 9.4a2 2 0 0 0 0-2.8z" />
-            <path d="M9 7l1.5 1.5M11 5l1.5 1.5M13 9l1.5 1.5M15 7l1.5 1.5" />
-          </svg>
-        </button>
-      </div>
     </div>
   );
 }
@@ -637,40 +516,18 @@ export function CatalogClient({
 
         {/* Map (desktop) */}
         <section className="hidden lg:block flex-1 relative">
-          {/* Stats overlay — top left */}
-          <MapStatsOverlay
-            count={filteredListings.length}
-            median={medianPrice}
-            perSotka={avgPerSotka}
-          />
-
-          {/* "Search as I move" toggle — below stats */}
-          <div className="absolute top-[68px] left-4 z-[400]">
-            <label className="bg-white/95 backdrop-blur-sm rounded-xl border border-zinc-200 shadow-sm px-3 py-2 flex items-center gap-2 cursor-pointer text-[12px] font-medium text-zinc-700 select-none">
-              <span className={`relative w-8 h-4 rounded-full transition-colors ${searchAsMove ? 'bg-primary' : 'bg-zinc-300'}`}>
-                <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${searchAsMove ? 'translate-x-4' : 'translate-x-0.5'}`} />
-              </span>
-              Искать при движении
-            </label>
-          </div>
-
-          {/* Layer tabs + zoom + tools — top right */}
-          <MapRightControls
+          <MapView
+            listings={mapListings}
+            onMarkerClick={handleMarkerClick}
             tileLayer={tileLayer}
-            onTileLayer={setTileLayer}
-            onZoomIn={() => mapApi.current?.zoomIn()}
-            onZoomOut={() => mapApi.current?.zoomOut()}
+            onTileLayerChange={setTileLayer}
+            mapApiRef={mapApi}
+            statsCount={filteredListings.length}
+            statsMedian={medianPrice}
+            statsPerSotka={avgPerSotka}
+            searchAsMove={searchAsMove}
+            onSearchAsMoveChange={setSearchAsMove}
           />
-
-          {/* Map canvas */}
-          <div className="absolute inset-0">
-            <MapView
-              listings={mapListings}
-              onMarkerClick={handleMarkerClick}
-              tileLayer={tileLayer}
-              mapApiRef={mapApi}
-            />
-          </div>
         </section>
 
         {/* Mobile content */}
