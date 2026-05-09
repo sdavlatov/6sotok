@@ -88,9 +88,6 @@ export default async function ListingPage({ params }: Props) {
             {listing.seller?.isAgency && (
               <span className="px-2 py-1 rounded bg-zinc-900 text-white">Агентство</span>
             )}
-            {listing.isNegotiable && (
-              <span className="px-2 py-1 rounded bg-amber-50 text-amber-700">Торг</span>
-            )}
             {listing.hasStateAct !== false && (
               <span className="px-2 py-1 rounded bg-amber-50 text-amber-700">Кадастр проверен</span>
             )}
@@ -380,7 +377,7 @@ export default async function ListingPage({ params }: Props) {
                 <div className="flex items-end justify-between gap-6 flex-wrap mb-6">
                   <div>
                     <div className="text-[12px] font-medium text-zinc-500">
-                      {listing.isNegotiable ? 'Цена ниже рыночной, возможен торг' : 'Этот участок дешевле медианы по району'}
+                      {'Этот участок дешевле медианы по району'}
                     </div>
                     <div className="font-black text-[44px] leading-none tracking-tight text-primary mt-1 tabular-nums">
                       {fmtPrice(pricePerSotka)}&nbsp;<span className="text-[20px] text-zinc-400">₸/сот.</span>

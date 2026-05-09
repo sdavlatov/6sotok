@@ -52,6 +52,9 @@ export interface Listing {
   reliefType?: ReliefType;
   plotShape?: string;
   plotBoundary?: string; // JSON array of {lat,lng}
+  frontWidth?: number;
+  depth?: number;
+  isNegotiable?: boolean;
 
   // Градостроительные параметры
   purpose?: Purpose;
