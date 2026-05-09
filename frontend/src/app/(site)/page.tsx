@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { HomeFilter } from '@/components/home/home-filter';
 import { CityMarquee } from '@/components/home/city-marquee';
 import { HeroTitle } from '@/components/home/hero-title';
+import { HeroBadge } from '@/components/home/hero-badge';
 import { SplitViewSection } from '@/components/home/split-view-section';
 import { getListings, getBusinessListings } from '@/lib/api';
 import type { Listing } from '@/types/listing';
@@ -73,13 +74,7 @@ export default async function HomePage() {
 
         <div className="relative max-w-[1440px] mx-auto px-6 pt-16 pb-8">
           <div className="max-w-5xl mb-10">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 mb-7 pl-1 pr-3.5 py-1 rounded-full bg-white border border-zinc-200 shadow-sm">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white font-black text-[11px]">№1</span>
-              <span className="text-[12.5px] font-semibold text-zinc-900 tracking-tight">Маркетплейс земельных участков в Казахстане</span>
-              <span className="w-1 h-1 rounded-full bg-zinc-300" />
-              <span className="text-[12px] font-medium text-zinc-500">с 2024 года</span>
-            </div>
+            <HeroBadge />
 
             <HeroTitle />
 
