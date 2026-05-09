@@ -71,11 +71,11 @@ const MAP_STYLE = `
   .map-price-pin.tier-mid    { background:#fff;    color:#111;    border:2px solid rgba(0,0,0,0.14);      box-shadow:0 2px 10px rgba(0,0,0,0.18); }
   .map-price-pin.tier-low    { background:#f0fdf4; color:#065f46; border:2px solid rgba(6,111,54,0.4);   box-shadow:0 2px 10px rgba(6,111,54,0.2); }
   .map-price-pin.tier-high   { background:#021A0E; color:#fff;    border:2px solid rgba(255,255,255,0.1); box-shadow:0 2px 10px rgba(0,0,0,0.3); }
-  .map-price-pin.tier-viewed { background:#fef3c7; color:#92400e; border:2px solid rgba(217,119,6,0.45); box-shadow:0 2px 10px rgba(217,119,6,0.2); }
+  .map-price-pin.tier-viewed { background:#f4f4f5; color:#71717a; border:2px solid rgba(113,113,122,0.35); box-shadow:0 2px 10px rgba(0,0,0,0.10); }
   .map-price-pin.tier-mid:hover,    .map-price-pin.tier-mid.active    { background:#111827; color:#fff; border-color:#111827; }
   .map-price-pin.tier-low:hover,    .map-price-pin.tier-low.active    { background:#066F36; color:#fff; border-color:#066F36; }
   .map-price-pin.tier-high:hover,   .map-price-pin.tier-high.active   { background:#066F36; border-color:#066F36; }
-  .map-price-pin.tier-viewed:hover, .map-price-pin.tier-viewed.active { background:#d97706; color:#fff; border-color:#d97706; }
+  .map-price-pin.tier-viewed:hover, .map-price-pin.tier-viewed.active { background:#52525b; color:#fff; border-color:#52525b; }
   .map-listing-popup .leaflet-popup-content-wrapper {
     border-radius: 16px; padding: 0; overflow: hidden;
     box-shadow: 0 8px 32px rgba(0,0,0,0.18); border: 1px solid #e4e4e7;
@@ -181,8 +181,8 @@ export function HeroMap({
 
       // Icon factories — all dot styles are inline to avoid CSS class loading issues
       const mkDotIcon = (isViewed: boolean) => {
-        const ringBg = isViewed ? 'rgba(217,119,6,0.35)' : 'rgba(6,111,54,0.35)';
-        const coreBg = isViewed ? '#d97706' : '#066F36';
+        const ringBg = isViewed ? 'rgba(113,113,122,0.25)' : 'rgba(6,111,54,0.35)';
+        const coreBg = isViewed ? '#a1a1aa' : '#066F36';
         return L.divIcon({
           className: '',
           html: `<div style="position:relative;width:28px;height:28px;overflow:visible">
@@ -199,7 +199,7 @@ export function HeroMap({
         const tier = priceTier(price, isViewed);
         return L.divIcon({
           className: 'map-pin-wrap',
-          html: `<div class="map-price-pin tier-${tier}">${isViewed ? '👁 ' : ''}${text}</div>`,
+          html: `<div class="map-price-pin tier-${tier}">${text}</div>`,
           iconSize: [1, 1],
           iconAnchor: [0, 0],
         });
@@ -215,7 +215,7 @@ export function HeroMap({
           const priceRow = price
             ? `<div style="font-size:17px;font-weight:900;color:#111;letter-spacing:-0.03em;margin-top:6px">${price.toLocaleString('ru-RU')} ₸</div>${area ? `<div style="font-size:10px;color:#a1a1aa;margin-top:2px;font-family:monospace">${Math.round(price / area).toLocaleString('ru-RU')} ₸/сотка</div>` : ''}`
             : '';
-          const viewedBadge = isViewed ? `<div style="display:inline-block;margin-bottom:6px;font-size:10px;font-weight:700;color:#92400e;background:#fef3c7;padding:2px 8px;border-radius:20px">Просмотрено</div>` : '';
+          const viewedBadge = isViewed ? `<div style="display:inline-block;margin-bottom:6px;font-size:10px;font-weight:700;color:#71717a;background:#f4f4f5;padding:2px 8px;border-radius:20px">Просмотрено</div>` : '';
           const meta = `<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#a1a1aa">${landType ?? 'ИЖС'}${location ? ' · ' + location : ''}${area ? ' · ' + area + ' сот.' : ''}</div>`;
           const popup = `
             <div style="width:224px;padding:14px 14px 12px">
