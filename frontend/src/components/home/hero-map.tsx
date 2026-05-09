@@ -127,6 +127,13 @@ export function HeroMap({
   const setSelectedRef = useRef(setSelected);
   const setVisibleRef = useRef(setVisibleCount);
 
+  // Exposed to React event handlers from Leaflet closure
+  const markerBySlugRef = useRef<Map<string, { marker: any; price: number | null | undefined; area: number | null | undefined; isPremium: boolean }>>(new Map());
+  const viewedRef = useRef<Set<string>>(new Set());
+  const currentZoomRef = useRef(5);
+  const mkDotIconRef = useRef<((v: boolean) => any) | null>(null);
+  const mkPriceIconRef = useRef<((p: number | null | undefined, a: number | null | undefined, v: boolean, pr: boolean) => any) | null>(null);
+
   useEffect(() => {
     if (!tileRef.current || !mapRef.current) return;
     tileRef.current.setUrl(TILE_URLS[layer] ?? TILE_URLS.schema);
@@ -156,6 +163,7 @@ export function HeroMap({
         const raw = JSON.parse(localStorage.getItem(LS_KEY) ?? '[]');
         viewed = new Set(raw);
       } catch {}
+      viewedRef.current = viewed;
 
       const map = L.map(ref.current, {
         center: KZ_CENTER, zoom: 5,
@@ -205,6 +213,8 @@ export function HeroMap({
         });
       };
 
+      mkDotIconRef.current = mkDotIcon;
+
       const premiumSet = new Set(premiumSlugs);
 
       const mkPriceIcon = (price: number | null | undefined, area: number | null | undefined, isViewed: boolean, isPremium: boolean) => {
@@ -219,7 +229,9 @@ export function HeroMap({
         });
       };
 
-      const markerData: { marker: any; price: number | null | undefined; area: number | null | undefined; isViewed: boolean; isPremium: boolean }[] = [];
+      mkPriceIconRef.current = mkPriceIcon;
+
+      const markerData: { marker: any; slug: string; price: number | null | undefined; area: number | null | undefined; isViewed: boolean; isPremium: boolean }[] = [];
 
       dots.forEach(({ lat, lng, slug, title, price, area, landType, location, image }) => {
         const isViewed = !!(slug && viewed.has(slug));
@@ -228,12 +240,14 @@ export function HeroMap({
 
         if (slug && title) {
           marker.on('click', () => {
-            setSelectedRef.current({ slug, title, price, area, landType, location, image, isPremium, isViewed });
+            const currentViewed = viewedRef.current.has(slug);
+            setSelectedRef.current({ slug, title, price, area, landType, location, image, isPremium, isViewed: currentViewed });
           });
+          markerBySlugRef.current.set(slug, { marker, price, area, isPremium });
         }
 
         clusterGroup.addLayer(marker);
-        markerData.push({ marker, price, area, isViewed, isPremium });
+        markerData.push({ marker, slug: slug ?? '', price, area, isViewed, isPremium });
       });
 
       map.addLayer(clusterGroup);
@@ -243,8 +257,10 @@ export function HeroMap({
 
       map.on('zoomend', () => {
         const zoom = map.getZoom();
-        markerData.forEach(({ marker, price, area, isViewed, isPremium }) => {
-          marker.setIcon(zoom >= PRICE_ZOOM ? mkPriceIcon(price, area, isViewed, isPremium) : mkDotIcon(isViewed));
+        currentZoomRef.current = zoom;
+        markerData.forEach(({ marker, slug, price, area, isPremium }) => {
+          const v = viewedRef.current.has(slug);
+          marker.setIcon(zoom >= PRICE_ZOOM ? mkPriceIcon(price, area, v, isPremium) : mkDotIcon(v));
         });
       });
 
@@ -264,6 +280,25 @@ export function HeroMap({
       tileRef.current = null;
     };
   }, []);
+
+  const handleOpen = (slug: string) => {
+    // Mark as viewed immediately — update localStorage + pin icon
+    viewedRef.current.add(slug);
+    try {
+      const prev: string[] = JSON.parse(localStorage.getItem(LS_KEY) ?? '[]');
+      const next = [slug, ...prev.filter(x => x !== slug)].slice(0, 30);
+      localStorage.setItem(LS_KEY, JSON.stringify(next));
+    } catch {}
+    const data = markerBySlugRef.current.get(slug);
+    if (data && mkDotIconRef.current && mkPriceIconRef.current) {
+      const icon = currentZoomRef.current >= PRICE_ZOOM
+        ? mkPriceIconRef.current(data.price, data.area, true, data.isPremium)
+        : mkDotIconRef.current(true);
+      data.marker.setIcon(icon);
+    }
+    // Update card to show viewed badge
+    setSelected(prev => prev ? { ...prev, isViewed: true } : prev);
+  };
 
   const sel = selected;
   const priceStr = sel?.price ? sel.price.toLocaleString('ru-RU') + ' ₸' : '';
@@ -322,6 +357,7 @@ export function HeroMap({
                 </div>
                 <Link
                   href={`/listing/${sel.slug}`}
+                  onClick={() => handleOpen(sel.slug)}
                   className="shrink-0 px-4 h-9 rounded-xl bg-zinc-900 hover:bg-primary text-white text-[12.5px] font-semibold flex items-center gap-1 transition-colors whitespace-nowrap"
                 >
                   Открыть →
