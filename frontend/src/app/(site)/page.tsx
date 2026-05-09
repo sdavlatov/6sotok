@@ -78,13 +78,13 @@ export default async function HomePage() {
             style={{ background: 'radial-gradient(circle, rgba(44,166,78,0.4) 0%, transparent 60%)' }} />
         </div>
 
-        <div className="relative max-w-[1440px] mx-auto px-6 pt-16 pb-8">
-          <div className="max-w-5xl mb-10">
+        <div className="relative max-w-[1440px] mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-6 sm:pb-8">
+          <div className="max-w-5xl mb-7 sm:mb-10">
             <HeroBadge />
 
             <HeroTitle />
 
-            <p className="mt-7 text-[18px] text-zinc-600 leading-snug max-w-2xl tracking-tight">
+            <p className="mt-5 sm:mt-7 text-[15px] sm:text-[18px] text-zinc-600 leading-snug max-w-2xl tracking-tight">
               Покупайте и продавайте участки удобно — быстро находите на карте и легко размещайте объявления.
             </p>
           </div>
@@ -101,7 +101,6 @@ export default async function HomePage() {
       <SplitViewSection
         carouselListings={carouselListings}
         cards1={cards1}
-        bizCard={bizCard}
         cards2={cards2}
         cards3={cards3}
         mapDots={mapDots}
@@ -110,37 +109,37 @@ export default async function HomePage() {
 
       {/* ═══ AUDIENCE BLOCKS ═══ */}
       <section className="border-t border-zinc-200/70 bg-white">
-        <div className="max-w-[1440px] mx-auto px-6 py-20">
-          <div className="grid lg:grid-cols-2 gap-5">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-10 sm:py-20">
+          <div className="grid lg:grid-cols-2 gap-4 sm:gap-5">
 
             {/* Покупателям */}
-            <Link href="/catalog" className="tile group relative overflow-hidden rounded-3xl bg-zinc-50 border border-zinc-200 p-10 min-h-[440px] flex flex-col justify-between">
+            <Link href="/catalog" className="tile group relative overflow-hidden rounded-2xl sm:rounded-3xl bg-zinc-50 border border-zinc-200 p-6 sm:p-10 min-h-[320px] sm:min-h-[440px] flex flex-col justify-between">
               <div className="absolute inset-0 opacity-60 pointer-events-none"
                 style={{ backgroundImage: 'linear-gradient(rgba(6,111,54,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(6,111,54,0.06) 1px, transparent 1px)', backgroundSize: '40px 40px', maskImage: 'radial-gradient(ellipse 80% 60% at 80% 20%, black, transparent)' }} />
               {/* Floating mini-map */}
-              <div className="drift absolute top-7 right-7 w-44 h-44 rounded-2xl map-bg border border-zinc-200/60 shadow-lg overflow-hidden pointer-events-none">
-                <span className="absolute top-[30%] left-[40%] flex items-center justify-center w-8 h-8 rounded-full bg-primary text-white font-black text-[11px] border-2 border-white shadow-md">
+              <div className="drift absolute top-5 right-5 sm:top-7 sm:right-7 w-28 h-28 sm:w-44 sm:h-44 rounded-xl sm:rounded-2xl map-bg border border-zinc-200/60 shadow-lg overflow-hidden pointer-events-none">
+                <span className="absolute top-[30%] left-[40%] flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary text-white font-black text-[10px] sm:text-[11px] border-2 border-white shadow-md">
                   {Math.max(1, Math.min(99, landCount))}
                 </span>
-                <span className="absolute top-[60%] left-[65%] w-3 h-3 rounded-full bg-zinc-800 border-2 border-white shadow-sm" />
-                <span className="absolute top-[20%] left-[70%] w-3 h-3 rounded-full bg-zinc-800 border-2 border-white shadow-sm" />
+                <span className="absolute top-[60%] left-[65%] w-2.5 h-2.5 rounded-full bg-zinc-800 border-2 border-white shadow-sm" />
+                <span className="absolute top-[20%] left-[70%] w-2.5 h-2.5 rounded-full bg-zinc-800 border-2 border-white shadow-sm" />
               </div>
 
               <div className="relative">
-                <div className="font-mono text-[12px] uppercase tracking-widest text-primary">→ покупателям</div>
-                <h3 className="mt-4 font-black tracking-[-0.04em] text-[52px] leading-[0.95] text-zinc-900">
+                <div className="font-mono text-[11px] sm:text-[12px] uppercase tracking-widest text-primary">→ покупателям</div>
+                <h3 className="mt-3 sm:mt-4 font-black tracking-[-0.04em] text-[36px] sm:text-[52px] leading-[0.95] text-zinc-900">
                   Ищите участки<br />прямо<br />на карте.
                 </h3>
               </div>
               <div className="relative">
-                <p className="text-[14.5px] text-zinc-600 leading-snug max-w-md">
+                <p className="text-[13.5px] sm:text-[14.5px] text-zinc-600 leading-snug max-w-md">
                   Каждое объявление привязано к точке на карте. Фильтруйте участки по площади, цене, документам и категории земли.
                 </p>
-                <div className="mt-7 flex items-center gap-3 flex-wrap">
-                  <span className="px-5 h-11 rounded-xl bg-zinc-900 text-white font-semibold text-[13.5px] tracking-tight flex items-center gap-2 group-hover:bg-primary transition">
+                <div className="mt-5 sm:mt-7 flex items-center gap-3 flex-wrap">
+                  <span className="px-4 sm:px-5 h-10 sm:h-11 rounded-xl bg-zinc-900 text-white font-semibold text-[13px] sm:text-[13.5px] tracking-tight flex items-center gap-2 group-hover:bg-primary transition">
                     Открыть карту →
                   </span>
-                  <div className="flex items-center gap-3 text-[12px] text-zinc-500 font-mono">
+                  <div className="flex items-center gap-2 sm:gap-3 text-[11.5px] sm:text-[12px] text-zinc-500 font-mono">
                     <span><b className="text-zinc-900">{landCount.toLocaleString('ru-RU')}</b> объявлений</span>
                     <span className="text-zinc-300">·</span>
                     <span><b className="text-zinc-900">{locations.length}</b> областей</span>
@@ -150,31 +149,31 @@ export default async function HomePage() {
             </Link>
 
             {/* Продавцам */}
-            <Link href="/add-listing" className="tile group relative overflow-hidden rounded-3xl bg-[#021A0E] text-white p-10 min-h-[440px] flex flex-col justify-between">
+            <Link href="/add-listing" className="tile group relative overflow-hidden rounded-2xl sm:rounded-3xl bg-[#021A0E] text-white p-6 sm:p-10 min-h-[320px] sm:min-h-[440px] flex flex-col justify-between">
               <div className="absolute inset-0 opacity-10 pointer-events-none"
                 style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)', backgroundSize: '56px 56px' }} />
               <div className="drift absolute -bottom-32 -right-32 w-[420px] h-[420px] rounded-full pointer-events-none"
                 style={{ background: 'radial-gradient(circle, rgba(44,166,78,0.45) 0%, transparent 60%)' }} />
               <div className="relative">
-                <div className="font-mono text-[12px] uppercase tracking-widest" style={{ color: '#2CA64E' }}>→ продавцам</div>
-                <h3 className="mt-4 font-black tracking-[-0.04em] text-[52px] leading-[0.95]">
+                <div className="font-mono text-[11px] sm:text-[12px] uppercase tracking-widest" style={{ color: '#2CA64E' }}>→ продавцам</div>
+                <h3 className="mt-3 sm:mt-4 font-black tracking-[-0.04em] text-[36px] sm:text-[52px] leading-[0.95]">
                   Разместите<br />участок<br />за&nbsp;3&nbsp;минуты.
                 </h3>
               </div>
               <div className="relative">
-                <div className="grid grid-cols-3 gap-3 mb-6 pt-4">
+                <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6 pt-4">
                   {[['01','Укажите кадастр'],['02','Фото и видео'],['03','Принимайте заявки']].map(([n,t], i) => (
-                    <div key={n} className={`border-l pl-3 ${i === 2 ? 'border-[#2CA64E]' : 'border-white/20'}`}>
+                    <div key={n} className={`border-l pl-2 sm:pl-3 ${i === 2 ? 'border-[#2CA64E]' : 'border-white/20'}`}>
                       <div className="font-mono text-[10px]" style={{ color: '#2CA64E' }}>{n}</div>
-                      <div className="mt-0.5 text-[12.5px] font-semibold leading-tight">{t}</div>
+                      <div className="mt-0.5 text-[11.5px] sm:text-[12.5px] font-semibold leading-tight">{t}</div>
                     </div>
                   ))}
                 </div>
-                <p className="text-[14.5px] text-white/60 leading-snug max-w-md">
+                <p className="text-[13.5px] sm:text-[14.5px] text-white/60 leading-snug max-w-md">
                   Публикация бесплатна, а заявки от покупателей приходят напрямую в WhatsApp и по звонку.
                 </p>
-                <div className="mt-7">
-                  <span className="px-5 h-11 rounded-xl bg-white text-zinc-900 font-semibold text-[13.5px] tracking-tight inline-flex items-center gap-2 group-hover:bg-primary group-hover:text-white transition">
+                <div className="mt-5 sm:mt-7">
+                  <span className="px-4 sm:px-5 h-10 sm:h-11 rounded-xl bg-white text-zinc-900 font-semibold text-[13px] sm:text-[13.5px] tracking-tight inline-flex items-center gap-2 group-hover:bg-primary group-hover:text-white transition">
                     Разместить объявление →
                   </span>
                 </div>
@@ -187,16 +186,16 @@ export default async function HomePage() {
 
       {/* ═══ BUSINESS SECTION ═══ */}
       <section className="bg-zinc-50 border-t border-zinc-200/70">
-        <div className="max-w-[1440px] mx-auto px-6 py-20">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-10 sm:py-20">
 
-          <div className="flex items-end justify-between gap-6 flex-wrap mb-10">
+          <div className="flex items-start sm:items-end justify-between gap-4 sm:gap-6 flex-wrap mb-7 sm:mb-10">
             <div>
               <div className="font-mono text-[10.5px] uppercase tracking-widest text-amber-600 mb-3">→ отдельная категория</div>
-              <h2 className="font-black tracking-[-0.05em] text-[56px] md:text-[64px] leading-[0.95] text-zinc-900">
+              <h2 className="font-black tracking-[-0.05em] text-[38px] sm:text-[56px] md:text-[64px] leading-[0.95] text-zinc-900">
                 Готовый бизнес.<br />
                 <span className="text-zinc-400">Не только земля.</span>
               </h2>
-              <p className="mt-5 text-[16px] text-zinc-600 leading-snug tracking-tight max-w-xl">
+              <p className="mt-4 sm:mt-5 text-[14px] sm:text-[16px] text-zinc-600 leading-snug tracking-tight max-w-xl">
                 Кафе на трассе, СТО, пасеки, базы отдыха, фермерские хозяйства — с P&L, оборудованием и участком в собственности.
               </p>
             </div>
@@ -206,7 +205,7 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5">
             {businessPreview.map((l, idx) => (
               <Link key={l.id} href={`/business/${l.slug}`}
                 className="tile group bg-white rounded-3xl border border-zinc-200 overflow-hidden hover:border-zinc-400 transition">

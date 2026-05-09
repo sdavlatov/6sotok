@@ -45,7 +45,6 @@ interface MapDot {
 interface Props {
   carouselListings: CarouselItem[];
   cards1: SmallItem[];
-  bizCard?: BizItem;
   cards2: SmallItem[];
   cards3: SmallItem[];
   mapDots: MapDot[];
@@ -65,15 +64,15 @@ function SmallCard({ l, idx }: { l: SmallItem; idx: number }) {
         {l.image && <img src={l.image} alt={l.title} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />}
         <div className="absolute bottom-3 left-3 font-mono text-[10px] text-zinc-700/70">↳ {l.area} соток</div>
       </div>
-      <div className="p-5">
-        <div className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
+      <div className="p-3 sm:p-5">
+        <div className="text-[10px] sm:text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
           {l.landType ?? 'ИЖС'}{l.location ? ` · ${l.location}` : ''}
         </div>
-        <h3 className="mt-1.5 font-black tracking-[-0.035em] text-[19px] leading-tight text-zinc-900 line-clamp-2">{l.title}</h3>
+        <h3 className="mt-1 sm:mt-1.5 font-black tracking-[-0.035em] text-[14px] sm:text-[19px] leading-tight text-zinc-900 line-clamp-2">{l.title}</h3>
         {l.price && (
-          <div className="mt-3">
-            <div className="font-black tracking-[-0.035em] text-[20px] text-zinc-900">{fmt(l.price)} ₸</div>
-            {pc && <div className="text-[10.5px] font-mono text-zinc-500 mt-0.5">{fmt(pc)} ₸ / сотка</div>}
+          <div className="mt-2 sm:mt-3">
+            <div className="font-black tracking-[-0.035em] text-[15px] sm:text-[20px] text-zinc-900 whitespace-nowrap overflow-hidden text-ellipsis">{fmt(l.price)} ₸</div>
+            {pc && <div className="text-[10px] sm:text-[10.5px] font-mono text-zinc-500 mt-0.5 hidden sm:block">{fmt(pc)} ₸ / сотка</div>}
           </div>
         )}
       </div>
@@ -120,7 +119,7 @@ const LAYERS = [
   { key: 'cadastre',  label: 'Кадастр' },
 ] as const;
 
-export function SplitViewSection({ carouselListings, cards1, bizCard, cards2, cards3, mapDots, landCount }: Props) {
+export function SplitViewSection({ carouselListings, cards1, cards2, cards3, mapDots, landCount }: Props) {
   const [idx, setIdx] = useState(0);
   const [visible, setVisible] = useState(true);
   const [layer, setLayer] = useState<'schema' | 'satellite' | 'cadastre'>('schema');
@@ -142,38 +141,34 @@ export function SplitViewSection({ carouselListings, cards1, bizCard, cards2, ca
   const pc = cl?.price && cl?.area ? Math.round(cl.price / cl.area) : null;
 
   return (
-    <section className="max-w-[1440px] mx-auto px-6 py-10">
+    <section className="max-w-[1440px] mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
       {/* Section header */}
-      <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
-        <h2 className="font-black tracking-[-0.04em] text-[44px] leading-[1] text-zinc-900">
-          {landCount.toLocaleString('ru-RU')} участков
-          <span className="text-zinc-400 block">по всему Казахстану</span>
-        </h2>
-        <div className="flex items-center gap-2 self-center">
-          <Link href="/catalog"
-            className="px-3.5 h-9 rounded-lg border border-zinc-200 bg-white text-[12.5px] font-medium text-zinc-700 hover:border-zinc-400 transition flex items-center gap-2">
-            Все фильтры
-            <span className="px-1.5 py-0.5 rounded bg-zinc-900 text-white text-[10px] font-bold">3</span>
-          </Link>
-          <Link href="/catalog?sort=new"
-            className="px-3.5 h-9 rounded-lg border border-zinc-200 bg-white text-[12.5px] font-medium text-zinc-700 hover:border-zinc-400 transition flex items-center">
-            Сначала новые ↓
-          </Link>
+      <div className="flex items-center justify-between mb-5 sm:mb-6 gap-4 flex-wrap">
+        <div>
+          <div className="font-mono text-[10.5px] uppercase tracking-widest text-zinc-400 mb-2">→ подборка</div>
+          <h2 className="font-black tracking-[-0.04em] text-[32px] sm:text-[44px] leading-[1] text-zinc-900">
+            Проверенные участки.
+            <span className="text-zinc-400 block">Лучшие предложения.</span>
+          </h2>
         </div>
+        <Link href="/catalog"
+          className="px-5 h-10 sm:h-11 rounded-xl bg-zinc-900 text-white text-[13px] sm:text-[13.5px] font-semibold tracking-tight flex items-center gap-2 hover:bg-primary transition shrink-0 self-center">
+          Перейти в каталог →
+        </Link>
       </div>
 
       <div className="grid lg:grid-cols-[1.35fr_1fr] gap-6 items-start">
 
         {/* ── Listings column ── */}
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-2 gap-3 sm:gap-5">
 
           {/* Featured rotating card (col-span-2) */}
           {cl && (
             <div className="col-span-2 transition-opacity duration-300" style={{ opacity: visible ? 1 : 0 }}>
               <Link href={`/listing/${cl.slug}`}
-                className="tile group block bg-white rounded-3xl border border-zinc-200 overflow-hidden hover:border-zinc-300 hover:shadow-lg transition-all">
-                <div className="grid grid-cols-[1.2fr_1fr]">
+                className="tile group block bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 overflow-hidden hover:border-zinc-300 hover:shadow-lg transition-all">
+                <div className="grid sm:grid-cols-[1.2fr_1fr]">
                   <div className={`relative overflow-hidden ${PLOT[idx % 6]}`} style={{ aspectRatio: '5/3' }}>
                     {cl.image && <img src={cl.image} alt={cl.title} className="absolute inset-0 w-full h-full object-cover" loading="eager" />}
                     <div className="absolute top-4 left-4">
@@ -188,26 +183,26 @@ export function SplitViewSection({ carouselListings, cards1, bizCard, cards2, ca
                       ))}
                     </div>
                   </div>
-                  <div className="p-7 flex flex-col">
+                  <div className="p-5 sm:p-7 flex flex-col">
                     <div className="flex items-center gap-2 text-[11.5px] font-medium text-zinc-500 uppercase tracking-wider">
                       <span className="w-1 h-1 rounded-full bg-primary flex-shrink-0" />
                       {cl.landType ?? 'ИЖС'}{cl.location ? ` · ${cl.location}` : ''}
                     </div>
-                    <h3 className="mt-2 font-black text-zinc-900 leading-[1]"
-                      style={{ fontSize: 'clamp(20px, 2vw, 28px)', letterSpacing: '-0.035em' }}>
+                    <h3 className="mt-2 font-black text-zinc-900 leading-[1.05] line-clamp-2"
+                      style={{ fontSize: 'clamp(18px, 1.8vw, 26px)', letterSpacing: '-0.035em' }}>
                       {cl.title}
                     </h3>
                     {cl.description && (
-                      <p className="mt-3 text-[13.5px] text-zinc-600 leading-snug line-clamp-3">{cl.description}</p>
+                      <p className="mt-3 text-[13px] text-zinc-600 leading-snug line-clamp-2">{cl.description}</p>
                     )}
-                    <div className="mt-auto pt-5 flex items-end justify-between">
+                    <div className="mt-auto pt-5 flex items-end justify-between gap-3">
                       {cl.price ? (
-                        <div>
-                          <div className="font-black text-zinc-900 leading-none"
-                            style={{ fontSize: 'clamp(22px, 2.2vw, 32px)', letterSpacing: '-0.035em' }}>
+                        <div className="min-w-0 overflow-hidden">
+                          <div className="font-black text-zinc-900 leading-none whitespace-nowrap overflow-hidden text-ellipsis"
+                            style={{ fontSize: 'clamp(16px, 1.6vw, 22px)', letterSpacing: '-0.035em' }}>
                             {fmt(cl.price)} ₸
                           </div>
-                          {pc && <div className="mt-1.5 text-[11.5px] font-mono text-zinc-500">{fmt(pc)} ₸ / сотка</div>}
+                          {pc && <div className="mt-1.5 text-[11px] font-mono text-zinc-500 whitespace-nowrap">{fmt(pc)} ₸ / сотка</div>}
                         </div>
                       ) : <div />}
                       <span className="px-4 h-10 rounded-xl bg-zinc-900 text-white text-[13px] font-medium flex items-center gap-1 group-hover:bg-primary transition shrink-0">
@@ -221,17 +216,53 @@ export function SplitViewSection({ carouselListings, cards1, bizCard, cards2, ca
           )}
 
           {cards1.map((l, i) => <SmallCard key={l.id} l={l} idx={i + 1} />)}
-          {bizCard && <BusinessCard l={bizCard} />}
-          {cards2.map((l, i) => <SmallCard key={l.id} l={l} idx={i + 3} />)}
-          {cards3.map((l, i) => <SmallCard key={l.id} l={l} idx={i + 5} />)}
 
-          <div className="col-span-2 flex items-center justify-center pt-2">
-            <Link href="/catalog"
-              className="px-5 h-11 rounded-xl border border-zinc-200 bg-white hover:border-zinc-400 text-[13.5px] font-medium text-zinc-700 transition flex items-center gap-2">
-              Показать все {landCount.toLocaleString('ru-RU')} участков
-              <span className="font-mono text-[11px] text-zinc-400">→</span>
-            </Link>
-          </div>
+          {/* Wide editorial tile — first item from cards2 pool */}
+          {cards2[0] && (() => {
+            const l = cards2[0];
+            const pc2 = l.price && l.area ? Math.round(l.price / l.area) : null;
+            return (
+              <Link key={l.id} href={`/listing/${l.slug}`}
+                className="tile group col-span-2 bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 overflow-hidden hover:border-zinc-300 hover:shadow-lg transition-all">
+                <div className="grid sm:grid-cols-[1fr_1fr]">
+                  {/* Large image */}
+                  <div className={`relative overflow-hidden ${PLOT[(Number(l.id) + 2) % 6]}`} style={{ minHeight: 200 }}>
+                    {l.image && <img src={l.image} alt={l.title} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                    <div className="absolute bottom-5 left-5 right-5">
+                      <div className="font-mono text-[10px] text-white/70 uppercase tracking-wider mb-1">↳ участок · {l.area} соток</div>
+                      <div className="font-black tracking-[-0.04em] text-[26px] leading-[1.05] text-white line-clamp-2">
+                        {l.title}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Info */}
+                  <div className="p-5 sm:p-8 flex flex-col justify-between bg-zinc-50">
+                    <div>
+                      <div className="text-[10.5px] font-mono uppercase tracking-widest text-zinc-400 mb-4">→ горячее предложение</div>
+                      <div className="flex flex-wrap gap-2 mb-5">
+                        {l.landType && <span className="px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] font-semibold text-zinc-700">{l.landType}</span>}
+                        {l.location && <span className="px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] font-medium text-zinc-500">{l.location}</span>}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Цена</div>
+                      <div className="font-black tracking-[-0.04em] text-[28px] leading-none text-zinc-900 whitespace-nowrap">
+                        {l.price ? `${fmt(l.price)} ₸` : '—'}
+                      </div>
+                      {pc2 && <div className="mt-1.5 text-[12px] font-mono text-zinc-500">{fmt(pc2)} ₸ / сотка</div>}
+                      <span className="mt-6 inline-flex items-center gap-2 px-5 h-11 rounded-xl bg-zinc-900 text-white text-[13.5px] font-semibold group-hover:bg-primary transition">
+                        Смотреть объявление →
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            );
+          })()}
+
+          {cards2.slice(1).map((l, i) => <SmallCard key={l.id} l={l} idx={i + 3} />)}
+          {cards3.map((l, i) => <SmallCard key={l.id} l={l} idx={i + 5} />)}
         </div>
 
         {/* ── Map column (sticky) ── */}

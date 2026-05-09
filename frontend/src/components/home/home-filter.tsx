@@ -101,24 +101,62 @@ export function HomeFilter({ locations, totalCount, countByType, filterData }: P
 
   return (
     <div className="w-full">
-      {/* ── Filter bar ── */}
-      <div className="bg-white rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.10)] border border-zinc-100 overflow-visible">
+      {/* ── Mobile filter ── */}
+      <div className="sm:hidden bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-zinc-100 overflow-hidden">
+        {/* Category scroll */}
+        <div className="flex gap-1.5 px-3 pt-3 overflow-x-auto scrollbar-none">
+          {CATEGORIES.map(c => (
+            <button key={c.value} onClick={() => setCategory(c.value)}
+              className={`px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all whitespace-nowrap shrink-0 ${
+                category === c.value ? 'bg-zinc-900 text-white' : 'text-zinc-500 bg-zinc-100'
+              }`}>
+              {c.label}
+            </button>
+          ))}
+        </div>
+        {/* Location row */}
+        <div ref={locationRef} className="relative mx-3 mt-2.5 mb-3">
+          <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-zinc-200 bg-zinc-50"
+            onClick={() => setShowSuggestions(true)}>
+            <MapPin className="size-4 text-zinc-400 shrink-0" strokeWidth={2} />
+            <input type="text" placeholder="Город или район"
+              value={location}
+              onChange={e => { setLocation(e.target.value); setShowSuggestions(true); }}
+              onFocus={() => setShowSuggestions(true)}
+              onKeyDown={e => e.key === 'Enter' && go()}
+              className="flex-1 bg-transparent text-[14px] font-medium text-zinc-900 placeholder:text-zinc-400 outline-none min-w-0"
+            />
+          </div>
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-zinc-200 shadow-xl z-50 overflow-hidden">
+              {suggestions.map(loc => (
+                <button key={loc} onMouseDown={e => e.preventDefault()}
+                  onClick={() => { setLocation(loc); setShowSuggestions(false); }}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium text-zinc-700 hover:bg-zinc-50 text-left">
+                  <MapPin className="size-3.5 text-zinc-400 shrink-0" strokeWidth={2} />
+                  {loc}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <button onClick={() => go()}
+          className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-black text-[15px] h-12 transition-colors duration-150">
+          Найти {count > 0 && <span>{count}</span>}
+          <span className="text-white/70">→</span>
+        </button>
+      </div>
 
-        {/* Category tabs + fields row */}
+      {/* ── Desktop filter bar ── */}
+      <div className="hidden sm:block bg-white rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.10)] border border-zinc-100 overflow-visible">
         <div className="flex items-stretch min-h-[64px]">
-
           {/* Categories */}
           <div className="flex items-center gap-1 px-3 border-r border-zinc-100 shrink-0">
             {CATEGORIES.map(c => (
-              <button
-                key={c.value}
-                onClick={() => setCategory(c.value)}
+              <button key={c.value} onClick={() => setCategory(c.value)}
                 className={`px-3 py-1.5 rounded-xl text-[13px] font-bold transition-all whitespace-nowrap ${
-                  category === c.value
-                    ? 'bg-zinc-900 text-white'
-                    : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50'
-                }`}
-              >
+                  category === c.value ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50'
+                }`}>
                 {c.label}
               </button>
             ))}
@@ -130,10 +168,7 @@ export function HomeFilter({ locations, totalCount, countByType, filterData }: P
               <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-0.5">Где</p>
               <div className="flex items-center gap-1.5">
                 <MapPin className="size-3.5 text-zinc-400 shrink-0" strokeWidth={2} />
-                <input
-                  type="text"
-                  placeholder="Город или район"
-                  value={location}
+                <input type="text" placeholder="Город или район" value={location}
                   onChange={e => { setLocation(e.target.value); setShowSuggestions(true); }}
                   onFocus={() => setShowSuggestions(true)}
                   onKeyDown={e => e.key === 'Enter' && go()}
@@ -146,8 +181,7 @@ export function HomeFilter({ locations, totalCount, countByType, filterData }: P
                 {suggestions.map(loc => (
                   <button key={loc} onMouseDown={e => e.preventDefault()}
                     onClick={() => { setLocation(loc); setShowSuggestions(false); }}
-                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium text-zinc-700 hover:bg-zinc-50 text-left"
-                  >
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium text-zinc-700 hover:bg-zinc-50 text-left">
                     <MapPin className="size-3.5 text-zinc-400 shrink-0" strokeWidth={2} />
                     {loc}
                   </button>
@@ -158,10 +192,8 @@ export function HomeFilter({ locations, totalCount, countByType, filterData }: P
 
           {/* Area */}
           <div ref={areaRef} className="relative border-r border-zinc-100 shrink-0">
-            <button
-              onClick={() => { setShowArea(v => !v); setShowPrice(false); }}
-              className="flex flex-col justify-center h-full px-4 text-left hover:bg-zinc-50 transition-colors"
-            >
+            <button onClick={() => { setShowArea(v => !v); setShowPrice(false); }}
+              className="flex flex-col justify-center h-full px-4 text-left hover:bg-zinc-50 transition-colors">
               <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-0.5">Площадь</p>
               <div className="flex items-center gap-1">
                 <span className="text-[14px] font-semibold text-zinc-900 whitespace-nowrap">
@@ -176,35 +208,25 @@ export function HomeFilter({ locations, totalCount, countByType, filterData }: P
                   <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">От</p>
                   <div className="flex rounded-lg border border-zinc-200 overflow-hidden text-[11px] font-bold">
                     <button onClick={() => setAreaUnit('sot')}
-                      className={`px-2.5 py-1 transition-colors ${areaUnit === 'sot' ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:bg-zinc-50'}`}>
-                      сот.
-                    </button>
+                      className={`px-2.5 py-1 transition-colors ${areaUnit === 'sot' ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:bg-zinc-50'}`}>сот.</button>
                     <button onClick={() => setAreaUnit('ga')}
-                      className={`px-2.5 py-1 transition-colors ${areaUnit === 'ga' ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:bg-zinc-50'}`}>
-                      га
-                    </button>
+                      className={`px-2.5 py-1 transition-colors ${areaUnit === 'ga' ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:bg-zinc-50'}`}>га</button>
                   </div>
                 </div>
                 <input type="number" placeholder={areaUnit === 'ga' ? '0.5' : '6'} value={areaFrom}
                   onChange={e => setAreaFrom(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-[14px] font-semibold text-zinc-900 outline-none focus:border-primary"
                 />
-                {areaUnit === 'ga' && areaFrom && (
-                  <p className="mt-1.5 text-[11px] text-zinc-400">= {parseFloat(areaFrom) * 100} соток</p>
-                )}
-                {areaUnit === 'sot' && areaFrom && (
-                  <p className="mt-1.5 text-[11px] text-zinc-400">= {(parseFloat(areaFrom) / 100).toFixed(2)} га</p>
-                )}
+                {areaUnit === 'ga' && areaFrom && <p className="mt-1.5 text-[11px] text-zinc-400">= {parseFloat(areaFrom) * 100} соток</p>}
+                {areaUnit === 'sot' && areaFrom && <p className="mt-1.5 text-[11px] text-zinc-400">= {(parseFloat(areaFrom) / 100).toFixed(2)} га</p>}
               </div>
             )}
           </div>
 
           {/* Price */}
           <div ref={priceRef} className="relative border-r border-zinc-100 shrink-0">
-            <button
-              onClick={() => { setShowPrice(v => !v); setShowArea(false); }}
-              className="flex flex-col justify-center h-full px-4 text-left hover:bg-zinc-50 transition-colors"
-            >
+            <button onClick={() => { setShowPrice(v => !v); setShowArea(false); }}
+              className="flex flex-col justify-center h-full px-4 text-left hover:bg-zinc-50 transition-colors">
               <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-0.5">Цена, ₸</p>
               <div className="flex items-center gap-1">
                 <span className="text-[14px] font-semibold text-zinc-900 whitespace-nowrap">
@@ -225,10 +247,8 @@ export function HomeFilter({ locations, totalCount, countByType, filterData }: P
           </div>
 
           {/* Search button */}
-          <button
-            onClick={() => go()}
-            className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white font-black text-[15px] px-6 m-2 rounded-xl transition-colors duration-150 shrink-0 whitespace-nowrap"
-          >
+          <button onClick={() => go()}
+            className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white font-black text-[15px] px-6 m-2 rounded-xl transition-colors duration-150 shrink-0 whitespace-nowrap">
             Найти {count > 0 && <span className="font-black">{count}</span>}
             <span className="text-white/70">→</span>
           </button>
