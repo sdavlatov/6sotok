@@ -24,13 +24,21 @@ const POPULAR = [
   'Поливная земля',
 ];
 
+interface FilterItem {
+  landType: string;
+  location: string;
+  price: number;
+  area: number;
+}
+
 interface Props {
   locations: string[];
   totalCount: number;
   countByType: Record<string, number>;
+  filterData: FilterItem[];
 }
 
-export function HomeFilter({ locations, totalCount, countByType }: Props) {
+export function HomeFilter({ locations, totalCount, countByType, filterData }: Props) {
   const router = useRouter();
   const [category, setCategory] = useState('');
   const [location, setLocation] = useState('');
@@ -44,7 +52,22 @@ export function HomeFilter({ locations, totalCount, countByType }: Props) {
   const areaRef = useRef<HTMLDivElement>(null);
   const priceRef = useRef<HTMLDivElement>(null);
 
-  const count = category ? (countByType[category] ?? 0) : totalCount;
+  const count = useMemo(() => {
+    const hasFilters = category || location.trim() || areaFrom || priceTo;
+    if (!hasFilters) return totalCount;
+    const areaFromSot = areaFrom
+      ? areaUnit === 'ga' ? parseFloat(areaFrom) * 100 : parseFloat(areaFrom)
+      : 0;
+    const priceToNum = priceTo ? parseInt(priceTo.replace(/\s/g, ''), 10) : 0;
+    const loc = location.trim().toLowerCase();
+    return filterData.filter(l => {
+      if (category && l.landType !== category) return false;
+      if (loc && !l.location.toLowerCase().includes(loc)) return false;
+      if (areaFromSot && l.area < areaFromSot) return false;
+      if (priceToNum && l.price > priceToNum) return false;
+      return true;
+    }).length;
+  }, [category, location, areaFrom, areaUnit, priceTo, filterData, totalCount]);
 
   const suggestions = useMemo(() => {
     const q = location.trim().toLowerCase();

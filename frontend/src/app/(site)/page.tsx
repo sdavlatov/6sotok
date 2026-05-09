@@ -26,7 +26,13 @@ export default async function HomePage() {
     lat: l.lat!, lng: l.lng!, slug: l.slug, title: l.title,
     price: l.price, area: l.area, landType: l.landType, location: l.location,
   }));
-  const landCount   = landListings.length;
+  const landCount = landListings.length;
+  const filterData = landListings.map(l => ({
+    landType: l.landType ?? '',
+    location: l.location ?? '',
+    price: l.price ?? 0,
+    area: l.area ?? 0,
+  }));
   const businessCount = businessListings.length;
 
   const countByType: Record<string, number> = {};
@@ -84,7 +90,7 @@ export default async function HomePage() {
           </div>
 
           {/* Filter bar — full width */}
-          <HomeFilter locations={locations} totalCount={landCount} countByType={countByType} />
+          <HomeFilter locations={locations} totalCount={landCount} countByType={countByType} filterData={filterData} />
         </div>
 
         {/* Marquee */}
