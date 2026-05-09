@@ -393,10 +393,10 @@ export function CatalogClient({
   const hasLegalFilter   = isPledged || isOnRedLine || isDivisible;
 
   return (
-    <div className="flex flex-col bg-white overflow-hidden" style={{ height: 'calc(100svh - 64px)' }}>
+    <div className="flex flex-col bg-white overflow-hidden isolate" style={{ height: 'calc(100svh - 64px)' }}>
 
       {/* ── Filter bar ─────────────────────────────────────────────────────── */}
-      <div className="h-14 bg-white border-b border-zinc-200 flex items-center px-4 gap-2 overflow-x-auto shrink-0 scrollbar-none">
+      <div className="h-14 bg-white border-b border-zinc-200 flex items-center px-4 gap-2 overflow-x-auto shrink-0 scrollbar-none relative z-10">
 
         {/* Type toggles */}
         <div className="shrink-0 flex items-center bg-zinc-100 rounded-lg p-0.5 text-[12.5px] font-medium gap-px">
@@ -601,7 +601,7 @@ export function CatalogClient({
         </aside>
 
         {/* Map (desktop) */}
-        <section className="hidden lg:block flex-1 relative">
+        <section className="hidden lg:block flex-1 relative overflow-hidden">
           <MapView
             listings={mapListings}
             onMarkerClick={handleMarkerClick}
