@@ -166,6 +166,12 @@ body {
   0%, 100% { transform: scale(1);   opacity: 0.4; }
   50%       { transform: scale(1.6); opacity: 0; }
 }
+@keyframes dashSpin {
+  0%   { opacity: 1; transform: scale(1); }
+  50%  { opacity: 0.6; transform: scale(0.998); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
 @keyframes marquee-scroll {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }

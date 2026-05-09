@@ -31,17 +31,25 @@ export const TILE_URLS: Record<string, string> = {
 };
 
 // ─── Leaflet types ───────────────────────────────────────────────────────────
+interface LeafletMouseEvent {
+  latlng: { lat: number; lng: number };
+  containerPoint: { x: number; y: number };
+}
 interface LMap {
   setView(center: [number, number], zoom: number): LMap;
   remove(): void;
   fitBounds(bounds: LLatLngBounds, options?: { padding?: [number, number]; maxZoom?: number }): LMap;
-  on(event: string, fn: (e: { latlng: { lat: number; lng: number } }) => void): LMap;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  on(event: string, fn: (e: any) => void): LMap;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  off(event: string, fn?: (e: any) => void): LMap;
   zoomIn(): void;
   zoomOut(): void;
 }
 interface LMarker {
   addTo(map: LMap): LMarker;
-  on(event: string, fn: () => void): LMarker;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  on(event: string, fn: (e: any) => void): LMarker;
   remove(): void;
 }
 interface LTileLayer {
@@ -154,12 +162,17 @@ export function MapView({
   const markersRef = useRef<LMarker[]>([]);
   const tileRef    = useRef<LTileLayer | null>(null);
 
-  const [ready,    setReady]    = useState(false);
-  const [error,    setError]    = useState(false);
-  const [active,   setActive]   = useState<MapItem | null>(null);
-  const [imgError, setImgError] = useState(false);
+  const [ready,       setReady]      = useState(false);
+  const [error,       setError]      = useState(false);
+  const [active,      setActive]     = useState<MapItem | null>(null);
+  const [imgError,    setImgError]   = useState(false);
+  const [pinPoint,    setPinPoint]   = useState<{ x: number; y: number } | null>(null);
+  const [showHeatMap, setShowHeatMap] = useState(false);
+  const [isMoving,    setIsMoving]   = useState(false);
 
   const showOverlays = statsCount !== undefined || onTileLayerChange !== undefined;
+
+  const POPUP_W = 300;
 
   // 1. Load Leaflet
   useEffect(() => {
@@ -232,7 +245,8 @@ export function MapView({
 
       const marker = L.marker([listing.lat!, listing.lng!], { icon })
         .addTo(map)
-        .on('click', () => {
+        .on('click', (e: LeafletMouseEvent) => {
+          setPinPoint(e?.containerPoint ?? null);
           setActive(prev => prev?.id === listing.id ? null : listing);
           setImgError(false);
           onMarkerClick?.(listing);
@@ -251,7 +265,24 @@ export function MapView({
     }
   }, [listings, ready, onMarkerClick]);
 
-  // 5. Cleanup
+  // 5. Search-as-move indicator
+  useEffect(() => {
+    if (!ready || !leafletMap.current) return;
+    const map = leafletMap.current;
+    const onStart = () => setIsMoving(true);
+    const onEnd   = () => setIsMoving(false);
+    if (searchAsMove) {
+      map.on('movestart', onStart);
+      map.on('moveend',   onEnd);
+    }
+    return () => {
+      map.off('movestart', onStart);
+      map.off('moveend',   onEnd);
+      setIsMoving(false);
+    };
+  }, [ready, searchAsMove]);
+
+  // 6. Cleanup
   useEffect(() => {
     return () => {
       leafletMap.current?.remove();
@@ -267,12 +298,11 @@ export function MapView({
     );
   }
 
-  // Layers available
   const LAYERS = [
-    { key: 'schema',    label: 'Схема' },
-    { key: 'satellite', label: 'Спутник' },
-    { key: 'cadastre',  label: 'Кадастр' },
-    { key: 'heat',      label: 'Тепло цен' },
+    { key: 'schema',    label: 'Схема',     heat: false, disabled: false },
+    { key: 'satellite', label: 'Спутник',   heat: false, disabled: false },
+    { key: 'cadastre',  label: 'Кадастр',   heat: false, disabled: true  },
+    { key: 'heat',      label: 'Тепло цен', heat: true,  disabled: false },
   ];
 
   return (
@@ -345,17 +375,24 @@ export function MapView({
           {/* Layer tabs */}
           <div className="bg-white/95 backdrop-blur-sm rounded-xl border border-zinc-200 shadow-sm p-1 flex gap-px text-[12px] font-medium">
             {LAYERS.map(layer => {
-              const isActive = tileLayer === layer.key;
-              const isDisabled = layer.key === 'cadastre' || layer.key === 'heat';
+              const isActive = layer.heat ? showHeatMap : (tileLayer === layer.key && !showHeatMap);
               return (
                 <button
                   key={layer.key}
-                  onClick={() => !isDisabled && onTileLayerChange?.(layer.key)}
-                  title={isDisabled ? 'Скоро' : layer.label}
+                  onClick={() => {
+                    if (layer.disabled) return;
+                    if (layer.heat) {
+                      setShowHeatMap(prev => !prev);
+                    } else {
+                      setShowHeatMap(false);
+                      onTileLayerChange?.(layer.key);
+                    }
+                  }}
+                  title={layer.disabled ? 'Скоро' : layer.label}
                   className={`px-3 h-7 rounded-lg transition-colors ${
                     isActive
                       ? 'bg-zinc-900 text-white'
-                      : isDisabled
+                      : layer.disabled
                         ? 'text-zinc-300 cursor-default'
                         : 'text-zinc-600 hover:bg-zinc-100'
                   }`}
@@ -411,6 +448,43 @@ export function MapView({
                 <path d="M9 7l1.5 1.5M11 5l1.5 1.5M13 9l1.5 1.5M15 7l1.5 1.5" />
               </svg>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* HEAT MAP overlay */}
+      {showHeatMap && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            zIndex: 450,
+            background: `
+              radial-gradient(ellipse 260px 180px at 22% 30%, rgba(255,60,0,0.22) 0%, transparent 70%),
+              radial-gradient(ellipse 200px 150px at 60% 52%, rgba(255,130,0,0.18) 0%, transparent 70%),
+              radial-gradient(ellipse 160px 130px at 38% 72%, rgba(255,200,0,0.16) 0%, transparent 70%),
+              radial-gradient(ellipse 140px 110px at 74% 28%, rgba(255,80,0,0.14) 0%, transparent 70%),
+              radial-gradient(ellipse 120px 100px at 50% 18%, rgba(255,160,0,0.12) 0%, transparent 70%)
+            `,
+            mixBlendMode: 'multiply',
+          }}
+        />
+      )}
+
+      {/* SEARCH-AS-MOVE indicator */}
+      {isMoving && searchAsMove && (
+        <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 850 }}>
+          <div
+            className="absolute inset-2 rounded-xl"
+            style={{
+              border: '2px dashed rgba(6,111,54,0.6)',
+              animation: 'dashSpin 1.2s linear infinite',
+            }}
+          />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+            <div className="bg-white/95 backdrop-blur-sm rounded-full px-4 py-1.5 text-[12px] font-semibold text-primary border border-zinc-200 shadow-lg flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              Поиск…
+            </div>
           </div>
         </div>
       )}
@@ -482,57 +556,102 @@ export function MapView({
         </div>
       )}
 
-      {/* Selected listing card — bottom right */}
-      {active && (
-        <div className="absolute bottom-4 left-3 right-3 sm:left-auto sm:right-4 sm:w-[300px]" style={{ zIndex: 900 }}>
-          <div className="bg-white rounded-2xl border border-zinc-200 shadow-2xl overflow-hidden">
-            <div className="relative h-36 bg-zinc-100">
-              {active.image && !imgError ? (
-                <img
-                  src={active.image}
-                  alt={active.title}
-                  className="w-full h-full object-cover"
-                  onError={() => setImgError(true)}
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-zinc-100 to-zinc-200 flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-zinc-300">
-                    <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" />
-                  </svg>
-                </div>
-              )}
-              <button
-                onClick={() => setActive(null)}
-                className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/40 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/60 transition"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M18 6 6 18" /><path d="m6 6 12 12" />
-                </svg>
-              </button>
-              {(active.purpose || active.landType) && (
-                <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/50 backdrop-blur-sm text-white text-[10px] font-bold uppercase tracking-wide">
-                  {active.purpose || active.landType}
-                </span>
-              )}
+      {/* Selected listing card — near pin */}
+      {active && <ActiveCard
+        active={active}
+        pinPoint={pinPoint}
+        imgError={imgError}
+        setImgError={setImgError}
+        setActive={setActive}
+        setPinPoint={setPinPoint}
+        mapRef={mapRef}
+        popupW={POPUP_W}
+      />}
+    </div>
+  );
+}
+
+// ─── Active card positioned near pin ─────────────────────────────────────────
+function ActiveCard({
+  active, pinPoint, imgError, setImgError, setActive, setPinPoint, mapRef, popupW,
+}: {
+  active: MapItem;
+  pinPoint: { x: number; y: number } | null;
+  imgError: boolean;
+  setImgError: (v: boolean) => void;
+  setActive: (v: MapItem | null) => void;
+  setPinPoint: (v: { x: number; y: number } | null) => void;
+  mapRef: React.RefObject<HTMLDivElement | null>;
+  popupW: number;
+}) {
+  const mapW = mapRef.current?.offsetWidth ?? 800;
+  const POPUP_H = 310;
+
+  let left = (pinPoint?.x ?? mapW - popupW - 20) + 20;
+  if (left + popupW > mapW - 8) left = (pinPoint?.x ?? popupW + 36) - popupW - 20;
+  left = Math.max(8, Math.min(left, mapW - popupW - 8));
+
+  const py = pinPoint?.y ?? POPUP_H + 30;
+  const showBelow = py < POPUP_H + 20;
+  const topPx = showBelow ? py + 24 : py;
+  const transformY = showBelow ? '0%' : '-100%';
+
+  return (
+    <div style={{ zIndex: 900, position: 'absolute', left, top: topPx, width: popupW, transform: `translateY(${transformY})` }}>
+      {/* Pointer triangle — bottom when popup is above pin */}
+      {!showBelow && (
+        <div className="absolute -bottom-2 left-6 w-4 h-4 bg-white border-r border-b border-zinc-200 rotate-45" style={{ zIndex: 1 }} />
+      )}
+      {/* Pointer triangle — top when popup is below pin */}
+      {showBelow && (
+        <div className="absolute -top-2 left-6 w-4 h-4 bg-white border-l border-t border-zinc-200 rotate-45" style={{ zIndex: 1 }} />
+      )}
+      <div className="bg-white rounded-2xl border border-zinc-200 shadow-2xl overflow-hidden">
+        <div className="relative h-36 bg-zinc-100">
+          {active.image && !imgError ? (
+            <img
+              src={active.image}
+              alt={active.title}
+              className="w-full h-full object-cover"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-zinc-100 to-zinc-200 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-zinc-300">
+                <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" />
+              </svg>
             </div>
-            <div className="p-3.5">
-              <p className="text-[10.5px] font-medium text-zinc-500 uppercase tracking-wider truncate">{active.location}</p>
-              <h4 className="mt-0.5 font-bold text-[16px] leading-tight text-zinc-900 line-clamp-2">{active.title}</h4>
-              <div className="mt-3 flex items-end justify-between">
-                <div className="font-black text-[20px] text-zinc-900 leading-none tracking-tight">
-                  {formatPrice(active.price)}
-                </div>
-                <Link
-                  href={listingUrl(active)}
-                  className="h-9 px-4 rounded-xl bg-zinc-900 text-white text-[11.5px] font-semibold flex items-center gap-1 hover:bg-primary transition-colors"
-                >
-                  Открыть →
-                </Link>
-              </div>
+          )}
+          <button
+            onClick={() => { setActive(null); setPinPoint(null); }}
+            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/40 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/60 transition"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+            </svg>
+          </button>
+          {(active.purpose || active.landType) && (
+            <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/50 backdrop-blur-sm text-white text-[10px] font-bold uppercase tracking-wide">
+              {active.purpose || active.landType}
+            </span>
+          )}
+        </div>
+        <div className="p-3.5">
+          <p className="text-[10.5px] font-medium text-zinc-500 uppercase tracking-wider truncate">{active.location}</p>
+          <h4 className="mt-0.5 font-bold text-[16px] leading-tight text-zinc-900 line-clamp-2">{active.title}</h4>
+          <div className="mt-3 flex items-end justify-between">
+            <div className="font-black text-[20px] text-zinc-900 leading-none tracking-tight">
+              {formatPrice(active.price)}
             </div>
+            <Link
+              href={listingUrl(active)}
+              className="h-9 px-4 rounded-xl bg-zinc-900 text-white text-[11.5px] font-semibold flex items-center gap-1 hover:bg-primary transition-colors"
+            >
+              Открыть →
+            </Link>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
