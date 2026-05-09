@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ru" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
-      <body className="min-h-full flex flex-col font-sans selection:bg-primary-soft selection:text-primary-dark">
+      <body className="min-h-full flex flex-col font-sans selection:bg-primary-soft selection:text-primary-dark" suppressHydrationWarning>
         <AuthProvider>
           <Header />
           <main className="flex-1">{children}</main>
