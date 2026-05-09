@@ -127,19 +127,11 @@ export default async function HomePage() {
                 </h3>
               </div>
               <div className="relative">
-                <div className="grid grid-cols-3 gap-4 mb-8">
-                  {[['01','Поиск по карте'],['02','Цены и площади'],['03','Звонок продавцу']].map(([n,t]) => (
-                    <div key={n} className="border-l border-zinc-200 pl-3.5 pt-3">
-                      <div className="font-mono text-[11px] font-medium text-zinc-400">{n}</div>
-                      <div className="mt-1.5 text-[13.5px] font-semibold leading-tight text-zinc-800">{t}</div>
-                    </div>
-                  ))}
-                </div>
                 <p className="text-[15px] text-zinc-500 leading-snug max-w-md">
                   Все участки страны — на одной карте. Цены, площади и документы без звонков агентам и спама.
                 </p>
-                <div className="mt-7 flex items-center gap-3 flex-wrap">
-                  <span className="px-5 h-11 rounded-xl border border-zinc-200 bg-zinc-900 text-white font-semibold text-[13.5px] tracking-tight flex items-center gap-2 group-hover:bg-primary transition">
+                <div className="mt-8 flex items-center gap-3 flex-wrap">
+                  <span className="px-5 h-11 rounded-xl bg-zinc-900 text-white font-semibold text-[13.5px] tracking-tight flex items-center gap-2 group-hover:bg-primary transition">
                     Открыть карту →
                   </span>
                   <div className="flex items-center gap-3 text-[12.5px] text-zinc-400 font-mono">
@@ -176,7 +168,7 @@ export default async function HomePage() {
                   Бесплатно, без скрытых комиссий. Покупатели находят через карту и поиск — в среднем 14 дней до сделки.
                 </p>
                 <div className="mt-7">
-                  <span className="px-5 h-11 rounded-xl border border-white/25 bg-white/10 text-white font-semibold text-[13.5px] tracking-tight inline-flex items-center gap-2 hover:bg-white/20 transition backdrop-blur-sm">
+                  <span className="px-5 h-11 rounded-xl bg-white text-zinc-900 font-semibold text-[13.5px] tracking-tight inline-flex items-center gap-2 group-hover:bg-primary group-hover:text-white transition">
                     Разместить объявление →
                   </span>
                 </div>
