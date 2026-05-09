@@ -150,7 +150,7 @@ export default async function HomePage() {
               <div className="drift absolute -bottom-32 -right-32 w-[420px] h-[420px] rounded-full pointer-events-none"
                 style={{ background: 'radial-gradient(circle, rgba(44,166,78,0.45) 0%, transparent 60%)' }} />
               <div className="relative">
-                <div className="text-[11.5px] font-medium uppercase tracking-[0.12em] text-white/35">→ Продавцам</div>
+                <div className="text-[11.5px] font-medium uppercase tracking-[0.12em] text-white/55">→ Продавцам</div>
                 <h3 className="mt-5 font-black tracking-[-0.04em] text-[48px] md:text-[52px] leading-[0.95]">
                   Разместите<br />участок<br /><span className="text-primary">за 3 минуты.</span>
                 </h3>
@@ -158,8 +158,8 @@ export default async function HomePage() {
               <div className="relative">
                 <div className="grid grid-cols-3 gap-4 mb-8">
                   {[['01','Кадастровый номер'],['02','Фото и описание'],['03','WhatsApp и звонки']].map(([n,t]) => (
-                    <div key={n} className="border-l border-white/15 pl-3.5">
-                      <div className="font-mono text-[11px] font-medium text-white/35">{n}</div>
+                    <div key={n} className="border-l border-white/20 pl-3.5 pt-3">
+                      <div className="font-mono text-[11px] font-medium text-white/55">{n}</div>
                       <div className="mt-1.5 text-[13.5px] font-semibold leading-tight">{t}</div>
                     </div>
                   ))}
