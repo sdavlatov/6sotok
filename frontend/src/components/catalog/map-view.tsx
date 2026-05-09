@@ -45,6 +45,7 @@ interface LMap {
   off(event: string, fn?: (e: any) => void): LMap;
   zoomIn(): void;
   zoomOut(): void;
+  latLngToContainerPoint(latlng: [number, number]): { x: number; y: number };
 }
 interface LMarker {
   addTo(map: LMap): LMarker;
@@ -201,6 +202,7 @@ export function MapView({
   const [pinPoint,    setPinPoint]   = useState<{ x: number; y: number } | null>(null);
   const [showHeatMap, setShowHeatMap] = useState(false);
   const [isMoving,    setIsMoving]   = useState(false);
+  const [heatPoints,  setHeatPoints] = useState<{ x: number; y: number; price: number }[]>([]);
 
   const showOverlays = statsCount !== undefined || onTileLayerChange !== undefined;
 
@@ -307,7 +309,29 @@ export function MapView({
     });
   }, [highlightedId, active, ready]);
 
-  // 5. Search-as-move indicator
+  // 5. Heat map points — recompute when map moves or listings change
+  useEffect(() => {
+    if (!ready || !leafletMap.current) return;
+    const map = leafletMap.current;
+    const compute = () => {
+      const pts = listings
+        .filter(l => l.lat != null && l.lng != null)
+        .map(l => {
+          const p = map.latLngToContainerPoint([l.lat!, l.lng!]);
+          return { x: p.x, y: p.y, price: l.price };
+        });
+      setHeatPoints(pts);
+    };
+    compute();
+    map.on('moveend', compute);
+    map.on('zoomend', compute);
+    return () => {
+      map.off('moveend', compute);
+      map.off('zoomend', compute);
+    };
+  }, [ready, listings]);
+
+  // 6. Search-as-move indicator
   useEffect(() => {
     if (!ready || !leafletMap.current) return;
     const map = leafletMap.current;
@@ -324,7 +348,7 @@ export function MapView({
     };
   }, [ready, searchAsMove]);
 
-  // 6. Cleanup
+  // 7. Cleanup
   useEffect(() => {
     return () => {
       leafletMap.current?.remove();
@@ -494,23 +518,23 @@ export function MapView({
         </div>
       )}
 
-      {/* HEAT MAP overlay */}
-      {showHeatMap && (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            zIndex: 450,
-            background: `
-              radial-gradient(ellipse 260px 180px at 22% 30%, rgba(255,60,0,0.22) 0%, transparent 70%),
-              radial-gradient(ellipse 200px 150px at 60% 52%, rgba(255,130,0,0.18) 0%, transparent 70%),
-              radial-gradient(ellipse 160px 130px at 38% 72%, rgba(255,200,0,0.16) 0%, transparent 70%),
-              radial-gradient(ellipse 140px 110px at 74% 28%, rgba(255,80,0,0.14) 0%, transparent 70%),
-              radial-gradient(ellipse 120px 100px at 50% 18%, rgba(255,160,0,0.12) 0%, transparent 70%)
-            `,
-            mixBlendMode: 'multiply',
-          }}
-        />
-      )}
+      {/* HEAT MAP overlay — blobs positioned at actual listing coords */}
+      {showHeatMap && heatPoints.length > 0 && (() => {
+        const maxPrice = Math.max(...heatPoints.map(p => p.price));
+        const gradients = heatPoints.map(p => {
+          const ratio = maxPrice > 0 ? p.price / maxPrice : 0.5;
+          const r = Math.round(255 * Math.min(1, ratio * 2));
+          const g = Math.round(180 * Math.max(0, 1 - ratio));
+          const alpha = 0.12 + ratio * 0.22;
+          return `radial-gradient(ellipse 80px 60px at ${p.x}px ${p.y}px, rgba(${r},${g},0,${alpha.toFixed(2)}) 0%, transparent 100%)`;
+        });
+        return (
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{ zIndex: 450, background: gradients.join(','), mixBlendMode: 'multiply' }}
+          />
+        );
+      })()}
 
       {/* SEARCH-AS-MOVE indicator */}
       {isMoving && searchAsMove && (

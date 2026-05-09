@@ -188,11 +188,7 @@ export function CatalogClient({
   initialViewMode = 'list',
   allListings,
 }: CatalogClientProps) {
-  // Lock body scroll for full-screen layout
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
-  }, []);
+  // No body overflow hack needed — container uses position:fixed
 
   // Drawer / UI state
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
@@ -423,7 +419,7 @@ export function CatalogClient({
   const hasLegalFilter   = isPledged || isOnRedLine || isDivisible;
 
   return (
-    <div className="flex flex-col bg-white overflow-hidden isolate" style={{ height: 'calc(100svh - 64px)' }}>
+    <div className="fixed inset-0 flex flex-col bg-white isolate" style={{ top: '64px', zIndex: 40 }}>
 
       {/* ── Filter bar ─────────────────────────────────────────────────────── */}
       <div className="h-14 bg-white border-b border-zinc-200 flex items-center px-4 gap-2 overflow-x-auto shrink-0 scrollbar-none relative z-10">
