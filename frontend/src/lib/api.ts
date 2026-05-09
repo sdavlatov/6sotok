@@ -55,6 +55,8 @@ interface PayloadListing {
   hasSeparateEntrance?: boolean
   isOperational?: boolean
   isTenanted?: boolean
+  monthlyRevenue?: number
+  paybackMonths?: number
   sellerName?: string
   sellerPhone?: string
   sellerHasWhatsApp?: boolean
@@ -103,6 +105,8 @@ function mapListing(p: PayloadListing): Listing {
     hasSeparateEntrance: p.hasSeparateEntrance,
     isOperational: p.isOperational,
     isTenanted: p.isTenanted,
+    monthlyRevenue: p.monthlyRevenue,
+    paybackMonths: p.paybackMonths,
     lat: p.lat,
     lng: p.lng,
     cadastralNumber: p.cadastralNumber,

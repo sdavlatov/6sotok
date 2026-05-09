@@ -75,6 +75,8 @@ export interface Listing {
   hasSeparateEntrance?: boolean;
   isOperational?: boolean;
   isTenanted?: boolean;
+  monthlyRevenue?: number;
+  paybackMonths?: number;
 
   // Координаты для карты
   lat?: number;

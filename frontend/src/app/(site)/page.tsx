@@ -215,12 +215,26 @@ export default async function HomePage() {
                 <div className="p-6">
                   <div className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">{l.landType ?? 'Готовый бизнес'}</div>
                   <h3 className="mt-1.5 font-black tracking-[-0.035em] text-[22px] leading-tight text-zinc-900 line-clamp-2">{l.title}</h3>
-                  {l.price && (
-                    <div className="mt-4 pt-4 border-t border-zinc-100">
+                  <div className="mt-4 pt-4 border-t border-zinc-100 grid grid-cols-3 gap-3">
+                    <div>
                       <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">Цена</div>
-                      <div className="mt-0.5 font-black tracking-[-0.035em] text-[18px] text-zinc-900">{fmtM(l.price)} млн ₸</div>
+                      <div className="mt-0.5 font-black tracking-[-0.035em] text-[16px] text-zinc-900">
+                        {l.price ? `${fmtM(l.price)} млн ₸` : '—'}
+                      </div>
                     </div>
-                  )}
+                    <div>
+                      <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">Выручка</div>
+                      <div className="mt-0.5 font-black tracking-[-0.035em] text-[16px] text-zinc-900">
+                        {l.monthlyRevenue ? `${fmtM(l.monthlyRevenue)} м/мес` : '—'}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">Окуп.</div>
+                      <div className="mt-0.5 font-black tracking-[-0.035em] text-[16px] text-primary">
+                        {l.paybackMonths ? `${l.paybackMonths} мес` : '—'}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </Link>
             ))}

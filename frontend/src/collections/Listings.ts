@@ -203,6 +203,8 @@ export const Listings: CollectionConfig = {
         { name: 'hasSeparateEntrance', type: 'checkbox', label: 'Отдельный вход', defaultValue: false },
         { name: 'isOperational', type: 'checkbox', label: 'Действующий бизнес', defaultValue: false },
         { name: 'isTenanted', type: 'checkbox', label: 'Есть арендаторы', defaultValue: false },
+        { name: 'monthlyRevenue', type: 'number', label: 'Выручка в месяц (₸)', min: 0 },
+        { name: 'paybackMonths', type: 'number', label: 'Срок окупаемости (мес)', min: 0 },
       ],
     },
 
