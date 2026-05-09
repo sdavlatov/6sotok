@@ -168,7 +168,7 @@ export default async function HomePage() {
                   Бесплатное размещение, проверка кадастра по ИИН, в среднем 14 дней до сделки. Берём 0% с продавца.
                 </p>
                 <div className="mt-7">
-                  <span className="px-5 h-11 rounded-xl border border-white/30 bg-transparent text-white font-semibold text-[13.5px] tracking-tight inline-flex items-center gap-2 group-hover:bg-primary group-hover:border-primary transition">
+                  <span className="px-5 h-11 rounded-xl bg-white text-zinc-900 font-semibold text-[13.5px] tracking-tight inline-flex items-center gap-2 group-hover:bg-primary group-hover:text-white transition">
                     Разместить объявление →
                   </span>
                 </div>
