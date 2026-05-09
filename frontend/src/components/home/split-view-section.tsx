@@ -264,21 +264,10 @@ export function SplitViewSection({ carouselListings, cards1, cards2, cards3, map
           {cards2.slice(1).map((l, i) => <SmallCard key={l.id} l={l} idx={i + 3} />)}
           {cards3.map((l, i) => <SmallCard key={l.id} l={l} idx={i + 5} />)}
 
-          {/* Mobile map CTA */}
-          <Link href="/catalog?view=map"
-            className="col-span-2 lg:hidden relative overflow-hidden map-bg rounded-2xl border border-zinc-200 flex items-center justify-between px-5 py-4 gap-4">
-            <div>
-              <div className="font-mono text-[10px] uppercase tracking-widest text-zinc-500 mb-0.5">→ на карте</div>
-              <div className="font-black tracking-tight text-[16px] text-zinc-900">{landCount} участков по Казахстану</div>
-            </div>
-            <span className="shrink-0 px-4 h-9 rounded-xl bg-zinc-900 text-white text-[12.5px] font-semibold whitespace-nowrap">
-              Открыть карту →
-            </span>
-          </Link>
         </div>
 
-        {/* ── Map column (sticky) ── */}
-        <div className="hidden lg:block lg:sticky lg:top-20" style={{ height: 820 }}>
+        {/* ── Map column ── */}
+        <div className="col-span-2 lg:col-span-1 lg:sticky lg:top-20 h-[280px] lg:h-[820px]">
           <div className="relative h-full w-full rounded-3xl overflow-hidden border border-zinc-200 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_30px_-10px_rgba(0,0,0,0.10)]">
 
             {/* Leaflet map */}
@@ -291,7 +280,7 @@ export function SplitViewSection({ carouselListings, cards1, cards2, cards3, map
             </div>
 
             {/* Zoom controls */}
-            <div className="absolute top-4 right-4 z-[400] flex flex-col gap-2">
+            <div className="absolute top-4 right-4 z-[400] hidden lg:flex flex-col gap-2">
               <Link href="/catalog?view=map" className="w-9 h-9 rounded-xl bg-white border border-zinc-200/60 text-zinc-700 font-bold text-lg shadow-sm hover:bg-zinc-50 flex items-center justify-center">+</Link>
               <Link href="/catalog?view=map" className="w-9 h-9 rounded-xl bg-white border border-zinc-200/60 text-zinc-700 font-bold text-lg shadow-sm hover:bg-zinc-50 flex items-center justify-center">−</Link>
               <Link href="/catalog?view=map" className="w-9 h-9 rounded-xl bg-white border border-zinc-200/60 text-zinc-700 shadow-sm hover:bg-zinc-50 flex items-center justify-center font-mono text-[11px] font-bold">⊕</Link>
@@ -314,6 +303,11 @@ export function SplitViewSection({ carouselListings, cards1, cards2, cards3, map
               <div>S</div>
             </div>
 
+            {/* Mobile CTA overlay */}
+            <Link href="/catalog?view=map"
+              className="lg:hidden absolute bottom-4 right-4 z-[400] px-4 h-9 rounded-xl bg-zinc-900 text-white text-[12.5px] font-semibold flex items-center shadow-lg">
+              Открыть карту →
+            </Link>
 
           </div>
         </div>
