@@ -46,6 +46,12 @@ interface LMap {
   zoomIn(): void;
   zoomOut(): void;
   latLngToContainerPoint(latlng: [number, number]): { x: number; y: number };
+  getBounds(): { getNorth(): number; getSouth(): number; getEast(): number; getWest(): number };
+  getZoom(): number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  addLayer(layer: any): LMap;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  removeLayer(layer: any): LMap;
 }
 interface LMarker {
   addTo(map: LMap): LMarker;
@@ -72,6 +78,10 @@ interface LeafletStatic {
   polygon(latlngs: [number, number][], options?: object): any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   circleMarker(latlng: [number, number], options?: object): any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  circle(latlng: [number, number], options?: object): any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  polyline(latlngs: [number, number][], options?: object): any;
 }
 
 declare global {
@@ -143,14 +153,26 @@ export interface MapViewProps {
   compareList?: CompareItem[];
   onRemoveCompare?: (id: string | number) => void;
   onCompare?: () => void;
+  onBoundsChange?: (bounds: { n: number; s: number; e: number; w: number }) => void;
+  visitedIds?: Set<string | number>;
 }
 
 // ─── Marker icon factory ─────────────────────────────────────────────────────
-function makeMarkerHtml(priceLabel: string, highlighted: boolean, active: boolean): string {
-  const bg = active ? '#066F36' : highlighted ? '#1a1a2e' : 'white';
-  const color = (active || highlighted) ? 'white' : '#09090b';
-  const border = active ? '#055a2b' : highlighted ? '#066F36' : '#e4e4e7';
-  const shadow = highlighted || active ? '0 4px 16px rgba(6,111,54,0.35)' : '0 2px 8px rgba(0,0,0,0.14)';
+function makeMarkerHtml(priceLabel: string, highlighted: boolean, active: boolean, visited = false): string {
+  let bg: string, color: string, border: string, shadow: string;
+  if (active) {
+    bg = '#066F36'; color = 'white'; border = '#055a2b';
+    shadow = '0 4px 16px rgba(6,111,54,0.35)';
+  } else if (highlighted) {
+    bg = '#1a1a2e'; color = 'white'; border = '#066F36';
+    shadow = '0 4px 16px rgba(6,111,54,0.35)';
+  } else if (visited) {
+    bg = '#f4f4f5'; color = '#a1a1aa'; border = '#e4e4e7';
+    shadow = '0 2px 8px rgba(0,0,0,0.14)';
+  } else {
+    bg = 'white'; color = '#09090b'; border = '#e4e4e7';
+    shadow = '0 2px 8px rgba(0,0,0,0.14)';
+  }
   const scale = highlighted ? 'scale(1.15)' : 'scale(1)';
   const pulse = highlighted ? `
     <span style="
@@ -189,6 +211,8 @@ export function MapView({
   compareList,
   onRemoveCompare,
   onCompare,
+  onBoundsChange,
+  visitedIds,
 }: MapViewProps) {
   const mapRef     = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<LMap | null>(null);
@@ -203,6 +227,10 @@ export function MapView({
   const [showHeatMap, setShowHeatMap] = useState(false);
   const [isMoving,    setIsMoving]   = useState(false);
   const [heatPoints,  setHeatPoints] = useState<{ x: number; y: number; price: number }[]>([]);
+  const [drawMode, setDrawMode] = useState<'none' | 'polygon' | 'radius'>('none');
+  const drawPointsRef = useRef<[number, number][]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const drawLayerRef = useRef<any>(null);
 
   const showOverlays = statsCount !== undefined || onTileLayerChange !== undefined;
 
@@ -264,9 +292,10 @@ export function MapView({
     withCoords.forEach(listing => {
       const priceLabel = formatPrice(listing.price);
       const isHighlighted = highlightedId != null && String(highlightedId) === String(listing.id);
+      const isVisited = visitedIds?.has(listing.id) ?? false;
       const icon = L.divIcon({
         className: '',
-        html: `<div style="transform:translateX(-50%)">${makeMarkerHtml(priceLabel, isHighlighted, false)}</div>`,
+        html: `<div style="transform:translateX(-50%)">${makeMarkerHtml(priceLabel, isHighlighted, false, isVisited)}</div>`,
         iconAnchor: [0, 32],
       });
 
@@ -300,14 +329,15 @@ export function MapView({
     markersMap.current.forEach(({ marker, listing }) => {
       const isHighlighted = highlightedId != null && String(highlightedId) === String(listing.id);
       const isActive = active != null && String(active.id) === String(listing.id);
+      const isVisited = visitedIds?.has(listing.id) ?? false;
       const priceLabel = formatPrice(listing.price);
       marker.setIcon(L.divIcon({
         className: '',
-        html: `<div style="transform:translateX(-50%)">${makeMarkerHtml(priceLabel, isHighlighted, isActive)}</div>`,
+        html: `<div style="transform:translateX(-50%)">${makeMarkerHtml(priceLabel, isHighlighted, isActive, isVisited)}</div>`,
         iconAnchor: [0, 32],
       }));
     });
-  }, [highlightedId, active, ready]);
+  }, [highlightedId, active, ready, visitedIds]);
 
   // 5. Heat map points — recompute when map moves or listings change
   useEffect(() => {
@@ -322,14 +352,24 @@ export function MapView({
         });
       setHeatPoints(pts);
     };
+    const emitBounds = () => {
+      if (!onBoundsChange) return;
+      const b = map.getBounds();
+      onBoundsChange({ n: b.getNorth(), s: b.getSouth(), e: b.getEast(), w: b.getWest() });
+    };
     compute();
+    emitBounds();
     map.on('moveend', compute);
     map.on('zoomend', compute);
+    map.on('moveend', emitBounds);
+    map.on('zoomend', emitBounds);
     return () => {
       map.off('moveend', compute);
       map.off('zoomend', compute);
+      map.off('moveend', emitBounds);
+      map.off('zoomend', emitBounds);
     };
-  }, [ready, listings]);
+  }, [ready, listings, onBoundsChange]);
 
   // 6. Search-as-move indicator
   useEffect(() => {
@@ -493,7 +533,41 @@ export function MapView({
 
           {/* Drawing tools */}
           <div className="bg-white/95 backdrop-blur-sm rounded-xl border border-zinc-200 shadow-sm p-1 flex flex-col">
-            <button className="w-9 h-9 rounded-lg hover:bg-zinc-100 text-zinc-600 flex items-center justify-center transition-colors" title="Нарисовать область">
+            <button
+              onClick={() => {
+                if (!leafletMap.current || !window.L) return;
+                const L = window.L;
+                const map = leafletMap.current;
+                if (drawMode === 'polygon') {
+                  setDrawMode('none');
+                  drawPointsRef.current = [];
+                  if (drawLayerRef.current) { map.removeLayer(drawLayerRef.current); drawLayerRef.current = null; }
+                  return;
+                }
+                setDrawMode('polygon');
+                drawPointsRef.current = [];
+                if (drawLayerRef.current) { map.removeLayer(drawLayerRef.current); drawLayerRef.current = null; }
+                const onClick = (e: { latlng: { lat: number; lng: number } }) => {
+                  drawPointsRef.current = [...drawPointsRef.current, [e.latlng.lat, e.latlng.lng]];
+                  if (drawLayerRef.current) map.removeLayer(drawLayerRef.current);
+                  if (drawPointsRef.current.length >= 2) {
+                    drawLayerRef.current = L.polygon(drawPointsRef.current, {
+                      color: '#066F36', fillColor: '#066F36', fillOpacity: 0.08,
+                      weight: 2, dashArray: '6 4',
+                    }).addTo(map);
+                  }
+                };
+                const onDblClick = () => {
+                  map.off('click', onClick);
+                  map.off('dblclick', onDblClick);
+                  setDrawMode('none');
+                };
+                map.on('click', onClick);
+                map.on('dblclick', onDblClick);
+              }}
+              className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${drawMode === 'polygon' ? 'bg-primary text-white' : 'hover:bg-zinc-100 text-zinc-600'}`}
+              title={drawMode === 'polygon' ? 'Завершить' : 'Нарисовать область'}
+            >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 17l6-6 4 4 8-8" />
                 <circle cx="3" cy="17" r="1.5" fill="currentColor" />
@@ -502,18 +576,48 @@ export function MapView({
                 <circle cx="21" cy="7"  r="1.5" fill="currentColor" />
               </svg>
             </button>
-            <button className="w-9 h-9 rounded-lg hover:bg-zinc-100 text-zinc-600 flex items-center justify-center transition-colors" title="Радиус от точки">
+            <button
+              onClick={() => {
+                if (!leafletMap.current || !window.L) return;
+                const L = window.L;
+                const map = leafletMap.current;
+                if (drawMode === 'radius') {
+                  setDrawMode('none');
+                  if (drawLayerRef.current) { map.removeLayer(drawLayerRef.current); drawLayerRef.current = null; }
+                  return;
+                }
+                setDrawMode('radius');
+                if (drawLayerRef.current) { map.removeLayer(drawLayerRef.current); drawLayerRef.current = null; }
+                const onClick = (e: { latlng: { lat: number; lng: number } }) => {
+                  if (drawLayerRef.current) map.removeLayer(drawLayerRef.current);
+                  drawLayerRef.current = L.circle([e.latlng.lat, e.latlng.lng], {
+                    radius: 25000, color: '#066F36', fillColor: '#066F36', fillOpacity: 0.06, weight: 2, dashArray: '6 4',
+                  }).addTo(map);
+                  map.off('click', onClick);
+                  setDrawMode('none');
+                };
+                map.on('click', onClick);
+              }}
+              className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${drawMode === 'radius' ? 'bg-primary text-white' : 'hover:bg-zinc-100 text-zinc-600'}`}
+              title={drawMode === 'radius' ? 'Отменить' : 'Радиус 25км от точки'}
+            >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="9" strokeDasharray="3 3" />
                 <circle cx="12" cy="12" r="2" fill="currentColor" />
               </svg>
             </button>
-            <button className="w-9 h-9 rounded-lg hover:bg-zinc-100 text-zinc-600 flex items-center justify-center transition-colors" title="Линейка">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20.6 6.6l-3.2-3.2a2 2 0 0 0-2.8 0L3.4 14.6a2 2 0 0 0 0 2.8l3.2 3.2a2 2 0 0 0 2.8 0L20.6 9.4a2 2 0 0 0 0-2.8z" />
-                <path d="M9 7l1.5 1.5M11 5l1.5 1.5M13 9l1.5 1.5M15 7l1.5 1.5" />
-              </svg>
-            </button>
+            {(drawLayerRef.current || drawMode !== 'none') && (
+              <button
+                onClick={() => {
+                  if (drawLayerRef.current && leafletMap.current) leafletMap.current.removeLayer(drawLayerRef.current);
+                  drawLayerRef.current = null; drawPointsRef.current = []; setDrawMode('none');
+                }}
+                className="w-9 h-9 rounded-lg hover:bg-red-50 text-red-400 flex items-center justify-center transition-colors"
+                title="Очистить"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -599,7 +703,7 @@ export function MapView({
           <div className="bg-white rounded-2xl border border-zinc-200 shadow-lg p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="text-[10.5px] font-mono uppercase tracking-wider text-zinc-500">в окне карты</div>
-              <button className="text-[10.5px] font-mono text-primary font-bold hover:underline">Аналитика →</button>
+              <Link href="/analytics" className="text-[10.5px] font-mono text-primary font-bold hover:underline">Аналитика →</Link>
             </div>
             <div className="font-black tracking-tight text-[26px] leading-none text-zinc-900">
               {fmtM(statsPerSotka!)} млн ₸

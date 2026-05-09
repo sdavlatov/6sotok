@@ -234,6 +234,8 @@ export function CatalogClient({
   const [compareList, setCompareList] = useState<CompareItem[]>([]);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string | number>>(new Set());
   const [showSaved, setShowSaved] = useState(false);
+  const [visitedIds, setVisitedIds] = useState<Set<string | number>>(new Set());
+  const [mapBounds, setMapBounds] = useState<{ n: number; s: number; e: number; w: number } | null>(null);
 
   // Location search with separate input state (breadcrumb only updates on confirm)
   const [locationInput, setLocationInput] = useState(initialLocation);
@@ -308,11 +310,20 @@ export function CatalogClient({
 
     if (showSaved) result = result.filter(l => bookmarkedIds.has(l.id));
 
+    // Apply map bounds filter when searchAsMove is ON
+    if (searchAsMove && mapBounds) {
+      result = result.filter(l =>
+        l.lat != null && l.lng != null &&
+        l.lat <= mapBounds.n && l.lat >= mapBounds.s &&
+        l.lng <= mapBounds.e && l.lng >= mapBounds.w
+      );
+    }
+
     return result;
   }, [selectedCategories, location, areaFrom, areaTo, priceFrom, priceTo,
       sortOrder, isPledged, isOnRedLine, isDivisible,
       hasElectricity, hasGas, hasWater, hasSewer, hasRoadAccess, allListings,
-      showSaved, bookmarkedIds]);
+      showSaved, bookmarkedIds, searchAsMove, mapBounds]);
 
   const activeFilterCount = useMemo(() => [
     selectedCategories.length > 0, !!location,
@@ -372,6 +383,7 @@ export function CatalogClient({
     const el = cardRefs.current[listing.id];
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setHoveredId(listing.id);
+    setVisitedIds(prev => { const next = new Set(prev); next.add(listing.id); return next; });
     highlightTimer.current = setTimeout(() => setHoveredId(null), 2500);
   }, []);
 
@@ -782,6 +794,8 @@ export function CatalogClient({
             compareList={compareList}
             onRemoveCompare={id => setCompareList(prev => prev.filter(c => c.id !== id))}
             onCompare={() => {}}
+            onBoundsChange={setMapBounds}
+            visitedIds={visitedIds}
           />
         </section>
 
