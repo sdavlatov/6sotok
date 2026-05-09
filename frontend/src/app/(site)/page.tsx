@@ -113,25 +113,55 @@ export default async function HomePage() {
           <div className="grid lg:grid-cols-2 gap-4 sm:gap-5">
 
             {/* Покупателям */}
-            <Link href="/catalog" className="tile group relative overflow-hidden rounded-2xl sm:rounded-3xl bg-zinc-50 border border-zinc-200 p-6 sm:p-10 min-h-[320px] sm:min-h-[440px] flex flex-col justify-between">
-              <div className="absolute inset-0 opacity-60 pointer-events-none"
+            <Link href="/catalog" className="tile group relative overflow-hidden rounded-2xl sm:rounded-3xl bg-zinc-50 border border-zinc-200 sm:p-10 sm:min-h-[440px] flex flex-col justify-between">
+              <div className="absolute inset-0 opacity-60 pointer-events-none hidden sm:block"
                 style={{ backgroundImage: 'linear-gradient(rgba(6,111,54,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(6,111,54,0.06) 1px, transparent 1px)', backgroundSize: '40px 40px', maskImage: 'radial-gradient(ellipse 80% 60% at 80% 20%, black, transparent)' }} />
-              {/* Floating mini-map */}
-              <div className="drift absolute top-5 right-5 sm:top-7 sm:right-7 w-28 h-28 sm:w-44 sm:h-44 rounded-xl sm:rounded-2xl map-bg border border-zinc-200/60 shadow-lg overflow-hidden pointer-events-none">
-                <span className="absolute top-[30%] left-[40%] flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary text-white font-black text-[10px] sm:text-[11px] border-2 border-white shadow-md">
+
+              {/* Desktop floating mini-map */}
+              <div className="drift hidden sm:block absolute top-7 right-7 w-44 h-44 rounded-2xl map-bg border border-zinc-200/60 shadow-lg overflow-hidden pointer-events-none">
+                <span className="absolute top-[30%] left-[40%] flex items-center justify-center w-8 h-8 rounded-full bg-primary text-white font-black text-[11px] border-2 border-white shadow-md">
                   {Math.max(1, Math.min(99, landCount))}
                 </span>
-                <span className="absolute top-[60%] left-[65%] w-2.5 h-2.5 rounded-full bg-zinc-800 border-2 border-white shadow-sm" />
-                <span className="absolute top-[20%] left-[70%] w-2.5 h-2.5 rounded-full bg-zinc-800 border-2 border-white shadow-sm" />
+                <span className="absolute top-[60%] left-[65%] w-3 h-3 rounded-full bg-zinc-800 border-2 border-white shadow-sm" />
+                <span className="absolute top-[20%] left-[70%] w-3 h-3 rounded-full bg-zinc-800 border-2 border-white shadow-sm" />
               </div>
 
-              <div className="relative">
+              {/* Mobile map preview */}
+              <div className="sm:hidden relative map-bg overflow-hidden" style={{ height: 160 }}>
+                {/* pins */}
+                {([
+                  [35, 30, true], [55, 65, false], [25, 72, false], [65, 20, false], [70, 55, false],
+                ] as [number, number, boolean][]).map(([top, left, pulse], i) => (
+                  <span key={i} className="absolute flex" style={{ top: `${top}%`, left: `${left}%`, transform: 'translate(-50%,-50%)' }}>
+                    {pulse ? (
+                      <span className="relative flex items-center justify-center">
+                        <span className="absolute w-8 h-8 rounded-full bg-primary/20 animate-ping" />
+                        <span className="relative flex items-center justify-center w-7 h-7 rounded-full bg-primary border-2 border-white shadow-md text-white font-black text-[10px]">
+                          {Math.max(1, Math.min(99, landCount))}
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="w-3 h-3 rounded-full bg-zinc-700 border-2 border-white shadow-sm" />
+                    )}
+                  </span>
+                ))}
+                {/* bottom fade */}
+                <div className="absolute inset-x-0 bottom-0 h-12 pointer-events-none"
+                  style={{ background: 'linear-gradient(to top, #f4f4f5 0%, transparent 100%)' }} />
+                <div className="absolute bottom-3 right-4 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                  <span className="text-[11px] font-mono text-zinc-500">{landCount} участков</span>
+                </div>
+              </div>
+
+              {/* Text */}
+              <div className="relative p-6 sm:p-0">
                 <div className="font-mono text-[11px] sm:text-[12px] uppercase tracking-widest text-primary">→ покупателям</div>
-                <h3 className="mt-3 sm:mt-4 font-black tracking-[-0.04em] text-[36px] sm:text-[52px] leading-[0.95] text-zinc-900">
+                <h3 className="mt-3 sm:mt-4 font-black tracking-[-0.04em] text-[34px] sm:text-[52px] leading-[0.95] text-zinc-900">
                   Ищите участки<br />прямо<br />на карте.
                 </h3>
               </div>
-              <div className="relative">
+              <div className="relative p-6 pt-0 sm:p-0">
                 <p className="text-[13.5px] sm:text-[14.5px] text-zinc-600 leading-snug max-w-md">
                   Каждое объявление привязано к точке на карте. Фильтруйте участки по площади, цене, документам и категории земли.
                 </p>
@@ -140,7 +170,7 @@ export default async function HomePage() {
                     Открыть карту →
                   </span>
                   <div className="flex items-center gap-2 sm:gap-3 text-[11.5px] sm:text-[12px] text-zinc-500 font-mono">
-                    <span><b className="text-zinc-900">{landCount.toLocaleString('ru-RU')}</b> объявлений</span>
+                    <span><b className="text-zinc-900">{landCount.toLocaleString('ru-RU')}</b> объявл.</span>
                     <span className="text-zinc-300">·</span>
                     <span><b className="text-zinc-900">{locations.length}</b> областей</span>
                   </div>
