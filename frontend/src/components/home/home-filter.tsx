@@ -122,7 +122,7 @@ export function HomeFilter({ locations, totalCount, countByType }: Props) {
               <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border border-zinc-200 shadow-xl z-50 overflow-hidden">
                 {suggestions.map(loc => (
                   <button key={loc} onMouseDown={e => e.preventDefault()}
-                    onClick={() => { setLocation(loc); setShowSuggestions(false); go(loc); }}
+                    onClick={() => { setLocation(loc); setShowSuggestions(false); }}
                     className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium text-zinc-700 hover:bg-zinc-50 text-left"
                   >
                     <MapPin className="size-3.5 text-zinc-400 shrink-0" strokeWidth={2} />
