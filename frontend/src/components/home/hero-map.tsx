@@ -280,10 +280,10 @@ export function HeroMap({
         <div className="text-[15px] font-black tracking-[-0.035em] text-zinc-900">{visibleCount.toLocaleString('ru-RU')} участков</div>
       </div>
 
-      {/* Bottom panel */}
+      {/* Floating card — bottom right */}
       {sel && (
-        <div className="absolute bottom-0 left-0 right-0 z-[500] pointer-events-auto">
-          <div className="bg-white rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.14)] overflow-hidden">
+        <div className="absolute bottom-4 left-3 right-3 sm:left-auto sm:right-4 sm:w-[260px] z-[500] pointer-events-auto">
+          <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.18)] overflow-hidden border border-zinc-100">
             {/* Close */}
             <button
               onClick={() => setSelected(null)}
