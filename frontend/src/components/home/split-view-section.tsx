@@ -263,6 +263,18 @@ export function SplitViewSection({ carouselListings, cards1, cards2, cards3, map
 
           {cards2.slice(1).map((l, i) => <SmallCard key={l.id} l={l} idx={i + 3} />)}
           {cards3.map((l, i) => <SmallCard key={l.id} l={l} idx={i + 5} />)}
+
+          {/* Mobile map CTA */}
+          <Link href="/catalog?view=map"
+            className="col-span-2 lg:hidden relative overflow-hidden map-bg rounded-2xl border border-zinc-200 flex items-center justify-between px-5 py-4 gap-4">
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-widest text-zinc-500 mb-0.5">→ на карте</div>
+              <div className="font-black tracking-tight text-[16px] text-zinc-900">{landCount} участков по Казахстану</div>
+            </div>
+            <span className="shrink-0 px-4 h-9 rounded-xl bg-zinc-900 text-white text-[12.5px] font-semibold whitespace-nowrap">
+              Открыть карту →
+            </span>
+          </Link>
         </div>
 
         {/* ── Map column (sticky) ── */}
