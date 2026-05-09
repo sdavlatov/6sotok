@@ -4,6 +4,7 @@ import type { Listing } from '@/types/listing'
 
 interface PayloadMedia {
   url?: string
+  mimeType?: string
 }
 
 interface PayloadListing {
@@ -63,10 +64,20 @@ interface PayloadListing {
   sellerIsAgency?: boolean
 }
 
+const VIDEO_RE = /\.(mp4|mov|webm|ogv|m4v)$/i
+
 function mapListing(p: PayloadListing): Listing {
-  const imageUrls = (p.images ?? [])
-    .map(i => i.image?.url)
-    .filter(Boolean) as string[]
+  const allMediaUrls = (p.images ?? [])
+    .map(i => i.image)
+    .filter((m): m is PayloadMedia => !!m?.url)
+
+  const imageUrls = allMediaUrls
+    .filter(m => !m.mimeType?.startsWith('video/') && !VIDEO_RE.test(m.url ?? ''))
+    .map(m => m.url as string)
+
+  const videoUrls = allMediaUrls
+    .filter(m => m.mimeType?.startsWith('video/') || VIDEO_RE.test(m.url ?? ''))
+    .map(m => m.url as string)
 
   const communications: string[] = []
   if (p.hasElectricity) communications.push('Свет')
@@ -85,6 +96,7 @@ function mapListing(p: PayloadListing): Listing {
     location: p.location,
     image: imageUrls[0] ?? '',
     images: imageUrls,
+    videos: videoUrls,
     communications,
     description: typeof p.description === 'string' ? p.description : undefined,
     createdAt: p.createdAt,

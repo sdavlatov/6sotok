@@ -53,7 +53,7 @@ export default async function BusinessListingPage({ params }: Props) {
           {/* Left column */}
           <div>
             {/* Gallery */}
-            <PhotoGrid images={listing.images ?? (listing.image ? [listing.image] : [])} title={listing.title} />
+            <PhotoGrid images={[...(listing.images ?? []), ...(listing.videos ?? [])]} title={listing.title} />
 
             {/* Title + key stats */}
             <div className="mt-8 bg-white rounded-2xl border border-zinc-200 p-7">

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { getBusinessListings } from '@/lib/api';
 import { BusinessCatalogClient } from '@/components/business/business-catalog-client';
 
@@ -11,5 +12,9 @@ export const metadata: Metadata = {
 
 export default async function BusinessPage() {
   const listings = await getBusinessListings();
-  return <BusinessCatalogClient allListings={listings} />;
+  return (
+    <Suspense>
+      <BusinessCatalogClient allListings={listings} />
+    </Suspense>
+  );
 }

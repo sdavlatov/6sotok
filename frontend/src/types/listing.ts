@@ -24,7 +24,8 @@ export interface Listing {
   landType: LandType;
   location: string;
   image: string; // main
-  images?: string[]; // gallery
+  images?: string[]; // gallery (photos only)
+  videos?: string[]; // gallery (videos only)
   communications: string[]; // badges
   description?: string;
   seller?: ListingSeller;

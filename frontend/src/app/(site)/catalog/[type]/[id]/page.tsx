@@ -50,7 +50,10 @@ export default async function ListingPage({ params }: Props) {
     .filter(l => l.id !== listing.id).slice(0, 3);
 
   const pricePerSotka = Math.round(listing.price / listing.area);
-  const allMedia = listing.images?.length ? listing.images : listing.image ? [listing.image] : [];
+  const allMedia = [
+    ...(listing.images?.length ? listing.images : listing.image ? [listing.image] : []),
+    ...(listing.videos ?? []),
+  ];
 
   const paramRows = [
     listing.landType      && { k: 'Тип',           v: listing.landType },

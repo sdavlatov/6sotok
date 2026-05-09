@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { List, Map, SlidersHorizontal, X, Building2, Coffee, ShoppingBag, Briefcase, Warehouse, Factory, Fuel, Hotel, LayoutGrid } from 'lucide-react';
 import { Container } from '@/components/layout/container';
 import { BusinessCard } from './business-card';
@@ -175,13 +176,14 @@ function BusinessFilters({
 }
 
 export function BusinessCatalogClient({ allListings }: Props) {
+  const searchParams = useSearchParams();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [sortOrder, setSortOrder] = useState<'new' | 'price_asc' | 'price_desc'>('new');
 
   const [dealType, setDealType] = useState<'all' | 'sale' | 'rent'>('all');
-  const [bizType, setBizType] = useState('');
+  const [bizType, setBizType] = useState(() => searchParams.get('type') ?? '');
   const [location, setLocation] = useState('');
   const [priceFrom, setPriceFrom] = useState('');
   const [priceTo, setPriceTo] = useState('');
