@@ -113,28 +113,28 @@ export default async function HomePage() {
                 style={{ backgroundImage: 'linear-gradient(rgba(6,111,54,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(6,111,54,0.06) 1px, transparent 1px)', backgroundSize: '40px 40px', maskImage: 'radial-gradient(ellipse 80% 60% at 80% 20%, black, transparent)' }} />
               {/* Floating mini-map */}
               <div className="drift absolute top-7 right-7 w-44 h-44 rounded-2xl map-bg border border-zinc-200/60 shadow-lg overflow-hidden pointer-events-none">
-                <span className="absolute top-[30%] left-[40%] flex items-center justify-center w-7 h-7 rounded-full bg-primary text-white font-black text-[10px] border-2 border-white">
-                  {Math.min(99, Math.round(landCount / 15))}
+                <span className="absolute top-[30%] left-[40%] flex items-center justify-center w-8 h-8 rounded-full bg-primary text-white font-black text-[11px] border-2 border-white shadow-md">
+                  {Math.max(1, Math.min(99, landCount))}
                 </span>
-                <span className="absolute top-[60%] left-[65%] w-2.5 h-2.5 rounded-full bg-zinc-900 border-2 border-white" />
-                <span className="absolute top-[20%] left-[70%] w-2.5 h-2.5 rounded-full bg-zinc-900 border-2 border-white" />
+                <span className="absolute top-[60%] left-[65%] w-3 h-3 rounded-full bg-zinc-800 border-2 border-white shadow-sm" />
+                <span className="absolute top-[20%] left-[70%] w-3 h-3 rounded-full bg-zinc-800 border-2 border-white shadow-sm" />
               </div>
 
               <div className="relative">
-                <div className="font-mono text-[10.5px] uppercase tracking-widest text-primary">→ покупателям</div>
+                <div className="text-[13px] font-semibold uppercase tracking-widest text-primary">→ Покупателям</div>
                 <h3 className="mt-4 font-black tracking-[-0.04em] text-[48px] md:text-[52px] leading-[0.95] text-zinc-900">
                   Вся земля<br />Казахстана —<br /><span className="text-zinc-400">на одной карте.</span>
                 </h3>
               </div>
               <div className="relative">
-                <p className="text-[14.5px] text-zinc-600 leading-snug max-w-md">
-                  Приближайте любой район страны. Цены, площади, документы — прямо на карте, без звонков риелторам и спама.
+                <p className="text-[15px] text-zinc-600 leading-snug max-w-md">
+                  Все участки страны — на одной карте. Цены, площади и документы без звонков агентам и спама.
                 </p>
                 <div className="mt-7 flex items-center gap-3 flex-wrap">
                   <span className="px-5 h-11 rounded-xl bg-zinc-900 text-white font-semibold text-[13.5px] tracking-tight flex items-center gap-2 group-hover:bg-primary transition">
                     Открыть карту →
                   </span>
-                  <div className="flex items-center gap-3 text-[12px] text-zinc-500 font-mono">
+                  <div className="flex items-center gap-3 text-[12.5px] text-zinc-500 font-mono">
                     <span><b className="text-zinc-900">{landCount.toLocaleString('ru-RU')}</b> объявлений</span>
                     <span className="text-zinc-300">·</span>
                     <span><b className="text-zinc-900">{locations.length}</b> городов</span>
@@ -150,22 +150,22 @@ export default async function HomePage() {
               <div className="drift absolute -bottom-32 -right-32 w-[420px] h-[420px] rounded-full pointer-events-none"
                 style={{ background: 'radial-gradient(circle, rgba(44,166,78,0.45) 0%, transparent 60%)' }} />
               <div className="relative">
-                <div className="font-mono text-[10.5px] uppercase tracking-widest text-primary">→ продавцам</div>
+                <div className="text-[13px] font-semibold uppercase tracking-widest text-primary">→ Продавцам</div>
                 <h3 className="mt-4 font-black tracking-[-0.04em] text-[48px] md:text-[52px] leading-[0.95]">
                   Разместите<br />участок<br /><span className="text-primary">за 3 минуты.</span>
                 </h3>
               </div>
               <div className="relative">
-                <div className="grid grid-cols-3 gap-3 mb-6">
-                  {[['01','Кадастровый номер'],['02','Фото и документы'],['03','Звонки в Telegram']].map(([n,t]) => (
-                    <div key={n} className="border-l border-white/20 pl-3">
-                      <div className="font-mono text-[10px] text-primary">{n}</div>
-                      <div className="mt-0.5 text-[12.5px] font-semibold leading-tight">{t}</div>
+                <div className="grid grid-cols-3 gap-4 mb-7">
+                  {[['01','Кадастровый номер'],['02','Фото и описание'],['03','Заявки в Telegram']].map(([n,t]) => (
+                    <div key={n} className="border-l-2 border-primary/40 pl-3">
+                      <div className="font-mono text-[11.5px] font-bold text-primary">{n}</div>
+                      <div className="mt-1 text-[13.5px] font-semibold leading-tight">{t}</div>
                     </div>
                   ))}
                 </div>
-                <p className="text-[14.5px] text-white/60 leading-snug max-w-md">
-                  Бесплатное размещение, проверка кадастра по ИИН, в среднем 14 дней до сделки. Берём 0% с продавца.
+                <p className="text-[15px] text-white/60 leading-snug max-w-md">
+                  Бесплатно, без скрытых комиссий. Покупатели находят через карту и поиск — в среднем 14 дней до сделки.
                 </p>
                 <div className="mt-7">
                   <span className="px-5 h-11 rounded-xl bg-white text-zinc-900 font-semibold text-[13.5px] tracking-tight inline-flex items-center gap-2 group-hover:bg-primary group-hover:text-white transition">
