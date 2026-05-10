@@ -70,7 +70,7 @@ export function ListingMap({ lat, lng, title, pois = [] }: ListingMapProps) {
       map = L.map(ref.current, {
         zoomControl: false,
         scrollWheelZoom: false,
-        dragging: false,
+        dragging: !isMobile,
         touchZoom: true,
         tap: false,
         attributionControl: false,
