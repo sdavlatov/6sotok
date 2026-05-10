@@ -5,7 +5,7 @@ import { ContactCard } from '@/components/listings/contact-card';
 import { MobileContactBar } from '@/components/listings/mobile-contact-bar';
 import { ListingCard } from '@/components/listings/listing-card';
 import { PhotoGrid } from '@/components/listings/photo-grid';
-import { ListingMap } from '@/components/listings/listing-map';
+import { ListingMap, type MapPOI } from '@/components/listings/listing-map';
 import { DocViewer } from '@/components/listings/doc-viewer';
 import { SLUG_LANDTYPE } from '@/lib/listing-url';
 import { CopyLinkButton } from '@/components/listings/copy-link-button';
@@ -13,6 +13,67 @@ import { ViewTracker } from '@/components/listings/view-tracker';
 import Link from 'next/link';
 export const dynamic = 'force-dynamic';
 import type { Metadata } from 'next';
+
+const POI_TYPES: Record<string, { label: string; dot: string }> = {
+  school:       { label: 'Школа',       dot: '#18181b' },
+  hospital:     { label: 'Больница',    dot: '#dc2626' },
+  clinic:       { label: 'Клиника',     dot: '#dc2626' },
+  pharmacy:     { label: 'Аптека',      dot: '#dc2626' },
+  supermarket:  { label: 'Супермаркет', dot: '#18181b' },
+  marketplace:  { label: 'Базар',       dot: '#18181b' },
+  kindergarten: { label: 'Детсад',      dot: '#d97706' },
+  bank:         { label: 'Банк',        dot: '#18181b' },
+};
+
+function haversine(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function fmtDist(m: number) {
+  return m < 1000 ? `${Math.round(m)} м` : `${(m/1000).toFixed(1)} км`;
+}
+
+async function fetchPOIs(lat: number, lng: number): Promise<MapPOI[]> {
+  try {
+    const radius = 2000;
+    const q = `[out:json][timeout:8];(
+      node[amenity=school](around:${radius},${lat},${lng});
+      node[amenity=hospital](around:${radius},${lat},${lng});
+      node[amenity=clinic](around:${radius},${lat},${lng});
+      node[amenity=pharmacy](around:${radius},${lat},${lng});
+      node[shop=supermarket](around:${radius},${lat},${lng});
+      node[amenity=kindergarten](around:${radius},${lat},${lng});
+      node[amenity=bank](around:${radius},${lat},${lng});
+    );out body;`;
+    const res = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST', body: q,
+      next: { revalidate: 86400 },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const seen = new Set<string>();
+    return (data.elements as any[])
+      .map((el: any) => {
+        const amenity = el.tags?.amenity || el.tags?.shop;
+        const type = POI_TYPES[amenity];
+        if (!type) return null;
+        const dist = haversine(lat, lng, el.lat, el.lon);
+        const name = el.tags?.name;
+        const label = name ? `${name} · ${fmtDist(dist)}` : `${type.label} · ${fmtDist(dist)}`;
+        const key = `${amenity}-${Math.round(dist/50)}`;
+        if (seen.has(key)) return null;
+        seen.add(key);
+        return { lat: el.lat, lng: el.lon, label, dot: type.dot } as MapPOI;
+      })
+      .filter(Boolean)
+      .sort((a: any, b: any) => haversine(lat, lng, a.lat, a.lng) - haversine(lat, lng, b.lat, b.lng))
+      .slice(0, 8) as MapPOI[];
+  } catch { return []; }
+}
 
 interface Props { params: Promise<{ type: string; id: string }> }
 
@@ -43,6 +104,7 @@ export default async function ListingPage({ params }: Props) {
     ...(listing.videos ?? []),
   ];
   const hasMap = !!(listing.lat && listing.lng);
+  const mapPOIs = hasMap ? await fetchPOIs(listing.lat!, listing.lng!) : [];
 
   const fmtPrice = (n: number) => new Intl.NumberFormat('ru-RU').format(n);
 
@@ -237,7 +299,7 @@ export default async function ListingPage({ params }: Props) {
                 </div>
                 <div className="rounded-2xl overflow-hidden border border-zinc-200 bg-white" style={{ isolation: 'isolate' }}>
                   <div style={{ height: 360 }}>
-                    <ListingMap lat={listing.lat!} lng={listing.lng!} title={listing.title} />
+                    <ListingMap lat={listing.lat!} lng={listing.lng!} title={listing.title} pois={mapPOIs} />
                   </div>
                   <div className="lp-distances grid grid-cols-2 md:grid-cols-4" style={{ gap: '1px', background: '#f4f4f5' }}>
                     {[
