@@ -121,7 +121,7 @@ export default async function ListingPage({ params }: Props) {
                 { label: 'Высота',        value: '—',                              unit: 'м над ур. моря' },
               ].map((s, i) => (
                 <div key={i} className="bg-white p-4">
-                  <div className="font-mono text-[10.5px] uppercase tracking-wider text-zinc-400">{s.label}</div>
+                  <div className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">{s.label}</div>
                   <div className={`mt-1 font-black text-[22px] leading-none tracking-tight tabular-nums ${s.accent ? 'text-primary' : 'text-zinc-900'}`}>
                     {s.value}
                   </div>
@@ -134,7 +134,7 @@ export default async function ListingPage({ params }: Props) {
             {listing.description && (
               <section className="mb-12">
                 <div className="flex items-center gap-3 mb-4">
-                  <span className="font-mono text-[10.5px] uppercase tracking-widest text-primary">→ описание</span>
+                  <span className="font-mono text-[12px] uppercase tracking-widest text-primary">→ описание</span>
                   <span className="flex-1 h-px bg-zinc-200" />
                 </div>
                 <div className="text-[16px] leading-relaxed text-zinc-700 space-y-3 max-w-2xl">
@@ -146,7 +146,7 @@ export default async function ListingPage({ params }: Props) {
             {/* ── Характеристики ── */}
             <section className="mb-12">
               <div className="flex items-center gap-3 mb-5">
-                <span className="font-mono text-[10.5px] uppercase tracking-widest text-primary">→ характеристики</span>
+                <span className="font-mono text-[12px] uppercase tracking-widest text-primary">→ характеристики</span>
                 <span className="flex-1 h-px bg-zinc-200" />
               </div>
               <div className="lp-specs grid md:grid-cols-2 gap-x-10">
@@ -218,39 +218,60 @@ export default async function ListingPage({ params }: Props) {
             {/* ── Коммуникации ── */}
             <section className="mb-12">
               <div className="flex items-center gap-3 mb-5">
-                <span className="font-mono text-[10.5px] uppercase tracking-widest text-primary">→ коммуникации</span>
+                <span className="font-mono text-[12px] uppercase tracking-widest text-primary">→ коммуникации</span>
                 <span className="flex-1 h-px bg-zinc-200" />
               </div>
-              <div className="rounded-2xl border border-zinc-200 overflow-hidden" style={{ gap: '1px', background: '#e4e4e7' }}>
-                {[
-                  { label: 'Электричество', on: !!listing.hasElectricity, detail: listing.hasElectricity ? '3-фазное · 15 кВт' : 'Отсутствует',      dot: 'bg-yellow-400' },
-                  { label: 'Газ',           on: !!listing.hasGas,         detail: listing.hasGas         ? 'Магистральный, у забора' : 'Отсутствует', dot: 'bg-orange-400' },
-                  { label: 'Вода',          on: !!listing.hasWater,       detail: listing.hasWater       ? 'Центральная' : 'Отсутствует',             dot: 'bg-cyan-400' },
-                  { label: 'Канализация',   on: !!listing.hasSewer,       detail: listing.hasSewer       ? 'Центральная' : 'Септик (требуется)',      dot: 'bg-sky-400' },
-                  { label: 'Дорога',        on: !!listing.hasRoadAccess,  detail: listing.hasRoadAccess  ? 'Асфальт до участка' : 'Грунтовая',        dot: 'bg-stone-400' },
-                ].map((u) => (
-                  <div key={u.label} className="bg-white flex items-center justify-between px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      {u.on ? (
-                        <span className="relative flex size-2 shrink-0">
-                          <span className={`absolute inline-flex h-full w-full rounded-full ${u.dot} opacity-60 animate-ping`} />
-                          <span className={`relative inline-flex size-2 rounded-full ${u.dot}`} />
-                        </span>
-                      ) : (
-                        <span className="size-2 rounded-full bg-zinc-200 shrink-0" />
-                      )}
-                      <span className="text-[14px] text-zinc-600">{u.label}</span>
+              <div className="lp-specs grid md:grid-cols-2 gap-x-10">
+                <dl className="divide-y divide-zinc-100 text-[14px]">
+                  {[
+                    { label: 'Электричество', on: !!listing.hasElectricity, detail: listing.hasElectricity ? '3-фазное · 15 кВт' : 'Отсутствует',      dot: 'bg-yellow-400' },
+                    { label: 'Газ',           on: !!listing.hasGas,         detail: listing.hasGas         ? 'Магистральный, у забора' : 'Отсутствует', dot: 'bg-orange-400' },
+                    { label: 'Вода',          on: !!listing.hasWater,       detail: listing.hasWater       ? 'Центр. + скважина 28 м'  : 'Отсутствует', dot: 'bg-cyan-400' },
+                  ].map((u) => (
+                    <div key={u.label} className="flex items-center justify-between py-3">
+                      <dt className="flex items-center gap-2.5 text-zinc-500">
+                        {u.on ? (
+                          <span className="relative flex size-2 shrink-0">
+                            <span className={`absolute inline-flex h-full w-full rounded-full ${u.dot} opacity-60 animate-ping`} />
+                            <span className={`relative inline-flex size-2 rounded-full ${u.dot}`} />
+                          </span>
+                        ) : (
+                          <span className="size-2 rounded-full bg-zinc-200 shrink-0" />
+                        )}
+                        {u.label}
+                      </dt>
+                      <dd className={`font-semibold ${u.on ? 'text-zinc-900' : 'text-zinc-400'}`}>{u.detail}</dd>
                     </div>
-                    <span className={`text-[14px] font-semibold ${u.on ? 'text-zinc-900' : 'text-zinc-400'}`}>{u.detail}</span>
-                  </div>
-                ))}
+                  ))}
+                </dl>
+                <dl className="divide-y divide-zinc-100 text-[14px]">
+                  {[
+                    { label: 'Канализация', on: !!listing.hasSewer,      detail: listing.hasSewer      ? 'Центральная'        : 'Септик (требуется)', dot: 'bg-sky-400' },
+                    { label: 'Дорога',      on: !!listing.hasRoadAccess, detail: listing.hasRoadAccess ? 'Асфальт до участка' : 'Грунтовая',          dot: 'bg-stone-400' },
+                  ].map((u) => (
+                    <div key={u.label} className="flex items-center justify-between py-3">
+                      <dt className="flex items-center gap-2.5 text-zinc-500">
+                        {u.on ? (
+                          <span className="relative flex size-2 shrink-0">
+                            <span className={`absolute inline-flex h-full w-full rounded-full ${u.dot} opacity-60 animate-ping`} />
+                            <span className={`relative inline-flex size-2 rounded-full ${u.dot}`} />
+                          </span>
+                        ) : (
+                          <span className="size-2 rounded-full bg-zinc-200 shrink-0" />
+                        )}
+                        {u.label}
+                      </dt>
+                      <dd className={`font-semibold ${u.on ? 'text-zinc-900' : 'text-zinc-400'}`}>{u.detail}</dd>
+                    </div>
+                  ))}
+                </dl>
               </div>
             </section>
 
             {/* ── Документы ── */}
             <section className="mb-12">
               <div className="flex items-center gap-3 mb-5">
-                <span className="font-mono text-[10.5px] uppercase tracking-widest text-primary">→ документы</span>
+                <span className="font-mono text-[12px] uppercase tracking-widest text-primary">→ документы</span>
                 <span className="flex-1 h-px bg-zinc-200" />
               </div>
               <DocViewer cadastralNumber={listing.cadastralNumber} />
@@ -260,7 +281,7 @@ export default async function ListingPage({ params }: Props) {
             {hasMap && (
               <section className="mb-12">
                 <div className="flex items-center gap-3 mb-5">
-                  <span className="font-mono text-[10.5px] uppercase tracking-widest text-primary">→ расположение</span>
+                  <span className="font-mono text-[12px] uppercase tracking-widest text-primary">→ расположение</span>
                   <span className="flex-1 h-px bg-zinc-200" />
                 </div>
                 <div className="rounded-2xl overflow-hidden border border-zinc-200 bg-white" style={{ isolation: 'isolate' }}>
@@ -275,7 +296,7 @@ export default async function ListingPage({ params }: Props) {
                       { label: 'Трасса A2',    value: '1.4 км', note: 'авто 3 мин' },
                     ].map((d, i) => (
                       <div key={i} className="bg-white p-3">
-                        <div className="font-mono text-[10.5px] uppercase tracking-wider text-zinc-400">{d.label}</div>
+                        <div className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">{d.label}</div>
                         <div className="font-black text-[18px] tracking-tight text-zinc-900 mt-0.5">{d.value}</div>
                         <div className="text-[10.5px] text-zinc-500">{d.note}</div>
                       </div>
@@ -288,7 +309,7 @@ export default async function ListingPage({ params }: Props) {
             {/* ── Анализ цены ── */}
             <section className="mb-12">
               <div className="flex items-center gap-3 mb-5">
-                <span className="font-mono text-[10.5px] uppercase tracking-widest text-primary">→ анализ цены</span>
+                <span className="font-mono text-[12px] uppercase tracking-widest text-primary">→ анализ цены</span>
                 <span className="flex-1 h-px bg-zinc-200" />
               </div>
               <div className="rounded-2xl border border-zinc-200 bg-white p-6">
@@ -308,7 +329,7 @@ export default async function ListingPage({ params }: Props) {
                       { label: 'макс',    value: fmtPrice(Math.round(pricePerSotka * 1.8)) },
                     ].map(s => (
                       <div key={s.label}>
-                        <div className="font-mono text-[10.5px] uppercase tracking-wider text-zinc-400">{s.label}</div>
+                        <div className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">{s.label}</div>
                         <div className="font-black text-[16px] tracking-tight text-zinc-900">{s.value}</div>
                       </div>
                     ))}
@@ -349,7 +370,7 @@ export default async function ListingPage({ params }: Props) {
             {similarListings.length > 0 && (
               <section>
                 <div className="flex items-center gap-3 mb-5">
-                  <span className="font-mono text-[10.5px] uppercase tracking-widest text-primary">→ похожие участки рядом</span>
+                  <span className="font-mono text-[12px] uppercase tracking-widest text-primary">→ похожие участки рядом</span>
                   <span className="flex-1 h-px bg-zinc-200" />
                   <Link href="/catalog" className="text-[12px] font-medium text-zinc-600 hover:text-zinc-900 transition-colors">
                     все →
