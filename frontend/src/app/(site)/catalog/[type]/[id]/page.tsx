@@ -6,6 +6,7 @@ import { MobileContactBar } from '@/components/listings/mobile-contact-bar';
 import { ListingCard } from '@/components/listings/listing-card';
 import { PhotoGrid } from '@/components/listings/photo-grid';
 import { ListingMap } from '@/components/listings/listing-map';
+import { DocViewer } from '@/components/listings/doc-viewer';
 import { SLUG_LANDTYPE } from '@/lib/listing-url';
 import { CopyLinkButton } from '@/components/listings/copy-link-button';
 import { ViewTracker } from '@/components/listings/view-tracker';
@@ -42,27 +43,6 @@ export default async function ListingPage({ params }: Props) {
     ...(listing.videos ?? []),
   ];
   const hasMap = !!(listing.lat && listing.lng);
-
-  const comms = [
-    { label: 'Электричество', on: !!listing.hasElectricity },
-    { label: 'Вода',          on: !!listing.hasWater },
-    { label: 'Газ',           on: !!listing.hasGas },
-    { label: 'Дорога',        on: !!listing.hasRoadAccess },
-  ];
-
-  const legalOk = [
-    listing.hasStateAct !== false && 'Государственный акт',
-    !listing.isPledged            && 'Без залога',
-    !listing.hasEncumbrances      && 'Без обременений',
-    !listing.isOnRedLine          && 'Без красной линии',
-  ].filter(Boolean) as string[];
-
-  const legalBad = [
-    listing.hasStateAct === false && 'Нет госакта',
-    listing.isPledged             && 'В залоге',
-    listing.hasEncumbrances       && 'Есть обременения',
-    listing.isOnRedLine           && 'Красная линия',
-  ].filter(Boolean) as string[];
 
   const fmtPrice = (n: number) => new Intl.NumberFormat('ru-RU').format(n);
 
@@ -200,36 +180,36 @@ export default async function ListingPage({ params }: Props) {
                 </dl>
                 <dl className="divide-y divide-zinc-100 text-[14px]">
                   <div className="flex justify-between py-3">
-                    <dt className="text-zinc-500">Электричество</dt>
-                    <dd className={`font-semibold ${listing.hasElectricity ? 'text-primary' : 'text-zinc-500'}`}>
-                      {listing.hasElectricity ? '3-фазное · 15 кВт' : 'Нет'}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between py-3">
-                    <dt className="text-zinc-500">Газ</dt>
-                    <dd className={`font-semibold ${listing.hasGas ? 'text-primary' : 'text-zinc-500'}`}>
-                      {listing.hasGas ? 'Магистральный, у забора' : 'Нет'}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between py-3">
-                    <dt className="text-zinc-500">Вода</dt>
-                    <dd className={`font-semibold ${listing.hasWater ? 'text-primary' : 'text-zinc-500'}`}>
-                      {listing.hasWater ? 'Центральная' : 'Нет'}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between py-3">
-                    <dt className="text-zinc-500">Канализация</dt>
-                    <dd className={`font-semibold ${listing.hasSewer ? 'text-primary' : 'text-zinc-700'}`}>
-                      {listing.hasSewer ? 'Центральная' : 'Септик (требуется)'}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between py-3">
-                    <dt className="text-zinc-500">Дорога</dt>
-                    <dd className="font-medium text-zinc-900">{listing.hasRoadAccess ? 'Асфальт до участка' : 'Без дороги'}</dd>
-                  </div>
-                  <div className="flex justify-between py-3">
                     <dt className="text-zinc-500">Делимость</dt>
                     <dd className="font-medium text-zinc-900">{listing.isDivisible ? 'Делимый' : 'Неделимый'}</dd>
+                  </div>
+                  <div className="flex justify-between py-3">
+                    <dt className="text-zinc-500">Тип собственности</dt>
+                    <dd className={`font-medium ${listing.ownershipType ? 'text-zinc-900' : 'text-zinc-400'}`}>{listing.ownershipType ?? '—'}</dd>
+                  </div>
+                  <div className="flex justify-between py-3">
+                    <dt className="text-zinc-500">Госакт</dt>
+                    <dd className={`font-semibold ${listing.hasStateAct ? 'text-primary' : listing.hasStateAct === false ? 'text-red-500' : 'text-zinc-400'}`}>
+                      {listing.hasStateAct === true ? 'Есть' : listing.hasStateAct === false ? 'Нет' : '—'}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between py-3">
+                    <dt className="text-zinc-500">Залог</dt>
+                    <dd className={`font-semibold ${listing.isPledged ? 'text-red-500' : 'text-zinc-400'}`}>
+                      {listing.isPledged ? 'В залоге' : listing.isPledged === false ? 'Нет' : '—'}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between py-3">
+                    <dt className="text-zinc-500">Обременения</dt>
+                    <dd className={`font-semibold ${listing.hasEncumbrances ? 'text-red-500' : 'text-zinc-400'}`}>
+                      {listing.hasEncumbrances ? 'Есть' : listing.hasEncumbrances === false ? 'Нет' : '—'}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between py-3">
+                    <dt className="text-zinc-500">Красная линия</dt>
+                    <dd className={`font-semibold ${listing.isOnRedLine ? 'text-red-500' : 'text-zinc-400'}`}>
+                      {listing.isOnRedLine ? 'Да' : listing.isOnRedLine === false ? 'Нет' : '—'}
+                    </dd>
                   </div>
                 </dl>
               </div>
@@ -241,53 +221,31 @@ export default async function ListingPage({ params }: Props) {
                 <span className="font-mono text-[10.5px] uppercase tracking-widest text-primary">→ коммуникации</span>
                 <span className="flex-1 h-px bg-zinc-200" />
               </div>
-              <div className="flex flex-wrap gap-2">
-                {comms.map(u => (
-                  <span key={u.label}
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-[13px] font-medium border ${
-                      u.on
-                        ? 'bg-[#f0fdf4] border-[rgba(6,111,54,0.2)] text-zinc-900'
-                        : 'bg-[#f5f5f5] border-[#e8e8e8] text-zinc-400 opacity-60'
-                    }`}>
-                    {u.on && (
-                      <span className="relative flex size-2 shrink-0">
-                        <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
-                        <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
-                      </span>
-                    )}
-                    {u.label}
-                  </span>
+              <div className="rounded-2xl border border-zinc-200 overflow-hidden" style={{ gap: '1px', background: '#e4e4e7' }}>
+                {[
+                  { label: 'Электричество', on: !!listing.hasElectricity, detail: listing.hasElectricity ? '3-фазное · 15 кВт' : 'Отсутствует',      dot: 'bg-yellow-400' },
+                  { label: 'Газ',           on: !!listing.hasGas,         detail: listing.hasGas         ? 'Магистральный, у забора' : 'Отсутствует', dot: 'bg-orange-400' },
+                  { label: 'Вода',          on: !!listing.hasWater,       detail: listing.hasWater       ? 'Центральная' : 'Отсутствует',             dot: 'bg-cyan-400' },
+                  { label: 'Канализация',   on: !!listing.hasSewer,       detail: listing.hasSewer       ? 'Центральная' : 'Септик (требуется)',      dot: 'bg-sky-400' },
+                  { label: 'Дорога',        on: !!listing.hasRoadAccess,  detail: listing.hasRoadAccess  ? 'Асфальт до участка' : 'Грунтовая',        dot: 'bg-stone-400' },
+                ].map((u) => (
+                  <div key={u.label} className="bg-white flex items-center justify-between px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      {u.on ? (
+                        <span className="relative flex size-2 shrink-0">
+                          <span className={`absolute inline-flex h-full w-full rounded-full ${u.dot} opacity-60 animate-ping`} />
+                          <span className={`relative inline-flex size-2 rounded-full ${u.dot}`} />
+                        </span>
+                      ) : (
+                        <span className="size-2 rounded-full bg-zinc-200 shrink-0" />
+                      )}
+                      <span className="text-[14px] text-zinc-600">{u.label}</span>
+                    </div>
+                    <span className={`text-[14px] font-semibold ${u.on ? 'text-zinc-900' : 'text-zinc-400'}`}>{u.detail}</span>
+                  </div>
                 ))}
               </div>
             </section>
-
-            {/* ── Юридика ── */}
-            {(legalOk.length > 0 || legalBad.length > 0) && (
-              <section className="mb-12">
-                <div className="flex items-center gap-3 mb-5">
-                  <span className="font-mono text-[10.5px] uppercase tracking-widest text-primary">→ юридика</span>
-                  <span className="flex-1 h-px bg-zinc-200" />
-                </div>
-                <div className="flex flex-wrap gap-x-6 gap-y-3">
-                  {legalOk.map(t => (
-                    <div key={t} className="inline-flex items-center gap-2">
-                      <span className="flex items-center justify-center w-[18px] h-[18px] rounded-full shrink-0 bg-[#f0fdf4] border border-[rgba(6,111,54,0.3)]">
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#066F36" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                      </span>
-                      <span className="text-[14px] font-medium text-zinc-900">{t}</span>
-                    </div>
-                  ))}
-                  {legalBad.map(t => (
-                    <div key={t} className="inline-flex items-center gap-2">
-                      <span className="flex items-center justify-center w-[18px] h-[18px] rounded-full shrink-0 bg-red-50 border border-red-200">
-                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-                      </span>
-                      <span className="text-[14px] font-medium text-red-500">{t}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
 
             {/* ── Документы ── */}
             <section className="mb-12">
@@ -295,47 +253,7 @@ export default async function ListingPage({ params }: Props) {
                 <span className="font-mono text-[10.5px] uppercase tracking-widest text-primary">→ документы</span>
                 <span className="flex-1 h-px bg-zinc-200" />
               </div>
-              <div className="lp-docs grid sm:grid-cols-2 gap-3">
-                <div className="rounded-2xl border border-zinc-200 bg-white p-4 flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-lg bg-[#f0fdf4] flex items-center justify-center font-black text-[12px] tracking-tight text-primary shrink-0">PDF</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13.5px] font-bold text-zinc-900 truncate">Акт на право частной собственности</div>
-                    <div className="font-mono text-[11.5px] text-zinc-500 mt-0.5">
-                      {listing.cadastralNumber ? `№ ${listing.cadastralNumber} · 14.03.2024` : 'Документ подтверждён'} · 1.2 МБ
-                    </div>
-                  </div>
-                  <button className="text-zinc-400 hover:text-zinc-900 text-[16px] transition-colors shrink-0">↓</button>
-                </div>
-
-                <div className="rounded-2xl border border-zinc-200 bg-white p-4 flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-lg bg-[#f0fdf4] flex items-center justify-center font-black text-[12px] tracking-tight text-primary shrink-0">PDF</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13.5px] font-bold text-zinc-900 truncate">Межевой план + координаты</div>
-                    <div className="font-mono text-[11.5px] text-zinc-500 mt-0.5">подписан кадастровым инженером · 2.4 МБ</div>
-                  </div>
-                  <button className="text-zinc-400 hover:text-zinc-900 text-[16px] transition-colors shrink-0">↓</button>
-                </div>
-
-                <div className="rounded-2xl border border-zinc-200 bg-white p-4 flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-lg bg-zinc-100 flex items-center justify-center font-black text-[12px] tracking-tight text-zinc-600 shrink-0">JPG</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13.5px] font-bold text-zinc-900 truncate">Технические условия (свет, газ)</div>
-                    <div className="font-mono text-[11.5px] text-zinc-500 mt-0.5">КЕГОК + Алматыгаз · 880 КБ</div>
-                  </div>
-                  <button className="text-zinc-400 hover:text-zinc-900 text-[16px] transition-colors shrink-0">↓</button>
-                </div>
-
-                <div className="rounded-2xl border border-amber-200 bg-amber-50/40 p-4 flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-lg bg-amber-100 flex items-center justify-center text-[20px] shrink-0">⚡</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13.5px] font-bold text-zinc-900">Проверка по ИИН — бесплатно</div>
-                    <div className="text-[11.5px] text-zinc-600">Покажем обременения, аресты, ипотеку</div>
-                  </div>
-                  <button className="px-2.5 h-7 rounded-lg bg-zinc-900 text-white text-[11.5px] font-semibold shrink-0">
-                    Запустить
-                  </button>
-                </div>
-              </div>
+              <DocViewer cadastralNumber={listing.cadastralNumber} />
             </section>
 
             {/* ── Расположение + карта ── */}
