@@ -101,25 +101,21 @@ export function DocViewer({ cadastralNumber }: DocViewerProps) {
           <div className="flex-1 flex items-center justify-center relative min-h-0 px-16" onClick={e => e.stopPropagation()}>
             <div className="w-full max-w-2xl bg-white rounded-2xl overflow-hidden shadow-2xl"
               style={{ maxHeight: 'calc(100vh - 160px)' }}>
-              {/* Заглушка документа */}
-              <div className="bg-zinc-50 flex flex-col items-center justify-center py-20 gap-5 border-b border-zinc-100">
+              {/* Превью документа */}
+              <div className="bg-zinc-50 flex flex-col items-center justify-center py-20 gap-5">
                 <div className={`w-20 h-20 rounded-2xl flex items-center justify-center font-black text-[22px] tracking-tight ${
                   current.color === 'green' ? 'bg-[#f0fdf4] text-primary' : 'bg-zinc-100 text-zinc-600'
                 }`}>
                   {current.type}
                 </div>
-                <div className="text-center">
+                <div className="text-center px-6">
                   <div className="font-bold text-zinc-900 text-[17px] mb-1">{current.name}</div>
                   <div className="font-mono text-[12px] text-zinc-500">{current.meta}</div>
                 </div>
-                <div className="px-5 py-2.5 rounded-xl bg-zinc-900 text-white text-[13px] font-semibold flex items-center gap-2 hover:bg-primary transition-colors cursor-pointer">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  Скачать документ
+                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#f0fdf4] border border-[rgba(6,111,54,0.15)]">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="text-[12px] font-medium text-primary">Документ верифицирован платформой 6sotok.kz</span>
                 </div>
-              </div>
-              <div className="px-6 py-4 flex items-center gap-3 bg-white">
-                <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span className="text-[13px] font-medium text-zinc-700">Документ верифицирован платформой 6sotok.kz</span>
               </div>
             </div>
 
