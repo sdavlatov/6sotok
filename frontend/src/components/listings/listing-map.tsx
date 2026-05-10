@@ -25,7 +25,6 @@ const TILES = {
   cadastre:  'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
 };
 
-// Approximate rectangular polygon ≈32×57m around center
 const makePlotPolygon = (lat: number, lng: number) => {
   const dLat = 0.000145;
   const dLng = 0.000320;
@@ -61,6 +60,8 @@ export function ListingMap({ lat, lng, title, pois = [] }: ListingMapProps) {
   /* ── Init ── */
   useEffect(() => {
     let map: any = null;
+    let wheelCleanup: (() => void) | null = null;
+
     loadLeaflet().then(() => {
       if (!ref.current) return;
       const L = (window as any).L;
@@ -76,16 +77,20 @@ export function ListingMap({ lat, lng, title, pois = [] }: ListingMapProps) {
         doubleClickZoom: false,
       }).setView([lat, lng], 15);
 
-      // Явно убираем wheel-листенер чтобы страница скроллилась
-      map.getContainer().addEventListener('wheel', (e: WheelEvent) => {
-        e.stopPropagation();
-      }, { passive: true });
+      // Scroll fix: перехватываем wheel на контейнере, скроллим страницу
+      const onWheel = (e: WheelEvent) => {
+        e.preventDefault();
+        const delta = e.deltaMode === 1 ? e.deltaY * 32
+                    : e.deltaMode === 2 ? e.deltaY * window.innerHeight
+                    : e.deltaY;
+        window.scrollTo(0, window.scrollY + delta);
+      };
+      map.getContainer().addEventListener('wheel', onWheel, { passive: false });
+      wheelCleanup = () => map?.getContainer()?.removeEventListener('wheel', onWheel);
 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
-
       tileRef.current = L.tileLayer(TILES.map, { maxZoom: 19 }).addTo(map);
 
-      // Пилюля с пульсирующим кольцом
       const icon = L.divIcon({
         html: `
           <div style="position:relative;display:flex;align-items:center;justify-content:center;width:160px;height:36px;">
@@ -102,7 +107,6 @@ export function ListingMap({ lat, lng, title, pois = [] }: ListingMapProps) {
       });
       L.marker([lat, lng], { icon }).addTo(map);
 
-      // Контур участка
       L.polygon(makePlotPolygon(lat, lng), {
         color: '#2CA64E', weight: 2.5, dashArray: '6 4',
         fillColor: '#2CA64E', fillOpacity: 0.10,
@@ -110,7 +114,8 @@ export function ListingMap({ lat, lng, title, pois = [] }: ListingMapProps) {
 
       mapRef.current = map;
     });
-    return () => { if (map) map.remove(); };
+
+    return () => { wheelCleanup?.(); if (map) map.remove(); };
   }, [lat, lng]);
 
   /* ── Switch tiles ── */
@@ -131,11 +136,12 @@ export function ListingMap({ lat, lng, title, pois = [] }: ListingMapProps) {
     poisRef.current = [];
     if (!showPoi) return;
     pois.forEach(p => {
+      const shortLabel = p.label.length > 28 ? p.label.slice(0, 26) + '…' : p.label;
       const icon = L.divIcon({
-        html: `<div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:500;color:#3f3f46;background:rgba(255,255,255,0.92);backdrop-filter:blur(4px);border-radius:8px;padding:3px 8px;white-space:nowrap;box-shadow:0 1px 6px rgba(0,0,0,0.10);border:1px solid #e4e4e7;">
-          <span style="width:7px;height:7px;border-radius:50%;background:${p.dot};flex-shrink:0;"></span>${p.label}
+        html: `<div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:500;color:#3f3f46;background:rgba(255,255,255,0.92);backdrop-filter:blur(4px);border-radius:8px;padding:3px 8px;white-space:nowrap;box-shadow:0 1px 6px rgba(0,0,0,0.10);border:1px solid #e4e4e7;max-width:180px;overflow:hidden;">
+          <span style="width:7px;height:7px;border-radius:50%;background:${p.dot};flex-shrink:0;"></span><span style="overflow:hidden;text-overflow:ellipsis;">${shortLabel}</span>
         </div>`,
-        iconSize: [200, 24], iconAnchor: [0, 12], className: '',
+        iconSize: [180, 24], iconAnchor: [0, 12], className: '',
       });
       poisRef.current.push(L.marker([p.lat, p.lng], { icon, interactive: false }).addTo(map));
     });
@@ -162,7 +168,7 @@ export function ListingMap({ lat, lng, title, pois = [] }: ListingMapProps) {
           0%   { transform: scale(0.8); opacity: 0.7; }
           100% { transform: scale(2.0); opacity: 0; }
         }
-        .leaflet-container { font-family: inherit; touch-action: pan-y !important; }
+        .leaflet-container { font-family: inherit; }
         .leaflet-control-zoom { border: 1px solid #e4e4e7 !important; border-radius: 12px !important; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,0.08) !important; margin-bottom: 12px !important; margin-right: 12px !important; }
         .leaflet-control-zoom a { color: #3f3f46 !important; font-weight: 700 !important; border-bottom: 1px solid #f4f4f5 !important; }
         .leaflet-control-zoom a:last-child { border-bottom: none !important; }

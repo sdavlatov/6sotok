@@ -132,6 +132,12 @@ body {
     radial-gradient(ellipse 220px 140px at 55% 50%, rgba(44,166,78,0.2), transparent 70%);
 }
 
+/* ── Leaflet scroll fix: overflow:clip не создаёт scroll-container, wheel уходит на страницу ── */
+.leaflet-container {
+  overflow: clip !important;
+  touch-action: pan-y pan-x !important;
+}
+
 /* ── Map background ── */
 .map-bg {
   background-color: #e8efe9;

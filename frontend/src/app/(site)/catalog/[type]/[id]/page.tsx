@@ -37,47 +37,108 @@ function fmtDist(m: number) {
   return m < 1000 ? `${Math.round(m)} м` : `${(m/1000).toFixed(1)} км`;
 }
 
-async function fetchPOIs(lat: number, lng: number): Promise<MapPOI[]> {
+function fmtNote(m: number) {
+  if (m < 500) return `пешком ${Math.max(1, Math.round(m / 80))} мин`;
+  return `авто ${Math.max(1, Math.round(m / 600))} мин`;
+}
+
+interface DistanceRow { label: string; value: string; note: string }
+interface LocationData { mapPOIs: MapPOI[]; strip: DistanceRow[] }
+
+function fallbackLocationData(lat = 0, lng = 0): LocationData {
+  return {
+    mapPOIs: lat ? [
+      { lat: lat + 0.005, lng: lng - 0.006, dot: '#18181b', label: 'Школа · ~800 м' },
+      { lat: lat - 0.003, lng: lng + 0.009, dot: '#dc2626', label: 'Больница · ~1.1 км' },
+      { lat: lat - 0.005, lng: lng + 0.008, dot: '#18181b', label: 'Магазин · ~1.2 км' },
+    ] : [],
+    strip: [
+      { label: 'Аэропорт',    value: '—', note: 'нет данных' },
+      { label: 'Школа',       value: '—', note: 'нет данных' },
+      { label: 'Поликлиника', value: '—', note: 'нет данных' },
+      { label: 'Дорога',      value: '—', note: 'нет данных' },
+    ],
+  };
+}
+
+async function fetchLocationData(lat: number, lng: number): Promise<LocationData> {
   try {
-    const radius = 3000;
-    const q = `[out:json][timeout:15];(node[amenity~"school|hospital|clinic|pharmacy|kindergarten|bank"](around:${radius},${lat},${lng});node[shop~"supermarket|mall"](around:${radius},${lat},${lng}););out body;`;
+    const q = `[out:json][timeout:20];(
+node[amenity~"^(school|hospital|clinic|pharmacy|kindergarten)$"](around:3000,${lat},${lng});
+node[shop=supermarket](around:3000,${lat},${lng});
+node[aeroway=aerodrome](around:120000,${lat},${lng});
+way[highway~"^(trunk|primary|motorway)$"](around:5000,${lat},${lng});
+);out center;`;
+
     const res = await fetch('https://overpass-api.de/api/interpreter', {
       method: 'POST',
       body: `data=${encodeURIComponent(q)}`,
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': '6sotok-kz/1.0' },
       next: { revalidate: 86400 },
       signal: AbortSignal.timeout(14000),
     });
-    if (!res.ok) return fallbackPOIs(lat, lng);
+    if (!res.ok) return fallbackLocationData(lat, lng);
     const data = await res.json();
-    if (!data.elements?.length) return fallbackPOIs(lat, lng);
-    const seen = new Set<string>();
-    const result = (data.elements as any[])
-      .map((el: any) => {
-        const amenity = el.tags?.amenity || el.tags?.shop;
-        const type = POI_TYPES[amenity];
-        if (!type || !el.lat || !el.lon) return null;
-        const dist = haversine(lat, lng, el.lat, el.lon);
-        const name = el.tags?.name;
-        const label = name ? `${name} · ${fmtDist(dist)}` : `${type.label} · ${fmtDist(dist)}`;
-        const key = `${amenity}-${Math.round(dist/100)}`;
-        if (seen.has(key)) return null;
-        seen.add(key);
-        return { lat: el.lat, lng: el.lon, label, dot: type.dot } as MapPOI;
-      })
-      .filter(Boolean)
-      .sort((a: any, b: any) => haversine(lat, lng, a.lat, a.lng) - haversine(lat, lng, b.lat, b.lng))
-      .slice(0, 8) as MapPOI[];
-    return result.length ? result : fallbackPOIs(lat, lng);
-  } catch { return fallbackPOIs(lat, lng); }
-}
+    if (!data.elements?.length) return fallbackLocationData(lat, lng);
 
-function fallbackPOIs(lat: number, lng: number): MapPOI[] {
-  return [
-    { lat: lat + 0.005, lng: lng - 0.006, dot: '#18181b', label: 'Школа · ~800 м' },
-    { lat: lat + 0.001, lng: lng + 0.011, dot: '#2563eb', label: 'Река · ~600 м' },
-    { lat: lat - 0.005, lng: lng + 0.008, dot: '#18181b', label: 'Магазин · ~1.2 км' },
-  ];
+    const seen = new Set<string>();
+    const mapPOIs: MapPOI[] = [];
+    let airport: { dist: number; name: string } | null = null;
+    let school: { dist: number } | null = null;
+    let clinic: { dist: number; label: string } | null = null;
+    let road: { dist: number; name: string } | null = null;
+
+    for (const el of data.elements as any[]) {
+      const elLat = el.lat ?? el.center?.lat;
+      const elLon = el.lon ?? el.center?.lon;
+      if (!elLat || !elLon) continue;
+      const dist = haversine(lat, lng, elLat, elLon);
+      const aeroway = el.tags?.aeroway;
+      const highway = el.tags?.highway;
+      const amenity = el.tags?.amenity || el.tags?.shop;
+
+      if (aeroway === 'aerodrome') {
+        const name = el.tags?.iata ? `Аэропорт ${el.tags.iata}` : (el.tags?.name || 'Аэропорт');
+        if (!airport || dist < airport.dist) airport = { dist, name };
+        continue;
+      }
+      if (highway) {
+        const osmName = el.tags?.name;
+        const name = osmName ? (osmName.length > 18 ? osmName.slice(0, 16) + '…' : osmName) : 'Дорога';
+        if (!road || dist < road.dist) road = { dist, name };
+        continue;
+      }
+
+      const type = POI_TYPES[amenity];
+      if (!type) continue;
+      const key = `${amenity}-${Math.round(dist / 100)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const label = `${type.label} · ${fmtDist(dist)}`;
+      mapPOIs.push({ lat: elLat, lng: elLon, label, dot: type.dot });
+
+      if (amenity === 'school' && (!school || dist < school.dist)) school = { dist };
+      if ((amenity === 'hospital' || amenity === 'clinic') && (!clinic || dist < clinic.dist)) {
+        clinic = { dist, label: amenity === 'hospital' ? 'Больница' : 'Поликлиника' };
+      }
+    }
+
+    mapPOIs.sort((a, b) => haversine(lat, lng, a.lat, a.lng) - haversine(lat, lng, b.lat, b.lng));
+
+    const strip: DistanceRow[] = [
+      airport ? { label: airport.name, value: fmtDist(airport.dist), note: fmtNote(airport.dist) }
+              : { label: 'Аэропорт', value: '—', note: 'нет данных' },
+      school  ? { label: 'Школа', value: fmtDist(school.dist), note: fmtNote(school.dist) }
+              : { label: 'Школа', value: '—', note: 'нет данных' },
+      clinic  ? { label: clinic.label, value: fmtDist(clinic.dist), note: fmtNote(clinic.dist) }
+              : { label: 'Поликлиника', value: '—', note: 'нет данных' },
+      road    ? { label: 'Дорога', value: fmtDist(road.dist), note: fmtNote(road.dist) }
+              : { label: 'Дорога', value: '—', note: 'нет данных' },
+    ];
+
+    const finalPOIs = mapPOIs.slice(0, 8);
+    return { mapPOIs: finalPOIs.length ? finalPOIs : fallbackLocationData(lat, lng).mapPOIs, strip };
+  } catch { return fallbackLocationData(lat, lng); }
 }
 
 interface Props { params: Promise<{ type: string; id: string }> }
@@ -109,7 +170,9 @@ export default async function ListingPage({ params }: Props) {
     ...(listing.videos ?? []),
   ];
   const hasMap = !!(listing.lat && listing.lng);
-  const mapPOIs = hasMap ? await fetchPOIs(listing.lat!, listing.lng!) : [];
+  const locationData = hasMap
+    ? await fetchLocationData(listing.lat!, listing.lng!)
+    : { mapPOIs: [] as MapPOI[], strip: [] as DistanceRow[] };
 
   const fmtPrice = (n: number) => new Intl.NumberFormat('ru-RU').format(n);
 
@@ -221,7 +284,7 @@ export default async function ListingPage({ params }: Props) {
                 <dl className="divide-y divide-zinc-100 text-[14px]">
                   <div className="flex justify-between py-3">
                     <dt className="text-zinc-500">Кадастровый номер</dt>
-                    <dd className={`font-mono ${listing.cadastralNumber ? 'text-zinc-900' : 'text-zinc-400'}`}>{listing.cadastralNumber ?? '—'}</dd>
+                    <dd className={`font-medium ${listing.cadastralNumber ? 'text-zinc-900' : 'text-zinc-400'}`}>{listing.cadastralNumber ?? '—'}</dd>
                   </div>
                   <div className="flex justify-between py-3">
                     <dt className="text-zinc-500">Категория земли</dt>
@@ -237,7 +300,7 @@ export default async function ListingPage({ params }: Props) {
                   </div>
                   <div className="flex justify-between py-3">
                     <dt className="text-zinc-500">Фасад × Глубина</dt>
-                    <dd className={`font-mono ${listing.frontWidth && listing.depth ? 'text-zinc-900' : 'text-zinc-400'}`}>
+                    <dd className={`font-medium ${listing.frontWidth && listing.depth ? 'text-zinc-900' : 'text-zinc-400'}`}>
                       {listing.frontWidth && listing.depth ? `${listing.frontWidth} × ${listing.depth} м` : '—'}
                     </dd>
                   </div>
@@ -250,19 +313,19 @@ export default async function ListingPage({ params }: Props) {
                 <dl className="divide-y divide-zinc-100 text-[14px]">
                   <div className="flex justify-between py-3">
                     <dt className="text-zinc-500">Электричество</dt>
-                    <dd className={`font-semibold ${listing.hasElectricity ? 'text-primary' : 'text-zinc-400'}`}>
+                    <dd className={`font-medium ${listing.hasElectricity ? 'text-primary' : 'text-zinc-400'}`}>
                       {listing.hasElectricity ? '3-фазное · 15 кВт' : '—'}
                     </dd>
                   </div>
                   <div className="flex justify-between py-3">
                     <dt className="text-zinc-500">Газ</dt>
-                    <dd className={`font-semibold ${listing.hasGas ? 'text-primary' : 'text-zinc-400'}`}>
+                    <dd className={`font-medium ${listing.hasGas ? 'text-primary' : 'text-zinc-400'}`}>
                       {listing.hasGas ? 'Магистральный, у забора' : '—'}
                     </dd>
                   </div>
                   <div className="flex justify-between py-3">
                     <dt className="text-zinc-500">Вода</dt>
-                    <dd className={`font-semibold ${listing.hasWater ? 'text-primary' : 'text-zinc-400'}`}>
+                    <dd className={`font-medium ${listing.hasWater ? 'text-primary' : 'text-zinc-400'}`}>
                       {listing.hasWater ? 'Центр. + скважина 28 м' : '—'}
                     </dd>
                   </div>
@@ -302,24 +365,21 @@ export default async function ListingPage({ params }: Props) {
                   <span className="font-mono text-[10.5px] uppercase tracking-widest text-primary">→ расположение</span>
                   <span className="flex-1 h-px bg-zinc-200" />
                 </div>
-                <div className="rounded-2xl overflow-hidden border border-zinc-200 bg-white" style={{ isolation: 'isolate' }}>
+                <div className="rounded-2xl border border-zinc-200 bg-white" style={{ isolation: 'isolate', overflow: 'clip' }}>
                   <div style={{ height: 360 }}>
-                    <ListingMap lat={listing.lat!} lng={listing.lng!} title={listing.title} pois={mapPOIs} />
+                    <ListingMap lat={listing.lat!} lng={listing.lng!} title={listing.title} pois={locationData.mapPOIs} />
                   </div>
-                  <div className="lp-distances grid grid-cols-2 md:grid-cols-4" style={{ gap: '1px', background: '#f4f4f5' }}>
-                    {[
-                      { label: 'Аэропорт ALA', value: '28 км',  note: '~ 38 мин' },
-                      { label: 'Школа',        value: '800 м',  note: 'пешком 9 мин' },
-                      { label: 'Поликлиника',  value: '2.1 км', note: 'авто 4 мин' },
-                      { label: 'Трасса A2',    value: '1.4 км', note: 'авто 3 мин' },
-                    ].map((d, i) => (
-                      <div key={i} className="bg-white p-3">
-                        <div className="font-mono text-[10.5px] uppercase tracking-wider text-zinc-400">{d.label}</div>
-                        <div className="font-black text-[18px] tracking-tight text-zinc-900 mt-0.5">{d.value}</div>
-                        <div className="text-[10.5px] text-zinc-500">{d.note}</div>
-                      </div>
-                    ))}
-                  </div>
+                  {locationData.strip.length > 0 && (
+                    <div className="lp-distances grid grid-cols-2 md:grid-cols-4" style={{ gap: '1px', background: '#f4f4f5' }}>
+                      {locationData.strip.map((d, i) => (
+                        <div key={i} className="bg-white p-3">
+                          <div className="font-mono text-[10.5px] uppercase tracking-wider text-zinc-400">{d.label}</div>
+                          <div className="font-black text-[18px] tracking-tight text-zinc-900 mt-0.5">{d.value}</div>
+                          <div className="text-[10.5px] text-zinc-500">{d.note}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </section>
             )}
