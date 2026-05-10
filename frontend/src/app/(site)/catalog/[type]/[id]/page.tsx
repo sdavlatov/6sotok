@@ -56,7 +56,7 @@ function fallbackLocationData(lat = 0, lng = 0): LocationData {
       { label: 'Аэропорт',    value: '—', note: 'нет данных' },
       { label: 'Школа',       value: '—', note: 'нет данных' },
       { label: 'Поликлиника', value: '—', note: 'нет данных' },
-      { label: 'Дорога',      value: '—', note: 'нет данных' },
+      { label: 'Трасса',      value: '—', note: 'нет данных' },
     ],
   };
 }
@@ -132,7 +132,7 @@ way[highway~"^(trunk|primary|motorway)$"](around:5000,${lat},${lng});
               : { label: 'Школа', value: '—', note: 'нет данных' },
       clinic  ? { label: clinic.label, value: fmtDist(clinic.dist), note: fmtNote(clinic.dist) }
               : { label: 'Поликлиника', value: '—', note: 'нет данных' },
-      road    ? { label: 'Дорога', value: fmtDist(road.dist), note: fmtNote(road.dist) }
+      road    ? { label: 'Трасса', value: fmtDist(road.dist), note: road.name !== 'Дорога' ? road.name : fmtNote(road.dist) }
               : { label: 'Дорога', value: '—', note: 'нет данных' },
     ];
 

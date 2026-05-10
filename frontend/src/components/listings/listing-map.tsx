@@ -83,7 +83,8 @@ export function ListingMap({ lat, lng, title, pois = [] }: ListingMapProps) {
         const delta = e.deltaMode === 1 ? e.deltaY * 32
                     : e.deltaMode === 2 ? e.deltaY * window.innerHeight
                     : e.deltaY;
-        window.scrollTo(0, window.scrollY + delta);
+        const el = document.scrollingElement || document.documentElement;
+        el.scrollTop += delta;
       };
       map.getContainer().addEventListener('wheel', onWheel, { passive: false });
       wheelCleanup = () => map?.getContainer()?.removeEventListener('wheel', onWheel);
