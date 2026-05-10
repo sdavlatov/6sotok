@@ -68,11 +68,18 @@ export function ListingMap({ lat, lng, title, pois = [] }: ListingMapProps) {
 
       map = L.map(ref.current, {
         zoomControl: false,
-        scrollWheelZoom: false,   // скролл страницы не блокируем
-        dragging: !isMobile,      // на мобиле отключаем drag чтобы страница скроллилась
+        scrollWheelZoom: false,
+        dragging: !isMobile,
         tap: false,
         attributionControl: false,
+        boxZoom: false,
+        doubleClickZoom: false,
       }).setView([lat, lng], 15);
+
+      // Явно убираем wheel-листенер чтобы страница скроллилась
+      map.getContainer().addEventListener('wheel', (e: WheelEvent) => {
+        e.stopPropagation();
+      }, { passive: true });
 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
@@ -155,7 +162,7 @@ export function ListingMap({ lat, lng, title, pois = [] }: ListingMapProps) {
           0%   { transform: scale(0.8); opacity: 0.7; }
           100% { transform: scale(2.0); opacity: 0; }
         }
-        .leaflet-container { font-family: inherit; }
+        .leaflet-container { font-family: inherit; touch-action: pan-y !important; }
         .leaflet-control-zoom { border: 1px solid #e4e4e7 !important; border-radius: 12px !important; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,0.08) !important; margin-bottom: 12px !important; margin-right: 12px !important; }
         .leaflet-control-zoom a { color: #3f3f46 !important; font-weight: 700 !important; border-bottom: 1px solid #f4f4f5 !important; }
         .leaflet-control-zoom a:last-child { border-bottom: none !important; }
