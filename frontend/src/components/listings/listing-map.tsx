@@ -70,24 +70,25 @@ export function ListingMap({ lat, lng, title, pois = [] }: ListingMapProps) {
       map = L.map(ref.current, {
         zoomControl: false,
         scrollWheelZoom: false,
-        dragging: !isMobile,
+        dragging: false,
+        touchZoom: true,
         tap: false,
         attributionControl: false,
         boxZoom: false,
         doubleClickZoom: false,
       }).setView([lat, lng], 15);
 
-      // Scroll fix: перехватываем wheel на контейнере, скроллим страницу
+      // Wheel: prevent map zoom, scroll page instead
+      const container = map.getContainer();
       const onWheel = (e: WheelEvent) => {
         e.preventDefault();
-        const delta = e.deltaMode === 1 ? e.deltaY * 32
-                    : e.deltaMode === 2 ? e.deltaY * window.innerHeight
-                    : e.deltaY;
-        const el = document.scrollingElement || document.documentElement;
-        el.scrollTop += delta;
+        const dy = e.deltaMode === 1 ? e.deltaY * 40
+                 : e.deltaMode === 2 ? e.deltaY * window.innerHeight
+                 : e.deltaY;
+        window.scrollBy(0, dy);
       };
-      map.getContainer().addEventListener('wheel', onWheel, { passive: false });
-      wheelCleanup = () => map?.getContainer()?.removeEventListener('wheel', onWheel);
+      container.addEventListener('wheel', onWheel, { passive: false });
+      wheelCleanup = () => container.removeEventListener('wheel', onWheel);
 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
       tileRef.current = L.tileLayer(TILES.map, { maxZoom: 19 }).addTo(map);
@@ -139,10 +140,10 @@ export function ListingMap({ lat, lng, title, pois = [] }: ListingMapProps) {
     pois.forEach(p => {
       const shortLabel = p.label.length > 28 ? p.label.slice(0, 26) + '…' : p.label;
       const icon = L.divIcon({
-        html: `<div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:500;color:#3f3f46;background:rgba(255,255,255,0.92);backdrop-filter:blur(4px);border-radius:8px;padding:3px 8px;white-space:nowrap;box-shadow:0 1px 6px rgba(0,0,0,0.10);border:1px solid #e4e4e7;max-width:180px;overflow:hidden;">
-          <span style="width:7px;height:7px;border-radius:50%;background:${p.dot};flex-shrink:0;"></span><span style="overflow:hidden;text-overflow:ellipsis;">${shortLabel}</span>
+        html: `<div style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;color:#3f3f46;background:rgba(255,255,255,0.92);backdrop-filter:blur(4px);border-radius:8px;padding:3px 8px;white-space:nowrap;box-shadow:0 1px 6px rgba(0,0,0,0.10);border:1px solid #e4e4e7;">
+          <span style="width:7px;height:7px;border-radius:50%;background:${p.dot};flex-shrink:0;"></span>${shortLabel}
         </div>`,
-        iconSize: [180, 24], iconAnchor: [0, 12], className: '',
+        iconSize: null as any, iconAnchor: [0, 12], className: '',
       });
       poisRef.current.push(L.marker([p.lat, p.lng], { icon, interactive: false }).addTo(map));
     });

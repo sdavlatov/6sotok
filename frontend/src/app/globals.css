@@ -135,7 +135,7 @@ body {
 /* ── Leaflet scroll fix: overflow:clip не создаёт scroll-container, wheel уходит на страницу ── */
 .leaflet-container {
   overflow: clip !important;
-  touch-action: pan-y pan-x !important;
+  touch-action: pan-y !important;
 }
 
 /* ── Map background ── */
