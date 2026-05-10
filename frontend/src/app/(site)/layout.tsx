@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, JetBrains_Mono } from 'next/font/google'
 import '../globals.css'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
@@ -12,6 +12,13 @@ const inter = Inter({
   display: 'swap',
 })
 
+const jetbrainsMono = JetBrains_Mono({
+  variable: '--font-mono',
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+})
+
 export const metadata: Metadata = {
   title: '6sotok.kz — Земля и бизнес в Казахстане',
   description: 'Маркетплейс земельных участков и готового бизнеса в Казахстане. Напрямую от собственников и проверенных агентств.',
@@ -19,7 +26,7 @@ export const metadata: Metadata = {
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang="ru" className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col font-sans selection:bg-primary-soft selection:text-primary-dark" suppressHydrationWarning>
         <AuthProvider>
           <Header />

@@ -2,6 +2,7 @@
 
 @theme {
   --font-sans: var(--font-inter), sans-serif;
+  --font-mono: var(--font-mono), 'JetBrains Mono', ui-monospace, monospace;
   
   /* Semantic Palette (Task 2) */
   --color-primary: #066F36;
