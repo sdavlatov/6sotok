@@ -183,7 +183,6 @@ export interface CatalogFiltersProps {
   mountainView:  boolean; setMountainView:  (v: boolean) => void;
   onlyFromOwner: boolean; setOnlyFromOwner: (v: boolean) => void;
   hasBuilding:   boolean; setHasBuilding:   (v: boolean) => void;
-  distanceFromCity: number; setDistanceFromCity: (v: number) => void;
   resultCount: number;
   onClose?: () => void;
 }
@@ -218,10 +217,33 @@ export function CatalogFilters({
   mountainView,  setMountainView,
   onlyFromOwner, setOnlyFromOwner,
   hasBuilding,   setHasBuilding,
-  distanceFromCity, setDistanceFromCity,
   resultCount,
   onClose,
 }: CatalogFiltersProps) {
+
+  // ── Cities ──────────────────────────────────────────────────────────────────
+  const cities = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const l of allListings) {
+      const loc = l.location?.trim();
+      if (!loc) continue;
+      map.set(loc, (map.get(loc) ?? 0) + 1);
+    }
+    return [...map.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([loc, count]) => ({
+        value: loc,
+        label: loc.split(/[,·]/)[0].trim(),
+        sub: loc.includes(',') ? loc.split(/[,·]/)[1]?.trim() : undefined,
+        count,
+      }));
+  }, [allListings]);
+
+  const toggleCity = (city: string) =>
+    setSelectedCities(selectedCities.includes(city)
+      ? selectedCities.filter(c => c !== city)
+      : [...selectedCities, city]
+    );
 
   // ── Area ────────────────────────────────────────────────────────────────────
   const areaValues = useMemo(() => allListings.map(l => l.area).filter(a => a > 0), [allListings]);
@@ -253,7 +275,6 @@ export function CatalogFilters({
     hasElectricity, hasGas, hasWater, hasSewer, hasRoadAccess,
     isPledged, isOnRedLine, isDivisible, hasStateAct, hasCadastral, purposeIJS,
     selectedCities.length > 0, nearWater, mountainView, onlyFromOwner, hasBuilding,
-    distanceFromCity < 100,
   ].filter(Boolean).length;
 
   const clearAll = () => {
@@ -265,7 +286,6 @@ export function CatalogFilters({
     setHasStateAct(false); setHasCadastral(false); setPurposeIJS(false);
     setSelectedCities([]); setNearWater(false); setMountainView(false);
     setOnlyFromOwner(false); setHasBuilding(false);
-    setDistanceFromCity(100);
   };
 
   const utilItems = [
@@ -379,22 +399,38 @@ export function CatalogFilters({
             </div>
           </div>
 
-          {/* Distance from Almaty */}
-          <div className="px-6 pt-6 pb-5">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[14px] font-bold text-zinc-900">До Алматы</span>
-              <span className="font-mono text-[11.5px] text-zinc-500">
-                {distanceFromCity >= 100 ? 'любое расстояние' : `до ${distanceFromCity} км`}
-              </span>
+          {/* City / district */}
+          {cities.length > 0 && (
+            <div className="px-6 pt-6 pb-5">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-[14px] font-bold text-zinc-900">Город / район</span>
+                {selectedCities.length > 0 && (
+                  <button onClick={() => setSelectedCities([])} className="text-[11.5px] text-zinc-400 hover:text-zinc-700 transition-colors">
+                    Сбросить
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {cities.map(({ value, label, sub, count }) => {
+                  const on = selectedCities.includes(value);
+                  return (
+                    <button key={value} onClick={() => toggleCity(value)}
+                      className={`flex items-center gap-1.5 px-3 h-9 rounded-full text-[12.5px] font-medium border transition-all ${
+                        on ? 'bg-primary-soft border-primary text-zinc-900' : 'bg-white border-zinc-200 text-zinc-700 hover:border-zinc-300'
+                      }`}
+                    >
+                      {on && (
+                        <span className="w-2.5 h-2.5 rounded-full bg-primary flex-shrink-0" />
+                      )}
+                      <span>{label}</span>
+                      {sub && <span className="text-zinc-400 text-[11px]">{sub}</span>}
+                      <span className="text-[10px] font-mono text-zinc-400">{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <p className="text-[11px] text-zinc-400 mb-3">В километрах по прямой</p>
-            <SingleSlider min={5} max={100} value={distanceFromCity} step={5}
-              onChange={setDistanceFromCity}
-            />
-            <div className="mt-2 flex justify-between text-[10.5px] font-mono text-zinc-400">
-              <span>5</span><span>25</span><span>50</span><span>75</span><span>100+</span>
-            </div>
-          </div>
+          )}
 
           {/* Features */}
           <div className="px-6 pt-6 pb-5">

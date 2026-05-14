@@ -238,7 +238,6 @@ export function CatalogClient({
   const [mountainView, setMountainView] = useState(false);
   const [onlyFromOwner, setOnlyFromOwner] = useState(false);
   const [hasBuilding, setHasBuilding] = useState(false);
-  const [distanceFromCity, setDistanceFromCity] = useState(100);
 
   useEffect(() => {
     if (isFiltersOpen) {
@@ -271,6 +270,10 @@ export function CatalogClient({
   // Area popover
   const [showAreaPopover, setShowAreaPopover] = useState(false);
   const areaPopoverRef = useRef<HTMLDivElement>(null);
+
+  // City popover
+  const [showCityPopover, setShowCityPopover] = useState(false);
+  const cityPopoverRef = useRef<HTMLDivElement>(null);
 
   const priceValues = useMemo(() => allListings.map(l => l.price), [allListings]);
   const PRICE_MIN = 0;
@@ -318,6 +321,29 @@ export function CatalogClient({
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [showAreaPopover]);
+
+  useEffect(() => {
+    if (!showCityPopover) return;
+    const handler = (e: MouseEvent) => {
+      if (cityPopoverRef.current && !cityPopoverRef.current.contains(e.target as Node))
+        setShowCityPopover(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showCityPopover]);
+
+  const cityOptions = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const l of allListings) {
+      const loc = l.location?.trim();
+      if (!loc) continue;
+      map.set(loc, (map.get(loc) ?? 0) + 1);
+    }
+    return [...map.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 20)
+      .map(([loc, count]) => ({ value: loc, label: loc.split(/[,·]/)[0].trim(), count }));
+  }, [allListings]);
 
   // Location search with separate input state (breadcrumb only updates on confirm)
   const [locationInput, setLocationInput] = useState(initialLocation);
@@ -388,10 +414,6 @@ export function CatalogClient({
     if (nearWater)           result = result.filter(l => l.locationType?.some((t: string) => /вод|озер|рек/i.test(t)));
     if (mountainView)        result = result.filter(l => l.locationType?.some((t: string) => /гор/i.test(t)));
     if (hasBuilding)         result = result.filter(l => l.locationType?.some((t: string) => /постр|строен/i.test(t)));
-    if (distanceFromCity < 100) result = result.filter(l =>
-      l.lat != null && l.lng != null &&
-      haversine(ALMATY[0], ALMATY[1], l.lat, l.lng) <= distanceFromCity
-    );
     if (selectedCities.length > 0) result = result.filter(l =>
       selectedCities.some(c => l.location?.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(l.location?.toLowerCase() ?? ''))
     );
@@ -420,8 +442,7 @@ export function CatalogClient({
       hasStateAct, hasCadastral, purposeIJS,
       hasElectricity, hasGas, hasWater, hasSewer, hasRoadAccess, allListings,
       showSaved, bookmarkedIds, searchAsMove, mapBounds,
-      onlyFromOwner, nearWater, mountainView, hasBuilding, selectedCities,
-      distanceFromCity]);
+      onlyFromOwner, nearWater, mountainView, hasBuilding, selectedCities]);
 
   const activeFilterCount = useMemo(() => [
     selectedCategories.length > 0, !!location,
@@ -433,7 +454,7 @@ export function CatalogClient({
   ].filter(Boolean).length, [selectedCategories, location, areaFrom, areaTo,
     priceFrom, priceTo, hasElectricity, hasGas, hasWater, hasSewer, hasRoadAccess,
     isPledged, isOnRedLine, isDivisible, hasStateAct, hasCadastral, purposeIJS,
-    selectedCities, onlyFromOwner, nearWater, mountainView, hasBuilding, distanceFromCity]);
+    selectedCities, onlyFromOwner, nearWater, mountainView, hasBuilding]);
 
   // Map stats
   const medianPrice = useMemo(() => {
@@ -466,7 +487,6 @@ export function CatalogClient({
     mountainView, setMountainView,
     onlyFromOwner, setOnlyFromOwner,
     hasBuilding, setHasBuilding,
-    distanceFromCity, setDistanceFromCity,
     resultCount: filteredListings.length,
     viewMode,
     onViewModeChange: setViewMode,
@@ -486,7 +506,6 @@ export function CatalogClient({
     setHasStateAct(false); setHasCadastral(false); setPurposeIJS(false);
     setSelectedCities([]); setNearWater(false); setMountainView(false);
     setOnlyFromOwner(false); setHasBuilding(false);
-    setDistanceFromCity(100);
   };
 
   const handleMarkerClick = useCallback((listing: MapItem) => {
@@ -644,7 +663,7 @@ export function CatalogClient({
       </div>
 
       {/* ── Filter bar ─────────────────────────────────────────────────────── */}
-      <div className="bg-white border-b border-zinc-200 flex items-center px-3 gap-1.5 shrink-0 relative z-10 overflow-x-auto scrollbar-none" style={{ minHeight: 50 }}>
+      <div className="bg-white border-b border-zinc-200 flex items-center px-3 gap-1.5 shrink-0 relative z-20" style={{ minHeight: 50 }}>
 
         {/* Type segmenter */}
         <div className="shrink-0 flex items-center bg-zinc-100 rounded-lg p-0.5 text-[12px] font-medium gap-px">
@@ -855,19 +874,58 @@ export function CatalogClient({
           >+ Категория земли</button>
         )}
         {/* Cities chip */}
-        {citiesChipLabel ? (
-          <button onClick={() => { setSelectedCities([]); }}
-            className="shrink-0 group h-8 pl-3 pr-2 rounded-lg border border-primary bg-primary-soft text-[12px] flex items-center gap-1.5 whitespace-nowrap"
-          >
-            <span className="text-primary/70">Город</span>
-            <span className="font-semibold text-zinc-900 max-w-[140px] truncate">{citiesChipLabel}</span>
-            <X className="w-3 h-3 text-primary/60 group-hover:text-primary" />
-          </button>
-        ) : (
-          <button onClick={() => setIsFiltersOpen(true)}
-            className="shrink-0 h-8 px-3 rounded-lg border border-dashed border-zinc-300 text-[12px] text-zinc-500 hover:border-zinc-400 hover:text-zinc-900 transition whitespace-nowrap hidden lg:block"
-          >+ Город</button>
-        )}
+        <div ref={cityPopoverRef} className="relative shrink-0 hidden lg:block">
+          {citiesChipLabel ? (
+            <button onClick={() => setShowCityPopover(v => !v)}
+              className="h-8 pl-3 pr-2 rounded-lg border border-primary bg-primary-soft text-[12px] flex items-center gap-1.5 whitespace-nowrap"
+            >
+              <span className="text-primary/70 font-medium">Город</span>
+              <span className="font-bold text-[12px] text-zinc-900 max-w-[140px] truncate">{citiesChipLabel}</span>
+              <span onClick={e => { e.stopPropagation(); setSelectedCities([]); setShowCityPopover(false); }} className="hover:bg-primary/10 rounded p-0.5 text-primary/60 hover:text-primary"><X className="w-3 h-3" /></span>
+            </button>
+          ) : (
+            <button onClick={() => setShowCityPopover(v => !v)}
+              className="h-8 px-3 rounded-lg border border-dashed border-zinc-300 text-[12px] font-medium text-zinc-500 hover:border-zinc-400 hover:text-zinc-900 transition whitespace-nowrap"
+            >+ Город</button>
+          )}
+          {showCityPopover && (
+            <div className="absolute top-full left-0 mt-2 w-[280px] bg-white rounded-2xl border border-zinc-200 shadow-2xl z-50 overflow-hidden">
+              <div className="absolute -top-[7px] left-5 w-3 h-3 bg-white border-l border-t border-zinc-200 rotate-45" />
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[15px] font-bold text-zinc-900">Город / район</span>
+                  {selectedCities.length > 0 && (
+                    <button onClick={() => setSelectedCities([])} className="text-[11.5px] text-zinc-400 hover:text-zinc-700 transition-colors">Сбросить</button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1.5 max-h-[220px] overflow-y-auto">
+                  {cityOptions.map(({ value, label, count }) => {
+                    const on = selectedCities.includes(value);
+                    return (
+                      <button key={value}
+                        onClick={() => setSelectedCities(prev =>
+                          prev.includes(value) ? prev.filter(c => c !== value) : [...prev, value]
+                        )}
+                        className={`flex items-center gap-1.5 px-3 h-8 rounded-full text-[12px] font-medium border transition-all ${
+                          on ? 'bg-primary-soft border-primary text-zinc-900' : 'bg-white border-zinc-200 text-zinc-700 hover:border-zinc-300'
+                        }`}
+                      >
+                        {on && <span className="w-2.5 h-2.5 rounded-full bg-primary flex-shrink-0" />}
+                        {label}
+                        <span className="text-[10px] font-mono text-zinc-400">{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="px-4 py-3 border-t border-zinc-100 flex items-center gap-3">
+                <button onClick={() => setShowCityPopover(false)} className="flex-1 h-9 rounded-xl bg-zinc-900 text-white text-[12.5px] font-semibold hover:bg-zinc-800 transition-colors">
+                  Показать {filteredListings.length}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="flex-1 min-w-2" />
 
