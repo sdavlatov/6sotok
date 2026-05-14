@@ -333,13 +333,13 @@ export function CatalogClient({
   }, [showCityPopover]);
 
   const cityOptions = useMemo(() => {
-    const map = new Map<string, number>();
+    const counts: Record<string, number> = {};
     for (const l of allListings) {
       const loc = l.location?.trim();
       if (!loc) continue;
-      map.set(loc, (map.get(loc) ?? 0) + 1);
+      counts[loc] = (counts[loc] ?? 0) + 1;
     }
-    return [...map.entries()]
+    return Object.entries(counts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 20)
       .map(([loc, count]) => ({ value: loc, label: loc.split(/[,·]/)[0].trim(), count }));
