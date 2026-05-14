@@ -238,6 +238,7 @@ export function CatalogClient({
   const [mountainView, setMountainView] = useState(false);
   const [onlyFromOwner, setOnlyFromOwner] = useState(false);
   const [hasBuilding, setHasBuilding] = useState(false);
+  const [distanceFromCity, setDistanceFromCity] = useState(100);
 
   useEffect(() => {
     if (isFiltersOpen) {
@@ -387,6 +388,10 @@ export function CatalogClient({
     if (nearWater)           result = result.filter(l => l.locationType?.some((t: string) => /вод|озер|рек/i.test(t)));
     if (mountainView)        result = result.filter(l => l.locationType?.some((t: string) => /гор/i.test(t)));
     if (hasBuilding)         result = result.filter(l => l.locationType?.some((t: string) => /постр|строен/i.test(t)));
+    if (distanceFromCity < 100) result = result.filter(l =>
+      l.lat != null && l.lng != null &&
+      haversine(ALMATY[0], ALMATY[1], l.lat, l.lng) <= distanceFromCity
+    );
     if (selectedCities.length > 0) result = result.filter(l =>
       selectedCities.some(c => l.location?.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(l.location?.toLowerCase() ?? ''))
     );
@@ -415,7 +420,8 @@ export function CatalogClient({
       hasStateAct, hasCadastral, purposeIJS,
       hasElectricity, hasGas, hasWater, hasSewer, hasRoadAccess, allListings,
       showSaved, bookmarkedIds, searchAsMove, mapBounds,
-      onlyFromOwner, nearWater, mountainView, hasBuilding, selectedCities]);
+      onlyFromOwner, nearWater, mountainView, hasBuilding, selectedCities,
+      distanceFromCity]);
 
   const activeFilterCount = useMemo(() => [
     selectedCategories.length > 0, !!location,
@@ -423,10 +429,11 @@ export function CatalogClient({
     hasElectricity, hasGas, hasWater, hasSewer, hasRoadAccess,
     isPledged, isOnRedLine, isDivisible, hasStateAct, hasCadastral, purposeIJS,
     selectedCities.length > 0, onlyFromOwner, nearWater, mountainView, hasBuilding,
+    distanceFromCity < 100,
   ].filter(Boolean).length, [selectedCategories, location, areaFrom, areaTo,
     priceFrom, priceTo, hasElectricity, hasGas, hasWater, hasSewer, hasRoadAccess,
     isPledged, isOnRedLine, isDivisible, hasStateAct, hasCadastral, purposeIJS,
-    selectedCities, onlyFromOwner, nearWater, mountainView, hasBuilding]);
+    selectedCities, onlyFromOwner, nearWater, mountainView, hasBuilding, distanceFromCity]);
 
   // Map stats
   const medianPrice = useMemo(() => {
@@ -459,6 +466,7 @@ export function CatalogClient({
     mountainView, setMountainView,
     onlyFromOwner, setOnlyFromOwner,
     hasBuilding, setHasBuilding,
+    distanceFromCity, setDistanceFromCity,
     resultCount: filteredListings.length,
     viewMode,
     onViewModeChange: setViewMode,
@@ -478,6 +486,7 @@ export function CatalogClient({
     setHasStateAct(false); setHasCadastral(false); setPurposeIJS(false);
     setSelectedCities([]); setNearWater(false); setMountainView(false);
     setOnlyFromOwner(false); setHasBuilding(false);
+    setDistanceFromCity(100);
   };
 
   const handleMarkerClick = useCallback((listing: MapItem) => {

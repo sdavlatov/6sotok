@@ -3,7 +3,6 @@
 import { useMemo, useRef, useCallback } from 'react';
 import { X } from 'lucide-react';
 import type { Listing } from '@/types/listing';
-import { LAND_CATEGORIES } from '@/lib/listing-constants';
 
 // ── Dual Range Slider ────────────────────────────────────────────────────────
 export function DualSlider({ min, max, from, to, step = 1, onChange }: {
@@ -184,9 +183,17 @@ export interface CatalogFiltersProps {
   mountainView:  boolean; setMountainView:  (v: boolean) => void;
   onlyFromOwner: boolean; setOnlyFromOwner: (v: boolean) => void;
   hasBuilding:   boolean; setHasBuilding:   (v: boolean) => void;
+  distanceFromCity: number; setDistanceFromCity: (v: number) => void;
   resultCount: number;
   onClose?: () => void;
 }
+
+const AREA_PRESETS = [
+  { label: 'до 6 со',   from: 0,  to: 6   },
+  { label: '6–15 со',   from: 6,  to: 15  },
+  { label: '15–30 со',  from: 15, to: 30  },
+  { label: '30–100 со', from: 30, to: 100 },
+];
 
 // ── Component ────────────────────────────────────────────────────────────────
 export function CatalogFilters({
@@ -211,22 +218,10 @@ export function CatalogFilters({
   mountainView,  setMountainView,
   onlyFromOwner, setOnlyFromOwner,
   hasBuilding,   setHasBuilding,
+  distanceFromCity, setDistanceFromCity,
   resultCount,
   onClose,
 }: CatalogFiltersProps) {
-
-  // ── Price ───────────────────────────────────────────────────────────────────
-  const priceValues = useMemo(() => allListings.map(l => l.price), [allListings]);
-  const PRICE_MIN = 0;
-  const PRICE_MAX = useMemo(() => {
-    const m = Math.max(...priceValues, 10_000_000);
-    return Math.ceil(m / 10_000_000) * 10_000_000;
-  }, [priceValues]);
-  const priceFromNum = priceFrom ? parseInt(priceFrom.replace(/\D/g, '')) || PRICE_MIN : PRICE_MIN;
-  const priceToNum   = priceTo   ? parseInt(priceTo.replace(/\D/g, ''))   || PRICE_MAX : PRICE_MAX;
-  const priceLabel   = (priceFromNum > PRICE_MIN || priceToNum < PRICE_MAX)
-    ? `${priceFromNum > PRICE_MIN ? (priceFromNum / 1_000_000).toFixed(0) + ' млн' : '0'} – ${priceToNum < PRICE_MAX ? (priceToNum / 1_000_000).toFixed(0) + ' млн ₸' : '∞'}`
-    : null;
 
   // ── Area ────────────────────────────────────────────────────────────────────
   const areaValues = useMemo(() => allListings.map(l => l.area).filter(a => a > 0), [allListings]);
@@ -237,38 +232,18 @@ export function CatalogFilters({
   const areaLabel   = (areaFromNum > AREA_MIN || areaToNum < AREA_MAX)
     ? `${areaFromNum}–${areaToNum} соток` : null;
 
-  // ── Cities ──────────────────────────────────────────────────────────────────
-  const cities = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const l of allListings) {
-      const loc = l.location?.trim();
-      if (!loc) continue;
-      map.set(loc, (map.get(loc) ?? 0) + 1);
-    }
-    return [...map.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .map(([loc, count]) => ({
-        value: loc,
-        label: loc.split(/[,·]/)[0].trim(),
-        sub: loc.includes(',') ? loc.split(/[,·]/)[1]?.trim() : undefined,
-        count,
-      }));
-  }, [allListings]);
-
-  const toggleCity = (city: string) =>
-    setSelectedCities(
-      selectedCities.includes(city)
-        ? selectedCities.filter(c => c !== city)
-        : [...selectedCities, city]
-    );
-
   // ── Counts ──────────────────────────────────────────────────────────────────
   const counts = useMemo(() => ({
-    hasStateAct:  allListings.filter(l => (l as Listing & { hasStateAct?: boolean }).hasStateAct === true).length,
-    isDivisible:  allListings.filter(l => l.isDivisible === true).length,
-    hasCadastral: allListings.filter(l => !!(l.cadastralNumber && l.cadastralNumber.length > 0)).length,
-    purposeIJS:   allListings.filter(l => l.landType === 'ИЖС' || l.purpose === 'ИЖС').length,
+    hasStateAct:   allListings.filter(l => (l as Listing & { hasStateAct?: boolean }).hasStateAct === true).length,
+    isDivisible:   allListings.filter(l => l.isDivisible === true).length,
+    hasCadastral:  allListings.filter(l => !!(l.cadastralNumber && l.cadastralNumber.length > 0)).length,
+    purposeIJS:    allListings.filter(l => l.landType === 'ИЖС' || l.purpose === 'ИЖС').length,
     onlyFromOwner: allListings.filter(l => !l.seller?.isAgency).length,
+    electricity:   allListings.filter(l => l.hasElectricity).length,
+    gas:           allListings.filter(l => l.hasGas).length,
+    water:         allListings.filter(l => l.hasWater).length,
+    sewer:         allListings.filter(l => l.hasSewer).length,
+    road:          allListings.filter(l => l.hasRoadAccess).length,
   }), [allListings]);
 
   // ── Active count ─────────────────────────────────────────────────────────────
@@ -278,6 +253,7 @@ export function CatalogFilters({
     hasElectricity, hasGas, hasWater, hasSewer, hasRoadAccess,
     isPledged, isOnRedLine, isDivisible, hasStateAct, hasCadastral, purposeIJS,
     selectedCities.length > 0, nearWater, mountainView, onlyFromOwner, hasBuilding,
+    distanceFromCity < 100,
   ].filter(Boolean).length;
 
   const clearAll = () => {
@@ -289,24 +265,27 @@ export function CatalogFilters({
     setHasStateAct(false); setHasCadastral(false); setPurposeIJS(false);
     setSelectedCities([]); setNearWater(false); setMountainView(false);
     setOnlyFromOwner(false); setHasBuilding(false);
+    setDistanceFromCity(100);
   };
 
   const utilItems = [
-    { key: 'hasElectricity', label: 'Свет 380В',  value: hasElectricity, set: setHasElectricity },
-    { key: 'hasGas',         label: 'Газ',         value: hasGas,         set: setHasGas },
-    { key: 'hasWater',       label: 'Вода',        value: hasWater,       set: setHasWater },
-    { key: 'hasSewer',       label: 'Канализация', value: hasSewer,       set: setHasSewer },
-    { key: 'hasRoadAccess',  label: 'Дорога',      value: hasRoadAccess,  set: setHasRoadAccess },
+    { key: 'electricity', label: 'Свет 380В',  count: counts.electricity, value: hasElectricity, set: setHasElectricity },
+    { key: 'water',       label: 'Вода',        count: counts.water,       value: hasWater,       set: setHasWater },
+    { key: 'gas',         label: 'Газ',         count: counts.gas,         value: hasGas,         set: setHasGas },
+    { key: 'sewer',       label: 'Канализация', count: counts.sewer,       value: hasSewer,       set: setHasSewer },
+    { key: 'road',        label: 'Дорога',      count: counts.road,        value: hasRoadAccess,  set: setHasRoadAccess },
   ];
 
   return (
     <div className="flex flex-col overflow-hidden h-full">
 
       {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-zinc-100 shrink-0">
+      <div className="flex items-center justify-between px-6 pt-6 pb-5 border-b border-zinc-100 shrink-0">
         <div>
-          <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 mb-1">← все параметры</p>
-          <h2 className="text-[28px] font-black tracking-tight text-zinc-900">Фильтры</h2>
+          <h2 className="text-[28px] font-black tracking-tighter text-zinc-900 leading-none">Фильтры</h2>
+          {activeCount > 0 && (
+            <p className="mt-1 text-[12px] text-zinc-400">{activeCount} активных параметра</p>
+          )}
         </div>
         <button onClick={onClose} className="w-8 h-8 rounded-lg text-zinc-500 hover:bg-zinc-100 flex items-center justify-center transition-colors">
           <X className="w-4 h-4" />
@@ -317,38 +296,13 @@ export function CatalogFilters({
       <div className="flex-1 overflow-y-auto overscroll-contain">
         <div className="divide-y divide-zinc-100">
 
-          {/* Price */}
-          <div className="px-5 pt-6 pb-5">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[14px] font-bold text-zinc-900">Цена, ₸</span>
-              {priceLabel && <span className="text-[11.5px] font-mono text-zinc-500">{priceLabel}</span>}
-            </div>
-            <Histogram values={priceValues} min={PRICE_MIN} max={PRICE_MAX} from={priceFromNum} to={priceToNum} buckets={16} />
-            <div className="mt-2">
-              <DualSlider min={PRICE_MIN} max={PRICE_MAX} from={priceFromNum} to={priceToNum} step={500_000}
-                onChange={(f, t) => { setPriceFrom(f > PRICE_MIN ? String(f) : ''); setPriceTo(t < PRICE_MAX ? String(t) : ''); }}
-              />
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <label className="block">
-                <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 mb-1">от</div>
-                <input type="text" placeholder="0" value={priceFrom} onChange={e => setPriceFrom(e.target.value)}
-                  className="w-full h-10 px-3 border border-zinc-200 rounded-xl text-[14px] font-bold text-zinc-900 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all" />
-              </label>
-              <label className="block">
-                <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 mb-1">до</div>
-                <input type="text" placeholder="Любая" value={priceTo} onChange={e => setPriceTo(e.target.value)}
-                  className="w-full h-10 px-3 border border-zinc-200 rounded-xl text-[14px] font-bold text-zinc-900 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all" />
-              </label>
-            </div>
-          </div>
-
           {/* Area */}
-          <div className="px-5 pt-6 pb-5">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[14px] font-bold text-zinc-900">Площадь, соток</span>
-              {areaLabel && <span className="text-[11.5px] font-mono text-zinc-500">{areaLabel}</span>}
+          <div className="px-6 pt-6 pb-5">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[14px] font-bold text-zinc-900">Площадь</span>
+              <span className="font-mono text-[11.5px] text-zinc-500">{areaLabel ?? 'любая'}</span>
             </div>
+            <p className="text-[11px] text-zinc-400 mb-3">Соток · по {allListings.length} объявлениям</p>
             <Histogram values={areaValues} min={AREA_MIN} max={AREA_MAX} from={areaFromNum} to={areaToNum} />
             <div className="mt-2">
               <DualSlider min={AREA_MIN} max={AREA_MAX} from={areaFromNum} to={areaToNum} step={1}
@@ -357,21 +311,32 @@ export function CatalogFilters({
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <label className="block">
-                <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 mb-1">от</div>
+                <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 mb-1">от</div>
                 <input type="number" placeholder="0" value={areaFrom} onChange={e => setAreaFrom(e.target.value)}
                   className="w-full h-10 px-3 border border-zinc-200 rounded-xl text-[14px] font-bold text-zinc-900 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all" />
               </label>
               <label className="block">
-                <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 mb-1">до</div>
+                <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 mb-1">до</div>
                 <input type="number" placeholder="Любая" value={areaTo} onChange={e => setAreaTo(e.target.value)}
                   className="w-full h-10 px-3 border border-zinc-200 rounded-xl text-[14px] font-bold text-zinc-900 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all" />
               </label>
             </div>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {AREA_PRESETS.map(p => {
+                const isOn = areaFromNum === p.from && areaToNum === p.to;
+                return (
+                  <button key={p.label}
+                    onClick={() => { setAreaFrom(p.from > 0 ? String(p.from) : ''); setAreaTo(p.to < AREA_MAX ? String(p.to) : ''); }}
+                    className={`px-2.5 h-7 rounded-full text-[12px] font-medium border transition-all ${isOn ? 'bg-primary border-primary text-white' : 'border-zinc-200 text-zinc-600 hover:border-zinc-400'}`}
+                  >{p.label}</button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Documents */}
-          <div className="px-5 pt-6 pb-5">
-            <span className="text-[14px] font-bold text-zinc-900 block mb-3">Документы</span>
+          <div className="px-6 pt-6 pb-5">
+            <span className="text-[14px] font-bold text-zinc-900 block mb-4">Документы</span>
             <div className="space-y-3">
               {[
                 { label: 'Акт на землю',              count: counts.hasStateAct,  value: hasStateAct,  set: setHasStateAct  },
@@ -381,7 +346,7 @@ export function CatalogFilters({
               ].map(({ label, count, value, set }) => (
                 <label key={label} className="flex items-center gap-3 cursor-pointer group">
                   <Checkbox checked={value} onToggle={() => set(!value)} />
-                  <span className={`text-[13.5px] flex-1 transition-colors ${value ? 'text-zinc-900 font-medium' : 'text-zinc-600 group-hover:text-zinc-900'}`}>{label}</span>
+                  <span className={`text-[13.5px] flex-1 transition-colors ${value ? 'text-zinc-900 font-medium' : 'text-zinc-700 group-hover:text-zinc-900'}`}>{label}</span>
                   <span className="text-[11px] font-mono text-zinc-400 tabular-nums">{count}</span>
                 </label>
               ))}
@@ -389,10 +354,10 @@ export function CatalogFilters({
           </div>
 
           {/* Communications */}
-          <div className="px-5 pt-6 pb-5">
-            <span className="text-[14px] font-bold text-zinc-900 block mb-3">Коммуникации</span>
+          <div className="px-6 pt-6 pb-5">
+            <span className="text-[14px] font-bold text-zinc-900 block mb-4">Коммуникации</span>
             <div className="flex flex-wrap gap-1.5">
-              {utilItems.map(({ key, label, value, set }) => (
+              {utilItems.map(({ key, label, count, value, set }) => (
                 <button key={key} onClick={() => set(!value)}
                   className={`flex items-center gap-1.5 px-3 h-9 rounded-full text-[12.5px] font-semibold border transition-all ${
                     value
@@ -401,71 +366,49 @@ export function CatalogFilters({
                   }`}
                 >
                   {value && (
-                    <span className="w-3.5 h-3.5 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0">
-                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                    <span className="w-3 h-3 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0">
+                      <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     </span>
                   )}
                   {label}
+                  {!value && <span className="text-[10px] font-mono text-zinc-400 ml-0.5">{count}</span>}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Город / район */}
-          {cities.length > 0 && (
-            <div className="px-5 py-5">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[14px] font-bold text-zinc-900">Город / район</span>
-                {selectedCities.length > 0 && (
-                  <button onClick={() => setSelectedCities([])} className="text-[11.5px] text-zinc-400 hover:text-zinc-700 transition-colors">
-                    Сбросить
-                  </button>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {cities.map(({ value, label, sub, count }) => {
-                  const on = selectedCities.includes(value);
-                  return (
-                    <button
-                      key={value}
-                      onClick={() => toggleCity(value)}
-                      className={`flex items-center gap-1.5 px-3 h-9 rounded-full text-[12.5px] font-medium border transition-all ${
-                        on
-                          ? 'bg-primary-soft border-primary text-zinc-900'
-                          : 'bg-white border-zinc-200 text-zinc-700 hover:border-zinc-300'
-                      }`}
-                    >
-                      {on && (
-                        <span className="w-3 h-3 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0">
-                          <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        </span>
-                      )}
-                      <span>{label}</span>
-                      {sub && <span className="text-zinc-400 text-[11px]">{sub}</span>}
-                      <span className="text-[10px] font-mono text-zinc-400">{count}</span>
-                    </button>
-                  );
-                })}
-              </div>
+          {/* Distance from Almaty */}
+          <div className="px-6 pt-6 pb-5">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[14px] font-bold text-zinc-900">До Алматы</span>
+              <span className="font-mono text-[11.5px] text-zinc-500">
+                {distanceFromCity >= 100 ? 'любое расстояние' : `до ${distanceFromCity} км`}
+              </span>
             </div>
-          )}
+            <p className="text-[11px] text-zinc-400 mb-3">В километрах по прямой</p>
+            <SingleSlider min={5} max={100} value={distanceFromCity} step={5}
+              onChange={setDistanceFromCity}
+            />
+            <div className="mt-2 flex justify-between text-[10.5px] font-mono text-zinc-400">
+              <span>5</span><span>25</span><span>50</span><span>75</span><span>100+</span>
+            </div>
+          </div>
 
-          {/* Особенности */}
-          <div className="px-5 pt-6 pb-5">
-            <span className="text-[14px] font-bold text-zinc-900 block mb-3">Особенности</span>
+          {/* Features */}
+          <div className="px-6 pt-6 pb-5">
+            <span className="text-[14px] font-bold text-zinc-900 block mb-4">Особенности</span>
             <div className="space-y-3.5">
               {[
                 { label: 'У воды (река, озеро)', value: nearWater,     set: setNearWater     },
                 { label: 'Вид на горы',          value: mountainView,  set: setMountainView  },
-                { label: 'Только от хозяина',    value: onlyFromOwner, set: setOnlyFromOwner },
+                { label: 'Только от хозяина',    value: onlyFromOwner, set: setOnlyFromOwner, count: counts.onlyFromOwner },
                 { label: 'С готовой постройкой', value: hasBuilding,   set: setHasBuilding   },
-              ].map(({ label, value, set }) => (
-                <label key={label} className="flex items-center justify-between cursor-pointer group">
-                  <span className={`text-[13.5px] transition-colors ${value ? 'text-zinc-900 font-medium' : 'text-zinc-600 group-hover:text-zinc-900'}`}>{label}</span>
+              ].map(({ label, value, set, count }) => (
+                <label key={label} className="flex items-center cursor-pointer group">
+                  <span className={`text-[13.5px] flex-1 transition-colors ${value ? 'text-zinc-900 font-medium' : 'text-zinc-700 group-hover:text-zinc-900'}`}>{label}</span>
+                  {count !== undefined && !value && <span className="text-[11px] font-mono text-zinc-400 mr-3">{count}</span>}
                   <Toggle on={value} onToggle={() => set(!value)} />
                 </label>
               ))}
@@ -476,7 +419,7 @@ export function CatalogFilters({
       </div>
 
       {/* Footer */}
-      <div className="px-5 pb-6 pt-4 border-t border-zinc-100 shrink-0 bg-white flex items-center gap-3">
+      <div className="px-6 pb-6 pt-4 border-t border-zinc-100 shrink-0 bg-white flex items-center gap-3">
         <button
           onClick={clearAll}
           className={`text-[13px] font-medium transition-colors whitespace-nowrap ${activeCount > 0 ? 'text-zinc-500 hover:text-zinc-900' : 'text-zinc-300 pointer-events-none'}`}
