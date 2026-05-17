@@ -36,14 +36,14 @@ export function BusinessCard({ listing }: { listing: Listing }) {
   return (
     <Link
       href={`/business/${listing.id}`}
-      className="group flex h-full flex-col overflow-hidden rounded-2xl bg-white border border-zinc-200 hover:border-primary/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+      className="group flex h-full flex-col overflow-hidden rounded-[var(--r-lg)] bg-white border border-[var(--line)] shadow-[var(--sh-1)] hover:shadow-[var(--sh-2)] hover:-translate-y-0.5 transition-all duration-200"
     >
       {/* Фото */}
-      <div className="relative w-full overflow-hidden bg-zinc-100 shrink-0" style={{ aspectRatio: '4/3' }}>
+      <div className="relative w-full overflow-hidden bg-[var(--paper-2)] shrink-0" style={{ aspectRatio: '4/3' }}>
         <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-[1.03]">
           {allMedia.length > 0
             ? <CardMediaSlider images={allMedia} title={listing.title} />
-            : <div className="w-full h-full bg-gradient-to-br from-zinc-100 to-zinc-200 flex items-center justify-center">
+            : <div className="w-full h-full bg-gradient-to-br from-[var(--paper-2)] to-[var(--paper-3)] flex items-center justify-center">
                 <span className="text-4xl opacity-40">🏢</span>
               </div>
           }
@@ -71,8 +71,8 @@ export function BusinessCard({ listing }: { listing: Listing }) {
       {/* Контент */}
       <div className="flex flex-1 flex-col px-3 pt-3 pb-3 gap-2 sm:px-4 sm:pt-4 sm:pb-4 sm:gap-3">
         {/* Тип · Площадь */}
-        <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-zinc-400 font-medium">
-          {typeLabel && <span className="text-zinc-600 font-semibold">{typeLabel}</span>}
+        <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-[var(--ink-400)] font-medium">
+          {typeLabel && <span className="text-[var(--ink-500)] font-semibold">{typeLabel}</span>}
           {typeLabel && listing.buildingArea && <span>·</span>}
           {listing.buildingArea && <span>{listing.buildingArea} м²</span>}
           {listing.floor != null && <><span>·</span><span>{listing.floor} эт.</span></>}
@@ -80,27 +80,27 @@ export function BusinessCard({ listing }: { listing: Listing }) {
 
         {/* Цена */}
         <div className="-mt-0.5">
-          <p className="text-lg sm:text-2xl font-bold text-zinc-900 leading-none tabular-nums tracking-tight">
+          <p className="text-lg sm:text-2xl font-bold text-[var(--ink-900)] leading-none tabular-nums tracking-tight">
             {price} ₸
           </p>
-          {perM2 && <p className="text-[11px] sm:text-xs text-zinc-400 mt-1 tabular-nums">{perM2} ₸/м²</p>}
+          {perM2 && <p className="text-[11px] sm:text-xs text-[var(--ink-400)] mt-1 tabular-nums">{perM2} ₸/м²</p>}
         </div>
 
         {/* Адрес */}
         <div className="flex items-center gap-1 min-w-0">
-          <MapPin className="size-3 sm:size-3.5 shrink-0 text-zinc-400" />
-          <span className="text-[11px] sm:text-[12.5px] text-zinc-500 truncate">{address}</span>
+          <MapPin className="size-3 sm:size-3.5 shrink-0 text-[var(--ink-400)]" />
+          <span className="text-[11px] sm:text-[12.5px] text-[var(--ink-400)] truncate">{address}</span>
         </div>
 
         {/* Теги */}
-        <div className="flex flex-wrap gap-1.5 pt-2 border-t border-zinc-100">
+        <div className="flex flex-wrap gap-1.5 pt-2 border-t border-[var(--line-soft)]">
           {listing.condition && (
-            <span className="bg-zinc-100 text-zinc-600 text-[10px] font-medium px-2 py-0.5 rounded-full">
+            <span className="bg-[var(--paper-3)] text-[var(--ink-500)] text-[10px] font-medium px-2 py-0.5 rounded-full">
               {CONDITION_LABEL[listing.condition] ?? listing.condition}
             </span>
           )}
           {listing.hasParking && (
-            <span className="bg-zinc-100 text-zinc-600 text-[10px] font-medium px-2 py-0.5 rounded-full">Парковка</span>
+            <span className="bg-[var(--paper-3)] text-[var(--ink-500)] text-[10px] font-medium px-2 py-0.5 rounded-full">Парковка</span>
           )}
           {listing.hasElectricity && (
             <span className="bg-yellow-50 text-yellow-700 text-[10px] font-medium px-2 py-0.5 rounded-full">Свет</span>

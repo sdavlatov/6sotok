@@ -88,35 +88,35 @@ function ViewingForm({ slug, onClose }: { slug?: string; onClose: () => void }) 
       <div className="w-11 h-11 rounded-full bg-[#f0fdf4] border border-[rgba(6,111,54,0.2)] flex items-center justify-center mx-auto mb-3">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#066F36" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
       </div>
-      <p className="text-[14px] font-semibold text-zinc-900 mb-1">Заявка отправлена</p>
-      <p className="text-[12px] text-zinc-500">Продавец свяжется для подтверждения</p>
-      <button onClick={onClose} className="mt-3 text-[12px] text-zinc-400 hover:text-zinc-700 transition-colors">Закрыть</button>
+      <p className="text-[14px] font-semibold text-[var(--ink-900)] mb-1">Заявка отправлена</p>
+      <p className="text-[12px] text-[var(--ink-400)]">Продавец свяжется для подтверждения</p>
+      <button onClick={onClose} className="mt-3 text-[12px] text-[var(--ink-400)] hover:text-[var(--ink-700)] transition-colors">Закрыть</button>
     </div>
   );
 
   return (
     <form onSubmit={e => { e.preventDefault(); pushDataLayer('viewing_request', { date, time, listing_slug: slug ?? null }); setSent(true); }} className="pt-4 space-y-3">
       <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Ваше имя" required
-        className="w-full px-3 py-2.5 rounded-xl border border-zinc-200 text-[13px] placeholder:text-zinc-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all" />
+        className="w-full px-3 py-2.5 rounded-xl border border-[var(--line)] text-[13px] placeholder:text-[var(--ink-400)] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all" />
       <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+7 (___) ___-__-__" required
-        className="w-full px-3 py-2.5 rounded-xl border border-zinc-200 text-[13px] placeholder:text-zinc-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all" />
+        className="w-full px-3 py-2.5 rounded-xl border border-[var(--line)] text-[13px] placeholder:text-[var(--ink-400)] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all" />
       <div>
-        <p className="text-[11px] font-medium text-zinc-500 mb-1.5">Дата</p>
+        <p className="text-[11px] font-medium text-[var(--ink-400)] mb-1.5">Дата</p>
         <div className="flex flex-wrap gap-1.5">
           {QUICK_DATES.map(d => (
             <button key={d.value} type="button" onClick={() => setDate(d.value)}
-              className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${date === d.value ? 'bg-primary text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}>
+              className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${date === d.value ? 'bg-primary text-white' : 'bg-[var(--paper-2)] text-[var(--ink-500)] hover:bg-[var(--paper-3)]'}`}>
               {d.label}
             </button>
           ))}
         </div>
       </div>
       <div>
-        <p className="text-[11px] font-medium text-zinc-500 mb-1.5">Время</p>
+        <p className="text-[11px] font-medium text-[var(--ink-400)] mb-1.5">Время</p>
         <div className="grid grid-cols-4 gap-1.5">
           {TIME_SLOTS.map(t => (
             <button key={t} type="button" onClick={() => setTime(t)}
-              className={`py-1.5 rounded-lg text-[12px] font-medium transition-colors ${time === t ? 'bg-primary text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}>
+              className={`py-1.5 rounded-lg text-[12px] font-medium transition-colors ${time === t ? 'bg-primary text-white' : 'bg-[var(--paper-2)] text-[var(--ink-500)] hover:bg-[var(--paper-3)]'}`}>
               {t}
             </button>
           ))}
@@ -163,22 +163,22 @@ export function ContactCard({
     <div className="flex flex-col gap-3">
 
       {/* ── Цена + контакты ── */}
-      <div className="bg-white rounded-3xl border border-zinc-200 p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_30px_-10px_rgba(0,0,0,0.08)]">
+      <div className="bg-white rounded-3xl border border-[var(--line)] p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_30px_-10px_rgba(0,0,0,0.08)]">
 
         {/* Цена */}
         <div className="flex items-baseline gap-3">
-          <span className="font-black text-[44px] leading-none tracking-tight text-zinc-900 tabular-nums">
+          <span className="font-black text-[44px] leading-none tracking-tight text-[var(--ink-900)] tabular-nums">
             {priceMln}
           </span>
-          <span className="font-black text-[26px] leading-none tracking-tight text-zinc-400">{priceUnit}</span>
+          <span className="font-black text-[26px] leading-none tracking-tight text-[var(--ink-400)]">{priceUnit}</span>
         </div>
-        <div className="mt-2 text-[12px] text-zinc-500 tabular-nums">
+        <div className="mt-2 text-[12px] text-[var(--ink-400)] tabular-nums">
           {fmtPerSotka} ₸ / сотку
         </div>
 
         {/* Продавец */}
         {seller && (
-          <div className="mt-5 pt-5 border-t border-zinc-100 flex items-center gap-3">
+          <div className="mt-5 pt-5 border-t border-[var(--line-soft)] flex items-center gap-3">
             <div className="w-11 h-11 rounded-full flex items-center justify-center font-black text-[14px] text-white shrink-0 overflow-hidden"
               style={{ background: 'linear-gradient(135deg, #82d4b6, #066F36)' }}>
               {seller.avatar
@@ -187,10 +187,10 @@ export function ContactCard({
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-[14px] font-bold text-zinc-900 leading-tight">{seller.name}</span>
+                <span className="text-[14px] font-bold text-[var(--ink-900)] leading-tight">{seller.name}</span>
                 {seller.isAgency && <span className="text-primary shrink-0"><VerifyIcon /></span>}
               </div>
-              <div className="flex items-center gap-1.5 mt-0.5 text-[11.5px] text-zinc-500 flex-wrap">
+              <div className="flex items-center gap-1.5 mt-0.5 text-[11.5px] text-[var(--ink-400)] flex-wrap">
                 <span className="px-1.5 py-0.5 rounded bg-[#f0fdf4] text-primary font-semibold text-[10px]">
                   {seller.isAgency ? 'Агентство' : 'Хозяин'}
                 </span>
@@ -198,7 +198,7 @@ export function ContactCard({
               </div>
             </div>
             <div className="text-right shrink-0">
-              <div className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">отвечает</div>
+              <div className="font-mono text-[11px] uppercase tracking-wider text-[var(--ink-400)]">отвечает</div>
               <div className="text-[12px] font-bold text-primary">~ 12 мин</div>
             </div>
           </div>
@@ -222,14 +222,14 @@ export function ContactCard({
               </button>
             )
           ) : (
-            <div className="h-12 rounded-xl bg-zinc-50 border border-zinc-100 text-zinc-400 text-[13px] font-medium flex items-center justify-center">
+            <div className="h-12 rounded-xl bg-[var(--paper-2)] border border-[var(--line-soft)] text-[var(--ink-400)] text-[13px] font-medium flex items-center justify-center">
               Контакт недоступен
             </div>
           )}
 
           {/* Сообщение + WhatsApp */}
           <div className="grid grid-cols-2 gap-2">
-            <button className="h-11 rounded-xl border border-zinc-200 bg-white text-[13px] font-semibold text-zinc-900 hover:border-zinc-400 transition-colors">
+            <button className="h-11 rounded-xl border border-[var(--line)] bg-white text-[13px] font-semibold text-[var(--ink-900)] hover:border-zinc-400 transition-colors">
               Сообщение
             </button>
             {seller?.hasWhatsApp && cleanPhone ? (
@@ -240,7 +240,7 @@ export function ContactCard({
                 <WaIcon /> WhatsApp
               </a>
             ) : (
-              <button className="h-11 rounded-xl border border-zinc-200 bg-white text-[13px] font-semibold text-zinc-900 hover:border-zinc-400 transition-colors">
+              <button className="h-11 rounded-xl border border-[var(--line)] bg-white text-[13px] font-semibold text-[var(--ink-900)] hover:border-zinc-400 transition-colors">
                 WhatsApp
               </button>
             )}
@@ -260,14 +260,14 @@ export function ContactCard({
         </div>
 
         {/* Онлайн */}
-        <div className="mt-4 pt-4 border-t border-zinc-100 flex items-center gap-2 text-[11.5px] text-zinc-500">
+        <div className="mt-4 pt-4 border-t border-[var(--line-soft)] flex items-center gap-2 text-[11.5px] text-[var(--ink-400)]">
           <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
           Был онлайн только что
         </div>
       </div>
 
       {/* ── Безопасная сделка ── */}
-      <div className={`rounded-3xl border p-5 ${allSafe ? 'bg-[#f6fdf8] border-[rgba(6,111,54,0.15)]' : 'bg-white border-zinc-200'}`}>
+      <div className={`rounded-3xl border p-5 ${allSafe ? 'bg-[#f6fdf8] border-[rgba(6,111,54,0.15)]' : 'bg-white border-[var(--line)]'}`}>
         <div className="font-mono text-[10.5px] uppercase tracking-widest text-primary mb-3">
           → безопасная сделка
         </div>
@@ -275,46 +275,46 @@ export function ContactCard({
           {safeItems.map(item => (
             <li key={item.label} className="flex items-start gap-2.5 text-[13px]">
               <span className={`w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0 mt-0.5 border ${
-                item.done ? 'bg-[#f0fdf4] border-[rgba(6,111,54,0.25)]' : 'bg-zinc-50 border-zinc-200'
+                item.done ? 'bg-[#f0fdf4] border-[rgba(6,111,54,0.25)]' : 'bg-zinc-50 border-[var(--line)]'
               }`}>
                 {item.done
                   ? <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#066F36" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                   : <span className="w-[5px] h-[5px] rounded-full bg-zinc-300 block" />}
               </span>
-              <span className={item.done ? 'text-zinc-700' : 'text-zinc-400'}>{item.label}</span>
+              <span className={item.done ? 'text-[var(--ink-700)]' : 'text-[var(--ink-400)]'}>{item.label}</span>
             </li>
           ))}
         </ul>
         <a href="/safe-deal"
-          className="mt-4 w-full h-10 rounded-xl border border-zinc-200 flex items-center justify-center text-[12.5px] font-semibold text-zinc-700 hover:border-primary hover:text-primary transition-colors">
+          className="mt-4 w-full h-10 rounded-xl border border-[var(--line)] flex items-center justify-center text-[12.5px] font-semibold text-[var(--ink-700)] hover:border-primary hover:text-primary transition-colors">
           Узнать подробнее
         </a>
       </div>
 
       {/* ── Юрист онлайн ── */}
-      <div className="bg-white rounded-3xl border border-zinc-200 p-5">
+      <div className="bg-white rounded-3xl border border-[var(--line)] p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#066F36" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1z"/>
               <path d="M7 21h10"/><line x1="12" y1="3" x2="12" y2="21"/><path d="M3 7h2c2 0 4.5-1 7-1s5 1 7 1h2"/>
             </svg>
-            <span className="text-[13px] font-semibold text-zinc-800">Юрист онлайн</span>
+            <span className="text-[13px] font-semibold text-[var(--ink-700)]">Юрист онлайн</span>
           </div>
-          <span className="text-[11px] text-zinc-400">доп. услуга</span>
+          <span className="text-[11px] text-[var(--ink-400)]">доп. услуга</span>
         </div>
         <ul className="space-y-1.5 mb-4">
           {['Проверка документов и истории участка', 'Составление договора купли-продажи', 'Сопровождение сделки в ЦОН'].map(item => (
-            <li key={item} className="flex items-center gap-2 text-[12px] text-zinc-500">
+            <li key={item} className="flex items-center gap-2 text-[12px] text-[var(--ink-400)]">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
               {item}
             </li>
           ))}
         </ul>
-        <div className="flex items-center justify-between pt-3 border-t border-zinc-100">
+        <div className="flex items-center justify-between pt-3 border-t border-[var(--line-soft)]">
           <div>
-            <span className="text-[20px] font-bold text-zinc-900 tabular-nums">35 000 ₸</span>
-            <span className="text-[11px] text-zinc-400 ml-1.5">единоразово</span>
+            <span className="text-[20px] font-bold text-[var(--ink-900)] tabular-nums">35 000 ₸</span>
+            <span className="text-[11px] text-[var(--ink-400)] ml-1.5">единоразово</span>
           </div>
           <button className="px-4 h-9 rounded-xl bg-zinc-900 text-white text-[12.5px] font-semibold hover:opacity-90 transition-opacity">
             Подключить
@@ -332,7 +332,7 @@ export function ContactCard({
             <span className="text-white/40 text-[14px] font-bold"> / мес</span>
           </div>
           <div className="text-[12px] text-white/60 mt-1 mb-3">Халык Банк · 7%, 25 лет, ПВ 30%</div>
-          <button className="px-3 h-8 rounded-lg bg-white text-zinc-900 text-[11.5px] font-bold hover:bg-primary-light hover:text-white transition-colors">
+          <button className="px-3 h-8 rounded-lg bg-white text-[var(--ink-900)] text-[11.5px] font-bold hover:bg-primary-light hover:text-white transition-colors">
             Рассчитать →
           </button>
         </div>

@@ -154,9 +154,17 @@ export function HeroMap({
     loadCss(CLUSTER_CSS1);
     loadCss(CLUSTER_CSS2);
 
-    loadScript(LEAFLET_JS).then(() => loadScript(CLUSTER_JS)).then(() => {
+    loadScript(LEAFLET_JS).then(() => {
+      // Force reload cluster plugin if markerClusterGroup isn't available yet
+      const existingCluster = document.querySelector(`script[src="${CLUSTER_JS}"]`);
+      if (existingCluster && typeof (window as any).L?.markerClusterGroup !== 'function') {
+        existingCluster.remove();
+      }
+      return loadScript(CLUSTER_JS);
+    }).then(() => {
       const L = (window as any).L;
       if (!ref.current || mapRef.current) return;
+      if (typeof L?.markerClusterGroup !== 'function') return;
 
       let viewed: Set<string> = new Set();
       try {

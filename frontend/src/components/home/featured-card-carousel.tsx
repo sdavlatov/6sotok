@@ -48,7 +48,7 @@ export function FeaturedCardCarousel({ listings }: { listings: CarouselListing[]
       className="col-span-2 transition-opacity duration-300"
       style={{ opacity: visible ? 1 : 0 }}>
       <Link href={`/listing/${l.slug}`}
-        className="tile group block bg-white rounded-3xl border border-zinc-200 overflow-hidden hover:border-zinc-300 hover:shadow-lg transition-all">
+        className="tile group block bg-white rounded-3xl border border-[var(--line)] shadow-[var(--sh-1)] overflow-hidden hover:shadow-[var(--sh-2)] transition-all">
         <div className="grid grid-cols-[1.2fr_1fr]">
 
           {/* Image */}
@@ -63,11 +63,11 @@ export function FeaturedCardCarousel({ listings }: { listings: CarouselListing[]
                 Премиум
               </span>
             </div>
-            <div className="absolute bottom-3 left-4 font-mono text-[10px] text-zinc-700/70 uppercase tracking-wider">
+            <div className="absolute bottom-3 left-4 font-mono text-[10px] text-[var(--ink-400)] uppercase tracking-wider">
               ↳ участок · {l.area} соток
             </div>
             {l.lat && l.lng && (
-              <div className="absolute bottom-3 right-4 font-mono text-[10px] text-zinc-700/70">
+              <div className="absolute bottom-3 right-4 font-mono text-[10px] text-[var(--ink-400)]">
                 {l.lat.toFixed(2)}°N {l.lng.toFixed(2)}°E
               </div>
             )}
@@ -82,11 +82,11 @@ export function FeaturedCardCarousel({ listings }: { listings: CarouselListing[]
 
           {/* Content */}
           <div className="p-7 flex flex-col">
-            <div className="flex items-center gap-2 text-[11.5px] font-medium text-zinc-500 uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-[11.5px] font-medium text-[var(--ink-400)] uppercase tracking-wider">
               <span className="w-1 h-1 rounded-full bg-primary flex-shrink-0" />
               {l.landType ?? 'ИЖС'}{l.location ? ` · ${l.location}` : ''}
             </div>
-            <h3 className="mt-2 font-black text-zinc-900 leading-[1]"
+            <h3 className="mt-2 font-black text-[var(--ink-900)] leading-[1]"
               style={{ fontSize: 'clamp(20px, 2vw, 28px)', letterSpacing: '-0.035em' }}>
               {l.title}
             </h3>
@@ -96,14 +96,14 @@ export function FeaturedCardCarousel({ listings }: { listings: CarouselListing[]
             <div className="mt-auto pt-5 flex items-end justify-between">
               {l.price ? (
                 <div>
-                  <div className="font-black text-zinc-900 leading-none"
+                  <div className="font-black text-[var(--ink-900)] leading-none"
                     style={{ fontSize: 'clamp(22px, 2.2vw, 32px)', letterSpacing: '-0.035em' }}>
                     {fmt(l.price)} ₸
                   </div>
-                  {pc && <div className="mt-1.5 text-[11.5px] font-mono text-zinc-500">{fmt(pc)} ₸ / сотка</div>}
+                  {pc && <div className="mt-1.5 text-[11.5px] font-mono text-[var(--ink-400)]">{fmt(pc)} ₸ / сотка</div>}
                 </div>
               ) : <div />}
-              <span className="px-4 h-10 rounded-xl bg-zinc-900 text-white text-[13px] font-medium flex items-center gap-1 group-hover:bg-primary transition shrink-0">
+              <span className="px-4 h-10 rounded-[var(--r-md)] bg-[var(--ink-900)] text-white text-[13px] font-medium flex items-center gap-1 group-hover:bg-[var(--brand-600)] transition shrink-0">
                 Смотреть →
               </span>
             </div>

@@ -3,68 +3,102 @@
 @theme {
   --font-sans: var(--font-inter), sans-serif;
   --font-mono: var(--font-mono), 'JetBrains Mono', ui-monospace, monospace;
-  
-  /* Semantic Palette (Task 2) */
-  --color-primary: #066F36;
+
+  /* Brand · Emerald */
+  --color-primary:       #066F36;
   --color-primary-light: #2CA64E;
   --color-primary-hover: #055a2b;
-  --color-primary-soft: #f0fdf4;
-  --color-primary-dark: #022c15;
-  
-  --color-success: #15803d; /* green-700 */
-  --color-success-soft: #f0fdf4; /* green-50 */
-  
-  --color-danger: #b91c1c; /* red-700 */
-  --color-danger-soft: #fef2f2; /* red-50 */
-  
-  --color-warning: #c2410c; /* orange-700 */
-  --color-warning-soft: #fff7ed; /* orange-50 */
-  
-  --color-accent: #A3D2F0; /* Restored original accent color */
-  --color-accent-purple: #7e22ce; 
-  --color-accent-soft: #faf5ff; 
-  
-  --color-muted: #a1a1aa; /* zinc-400 */
-  --color-border: #e4e4e7; /* zinc-200 */
-  --color-card: #ffffff;
-  --color-background: #fafafa;
+  --color-primary-soft:  #f0fdf4;
+  --color-primary-dark:  #021A0E;
+
+  /* Accent · Amber (только для раздела Бизнес) */
+  --color-amber:      #f59e0b;
+  --color-amber-soft: #fdf6e7;
+
+  /* Semantic */
+  --color-success:      #066F36;
+  --color-success-soft: #f0fdf4;
+  --color-danger:       #b04438;
+  --color-danger-soft:  #fef2f2;
+  --color-warning:      #b76b14;
+  --color-warning-soft: #fff7ed;
+  --color-info:         #3b67a8;
+  --color-info-soft:    #eff4fb;
+
+  /* Surface */
+  --color-background: #fafaf7;
+  --color-card:       #ffffff;
+  --color-muted:      #7d8074;
+  --color-border:     #e3e1d9;
 }
 
 :root {
-  --background: #fafafa;
-  --foreground: #18181b;
+  --background: #fafaf7;
+  --foreground: #09090b;
 
-  /* Ink scale = zinc scale (для page.tsx inline стилей) */
-  --ink-900: #18181b; /* zinc-900 */
-  --ink-800: #27272a; /* zinc-800 */
-  --ink-700: #3f3f46; /* zinc-700 */
-  --ink-600: #52525b; /* zinc-600 */
-  --ink-500: #71717a; /* zinc-500 */
-  --ink-400: #a1a1aa; /* zinc-400 */
-  --ink-200: #e4e4e7; /* zinc-200 */
+  /* Brand scale */
+  --brand:     #066F36;
+  --brand-600: #066F36;
+  --brand-500: #2CA64E;
+  --brand-300: #7FD495;
+  --brand-100: #D6EFE5;
+  --brand-50:  #f0fdf4;
+  --brand-ink: #021A0E;
 
-  /* Paper & surface */
-  --paper:   #fafafa; /* = background */
-  --paper-2: #f4f4f5; /* zinc-100 */
+  /* Amber (бизнес) */
+  --amber:     #d4a017;
+  --amber-500: #f59e0b;
+
+  /* Ink — тёплая шкала */
+  --ink-900: #09090b;
+  --ink-800: #1a1c16;
+  --ink-700: #2a2d23;
+  --ink-600: #3f4237;
+  --ink-500: #5b5e54;
+  --ink-400: #7d8074;
+  --ink-300: #a3a59a;
+  --ink-200: #e3e1d9;
+
+  /* Paper — тёплые фоны */
+  --paper:   #fafaf7;
+  --paper-2: #f4f3ef;
+  --paper-3: #ecebe5;
 
   /* Borders */
-  --line:      #e4e4e7; /* zinc-200 */
-  --line-soft: #f4f4f5; /* zinc-100 */
+  --line:      #e3e1d9;
+  --line-soft: #f0efea;
 
-  /* Emerald = primary green scale */
-  --emerald-50:  #f0fdf4; /* = primary-soft */
-  --emerald-600: #066F36; /* = primary */
-  --emerald-700: #055a2b; /* = primary-hover */
-  --emerald-800: #14532d; /* green-900 */
+  /* Emerald aliases */
+  --emerald-50:  #f0fdf4;
+  --emerald-600: #066F36;
+  --emerald-700: #055a2b;
+  --emerald-800: #021A0E;
+
+  /* Shadows — тёплые */
+  --sh-1:     0 1px 0 rgba(20,22,15,.04), 0 1px 2px rgba(20,22,15,.04);
+  --sh-2:     0 1px 0 rgba(20,22,15,.04), 0 6px 18px -6px rgba(20,22,15,.10);
+  --sh-3:     0 8px 30px -10px rgba(20,22,15,.18), 0 2px 6px rgba(20,22,15,.06);
+  --sh-brand: 0 10px 30px -12px rgba(15,68,56,.45), 0 2px 6px rgba(15,68,56,.18);
+
+  /* Radius tokens */
+  --r-xs:   6px;
+  --r-sm:   10px;
+  --r-md:   12px;
+  --r-lg:   18px;
+  --r-xl:   24px;
+  --r-2xl:  28px;
+  --r-pill: 999px;
+
+  /* Easing */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-/* Force Light Mode strictly for analytical UX mapping constraints */
 html {
   font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
-  font-variant-numeric: proportional-nums;
+  font-feature-settings: 'ss01', 'cv11';
+  font-variant-numeric: tabular-nums;
   font-optical-sizing: auto;
   text-rendering: optimizeLegibility;
 }
@@ -75,20 +109,46 @@ body {
   font-family: inherit;
 }
 
-/* Task 1: Macro Typography Utilities */
+/* Typography utilities — Design System v1.0 */
 @utility text-micro {
   font-size: 10px;
   line-height: 14px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 700;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+@utility text-eyebrow {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  color: var(--brand);
 }
 
 @utility text-price-lg {
   font-size: 28px;
   line-height: 32px;
   font-weight: 900;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+@utility text-caption {
+  font-size: 12.5px;
+  line-height: 1.4;
+  font-weight: 500;
+  color: var(--ink-400);
+}
+
+@utility text-mono-label {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-400);
 }
 
 /* ── Plot image placeholders ── */
@@ -132,6 +192,66 @@ body {
     radial-gradient(ellipse 220px 140px at 55% 50%, rgba(44,166,78,0.2), transparent 70%);
 }
 
+/* ── Compare page grid ── */
+.cmp-grid { display: grid; }
+.cmp-row { display: contents; }
+.cmp-cell {
+  border-top: 1px solid var(--line-soft);
+  padding: 16px 20px;
+  background: #fff;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.cmp-label {
+  border-top: 1px solid var(--line-soft);
+  background: var(--paper);
+  padding: 14px 20px;
+  font-family: var(--font-mono), 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-400);
+  display: flex;
+  align-items: center;
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  border-right: 1px solid var(--line);
+  white-space: nowrap;
+}
+.cmp-section {
+  grid-column: 1 / -1;
+  background: var(--paper);
+  padding: 22px 20px 10px;
+  font-family: var(--font-mono), 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--brand);
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cmp-section::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.cmp-add {
+  border-top: 1px solid var(--line-soft);
+  background: var(--paper);
+  border-left: 1px dashed var(--line);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cmp-cell-best { background: var(--brand-50) !important; }
+
 /* ── Leaflet scroll fix: overflow:clip не создаёт scroll-container, wheel уходит на страницу ── */
 .leaflet-container {
   overflow: clip !important;
@@ -173,10 +293,28 @@ body {
   0%, 100% { transform: scale(1);   opacity: 0.4; }
   50%       { transform: scale(1.6); opacity: 0; }
 }
-@keyframes pulseRing {
-  0%   { transform: scale(1);   opacity: 0.7; }
-  70%  { transform: scale(1.5); opacity: 0; }
-  100% { transform: scale(1.5); opacity: 0; }
+@keyframes sonarPulse {
+  0%   { transform: scale(2.6); opacity: 0;    }
+  40%  { transform: scale(1);   opacity: 0.82; }
+  75%  { transform: scale(2.6); opacity: 0;    }
+  100% { transform: scale(2.6); opacity: 0;    }
+}
+@keyframes dot-pulse {
+  0%   { transform: translate(-50%,-50%) scale(1);   opacity: 0.6; }
+  100% { transform: translate(-50%,-50%) scale(3.6); opacity: 0; }
+}
+@keyframes dot-ring-pulse {
+  0%   { transform: scale(1);   opacity: 0.55; }
+  100% { transform: scale(3.6); opacity: 0;    }
+}
+@keyframes markerBreath {
+  0%, 100% { transform: scale(1);    box-shadow: 0 2px 10px rgba(0,0,0,0.30); }
+  50%       { transform: scale(1.18); box-shadow: 0 4px 18px rgba(0,0,0,0.50); }
+}
+@keyframes markerPop {
+  0%   { transform: translateX(-50%) scale(0.4); opacity: 0; }
+  70%  { transform: translateX(-50%) scale(1.15); opacity: 1; }
+  100% { transform: translateX(-50%) scale(1);    opacity: 1; }
 }
 
 @keyframes dashSpin {

@@ -1,4 +1,4 @@
-export type LandType = 'ИЖС' | 'Дача' | 'Коммерция' | 'Сельхоз' | 'МЖС' | 'ЛПХ' | 'Промзона' | 'Рекреация';
+export type LandType = 'ИЖС' | 'Дача' | 'Коммерция' | 'Сельхоз' | 'МЖС' | 'ЛПХ' | 'КХ' | 'Промбаза' | 'Рекреация';
 export type DealType = 'sale' | 'rent';
 export type Purpose = 'ИЖС' | 'ЛПХ' | 'Коммерция' | 'Сельхоз';
 export type OwnershipType = 'Частная собственность' | 'Аренда';

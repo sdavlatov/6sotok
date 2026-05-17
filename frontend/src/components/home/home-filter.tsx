@@ -12,7 +12,8 @@ const CATEGORIES = [
   { value: 'Дача',     label: 'Дача' },
   { value: 'Сельхоз',  label: 'Сельхоз' },
   { value: 'Коммерция', label: 'Коммерция' },
-  { value: 'Промзона', label: 'Промзона' },
+  { value: 'КХ',       label: 'КХ' },
+  { value: 'Промбаза', label: 'Промбаза' },
   { value: 'Рекреация', label: 'Рекреация' },
 ];
 

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -15,12 +15,24 @@ export interface MapItem {
   purpose?: string;
   lat?: number | null;
   lng?: number | null;
+  area?: number;
+  hasStateAct?: boolean;
+  hasElectricity?: boolean;
+  hasGas?: boolean;
+  hasWater?: boolean;
+  hasRoadAccess?: boolean;
+  createdAt?: string;
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const LEAFLET_VERSION = '1.9.4';
 const LEAFLET_CSS = `https://unpkg.com/leaflet@${LEAFLET_VERSION}/dist/leaflet.css`;
 const LEAFLET_JS  = `https://unpkg.com/leaflet@${LEAFLET_VERSION}/dist/leaflet.js`;
+
+const CLUSTER_VERSION = '1.5.3';
+const CLUSTER_CSS = `https://unpkg.com/leaflet.markercluster@${CLUSTER_VERSION}/dist/MarkerCluster.css`;
+const CLUSTER_CSS_DEFAULT = `https://unpkg.com/leaflet.markercluster@${CLUSTER_VERSION}/dist/MarkerCluster.Default.css`;
+const CLUSTER_JS  = `https://unpkg.com/leaflet.markercluster@${CLUSTER_VERSION}/dist/leaflet.markercluster.js`;
 
 const KZ_CENTER: [number, number] = [48.0, 68.0];
 const KZ_ZOOM = 5;
@@ -46,6 +58,7 @@ interface LMap {
   zoomIn(): void;
   zoomOut(): void;
   latLngToContainerPoint(latlng: [number, number]): { x: number; y: number };
+  latLngToLayerPoint(latlng: [number, number]): { x: number; y: number };
   getBounds(): { getNorth(): number; getSouth(): number; getEast(): number; getWest(): number };
   getZoom(): number;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -68,6 +81,9 @@ interface LTileLayer {
 interface LLatLngBounds {
   isValid(): boolean;
 }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+interface LClusterGroup { addLayer(m: any): void; clearLayers(): void; addTo(map: LMap): LClusterGroup; remove(): void; }
+
 interface LeafletStatic {
   map(el: HTMLElement, options?: object): LMap;
   tileLayer(url: string, options?: object): LTileLayer;
@@ -82,6 +98,8 @@ interface LeafletStatic {
   circle(latlng: [number, number], options?: object): any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   polyline(latlngs: [number, number][], options?: object): any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  markerClusterGroup?(options?: object): LClusterGroup;
 }
 
 declare global {
@@ -97,19 +115,19 @@ export function formatPrice(price: number): string {
 
 const fmtM = (n: number) => (n / 1_000_000).toFixed(1).replace(/\.0$/, '');
 
-function loadScript(src: string): Promise<void> {
+function loadScript(src: string, readyCheck?: () => boolean): Promise<void> {
   return new Promise((resolve, reject) => {
-    if (window.L) { resolve(); return; }
+    if (readyCheck ? readyCheck() : !!window.L) { resolve(); return; }
     const existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
     if (existing) {
       existing.addEventListener('load', () => resolve(), { once: true });
-      existing.addEventListener('error', () => reject(new Error('leaflet load error')), { once: true });
+      existing.addEventListener('error', () => reject(new Error('script load error')), { once: true });
       return;
     }
     const s = document.createElement('script');
     s.src = src; s.async = true;
     s.onload = () => resolve();
-    s.onerror = () => reject(new Error('leaflet load error'));
+    s.onerror = () => reject(new Error('script load error'));
     document.head.appendChild(s);
   });
 }
@@ -158,42 +176,91 @@ export interface MapViewProps {
 }
 
 // ─── Marker icon factory ─────────────────────────────────────────────────────
-function makeMarkerHtml(priceLabel: string, highlighted: boolean, active: boolean, visited = false, zoom = 12): string {
-  let bg: string, border: string, shadow: string;
+// zoom < 10  → dot with number
+// zoom 10-11 → compact price pill
+// zoom >= 12 → full price pill
+//
+// Base color determined by price tier (0=budget, 1=mid, 2=premium):
+//   tier 0 → slate  #4b5563 — budget listings
+//   tier 1 → black  #111827 — standard (most common)
+//   tier 2 → green  #166534 — premium listings
+//
+// Interaction states always override base color (priority order):
+//   active     → WHITE  — currently open, no pulse
+//   visited    → MUTED  — seen before, no pulse (before highlighted to fix the green bug)
+//   highlighted→ BRIGHT GREEN — sidebar hover, sonar pulse
+//   default    → base tier color + sonar pulse
+
+// Зелёный (#066F36) зарезервирован ТОЛЬКО для highlighted (ховер из сайдбара).
+// Тиры используют белый / чёрный / тёмно-синий — чтобы не путать с ховером.
+// Базовых цветов два: белый (бюджет) и чёрный (всё остальное).
+// Зелёный — только highlighted (hover из сайдбара).
+const TIER_COLORS: Array<{ bg: string; text: string; pulse: string; shadow: string }> = [
+  { bg: '#ffffff', text: '#374151', pulse: 'rgba(74,222,128,0.58)', shadow: '0 2px 10px rgba(0,0,0,0.15)' },
+  { bg: '#111827', text: '#ffffff', pulse: 'rgba(74,222,128,0.62)', shadow: '0 2px 12px rgba(0,0,0,0.28)' },
+  { bg: '#111827', text: '#ffffff', pulse: 'rgba(74,222,128,0.62)', shadow: '0 2px 12px rgba(0,0,0,0.28)' },
+];
+
+function makeMarkerHtml(priceLabel: string, highlighted: boolean, active: boolean, visited = false, zoom = 12, tier = 1): string {
+  const isDot = zoom < 10;
+
+  let bg: string, textColor: string, shadow: string, pulseColor: string;
+  let hasPulse = false;
+
   if (active) {
-    bg = '#066F36'; border = '#055a2b'; shadow = '0 4px 16px rgba(6,111,54,0.35)';
-  } else if (highlighted) {
-    bg = '#1a1a2e'; border = '#066F36'; shadow = '0 4px 16px rgba(6,111,54,0.35)';
+    bg = '#ffffff'; textColor = '#111827';
+    shadow = '0 3px 18px rgba(0,0,0,0.20), 0 1px 6px rgba(0,0,0,0.10)';
+    pulseColor = '';
   } else if (visited) {
-    bg = '#d4d4d8'; border = '#a1a1aa'; shadow = '0 1px 4px rgba(0,0,0,0.14)';
+    // visited MUST come before highlighted to prevent the green bug
+    bg = '#e4e4e7'; textColor = '#71717a';
+    shadow = '0 0 0 2px #a1a1aa, 0 2px 8px rgba(0,0,0,0.12)';
+    pulseColor = '';
+  } else if (highlighted) {
+    bg = '#066F36'; textColor = '#ffffff';
+    shadow = '0 3px 14px rgba(6,111,54,0.45)';
+    pulseColor = 'rgba(74,222,128,0.70)';
+    hasPulse = true;
   } else {
-    bg = 'white'; border = '#d4d4d8'; shadow = '0 2px 8px rgba(0,0,0,0.14)';
+    // Unvisited: use price-tier base color
+    const t = TIER_COLORS[tier] ?? TIER_COLORS[1];
+    bg = t.bg; textColor = t.text; shadow = t.shadow;
+    pulseColor = t.pulse;
+    hasPulse = true;
   }
 
-  if (zoom < 9) {
-    // Large dot, no text
-    const size = active || highlighted ? 20 : 16;
-    const pulse = highlighted ? `<span style="position:absolute;inset:-5px;border-radius:50%;border:2px solid rgba(6,111,54,0.5);animation:pulseRing 1.4s ease-out infinite;"></span>` : '';
-    return `<span style="position:relative;display:inline-flex;align-items:center;justify-content:center;">
-      ${pulse}
-      <span style="width:${size}px;height:${size}px;border-radius:50%;background:${bg};border:2.5px solid ${border};box-shadow:${shadow};display:inline-block;"></span>
-    </span>`;
+  if (isDot) {
+    // Match hero-map mkDotIcon style: 16px core + 3px white border + 28px expanding ring
+    let coreBg: string, ringBg: string;
+    if (active) {
+      coreBg = '#ffffff'; ringBg = '';
+    } else if (visited) {
+      coreBg = '#a1a1aa'; ringBg = 'rgba(113,113,122,0.25)';
+    } else if (highlighted) {
+      coreBg = '#066F36'; ringBg = 'rgba(6,111,54,0.45)';
+    } else {
+      coreBg = '#066F36'; ringBg = 'rgba(6,111,54,0.35)';
+    }
+    const ring = ringBg
+      ? `<div style="position:absolute;left:50%;top:50%;width:28px;height:28px;border-radius:50%;background:${ringBg};animation:dot-pulse 2.2s ease-out infinite;pointer-events:none;"></div>`
+      : '';
+    return `<div style="position:relative;width:28px;height:28px;display:flex;align-items:center;justify-content:center;overflow:visible;">
+      ${ring}
+      <div style="position:relative;z-index:1;width:16px;height:16px;border-radius:50%;background:${coreBg};border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);flex-shrink:0;"></div>
+    </div>`;
   }
 
-  // Abbreviated label at mid zoom (9-11), full label at zoom >= 12
-  const label = zoom < 12
-    ? priceLabel.replace(' млн ₸', 'м').replace(' тыс ₸', 'к')
-    : priceLabel;
-  const fontSize  = zoom < 12 ? '10.5px' : '11.5px';
-  const padding   = zoom < 12 ? '3px 8px'  : '5px 11px';
+  const label    = zoom < 12 ? priceLabel.replace(' млн ₸', 'м').replace(' тыс ₸', 'к') : priceLabel;
+  const fontSize = zoom < 12 ? '10.5px' : '11.5px';
+  const padding  = zoom < 12 ? '3px 8px'  : '5px 11px';
+  const scale    = active || highlighted ? 'scale(1.08)' : 'scale(1)';
+  const pulse = hasPulse
+    ? `<span style="position:absolute;inset:0;border-radius:20px;background:${pulseColor};animation:sonarPulse 3.5s ease-in-out infinite;pointer-events:none;transform-origin:center;"></span>`
+    : '';
 
-  const color = (active || highlighted) ? 'white' : visited ? '#a1a1aa' : '#09090b';
-  const scale = highlighted ? 'scale(1.15)' : 'scale(1)';
-  const pulse = highlighted ? `
-    <span style="position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;border-radius:20px;border:2px solid rgba(6,111,54,0.5);animation:pulseRing 1.4s ease-out infinite;"></span>` : '';
-  return `<span style="position:relative;display:inline-flex;align-items:center;">
+  return `<span style="position:relative;display:inline-flex;align-items:center;transform:${scale};transition:transform 0.15s;">
     ${pulse}
-    <span style="position:relative;display:inline-flex;align-items:center;background:${bg};color:${color};border:1.5px solid ${border};border-radius:20px;padding:${padding};font-size:${fontSize};font-weight:800;white-space:nowrap;box-shadow:${shadow};cursor:pointer;font-family:system-ui,sans-serif;transform:${scale};transition:transform 0.15s,box-shadow 0.15s;letter-spacing:-0.02em;">${label}</span>
+    <span style="position:relative;z-index:1;display:inline-flex;align-items:center;background:${bg};color:${textColor};border-radius:20px;padding:${padding};font-size:${fontSize};font-weight:800;white-space:nowrap;box-shadow:${shadow};cursor:pointer;font-family:ui-monospace,system-ui,sans-serif;letter-spacing:-0.02em;">${label}</span>
   </span>`;
 }
 
@@ -216,10 +283,13 @@ export function MapView({
   onBoundsChange,
   visitedIds,
 }: MapViewProps) {
-  const mapRef     = useRef<HTMLDivElement>(null);
-  const leafletMap = useRef<LMap | null>(null);
-  const markersMap = useRef<Map<string | number, { marker: LMarker; listing: MapItem }>>(new Map());
-  const tileRef    = useRef<LTileLayer | null>(null);
+  const mapRef       = useRef<HTMLDivElement>(null);
+  const leafletMap   = useRef<LMap | null>(null);
+  const markersMap   = useRef<Map<string | number, { marker: LMarker; listing: MapItem; tier: number }>>(new Map());
+  const tileRef      = useRef<LTileLayer | null>(null);
+  const clusterRef   = useRef<LClusterGroup | null>(null);
+  const tiersCacheRef = useRef<Map<string | number, number>>(new Map());
+  const heatPaneRef  = useRef<HTMLDivElement | null>(null);
 
   const [ready,       setReady]      = useState(false);
   const [error,       setError]      = useState(false);
@@ -229,24 +299,23 @@ export function MapView({
   const [showHeatMap, setShowHeatMap] = useState(false);
   const [isMoving,    setIsMoving]   = useState(false);
   const [heatPoints,  setHeatPoints] = useState<{ x: number; y: number; price: number }[]>([]);
-  const [drawMode, setDrawMode] = useState<'none' | 'polygon' | 'radius'>('none');
   const [mapZoom, setMapZoom] = useState(KZ_ZOOM);
   const mapZoomRef = useRef(KZ_ZOOM);
-  const drawPointsRef = useRef<[number, number][]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const drawLayerRef = useRef<any>(null);
   const onBoundsChangeRef = useRef(onBoundsChange);
   const initialFitDone = useRef(false);
   useEffect(() => { onBoundsChangeRef.current = onBoundsChange; }, [onBoundsChange]);
 
   const showOverlays = statsCount !== undefined || onTileLayerChange !== undefined;
 
-  const POPUP_W = 300;
+  const POPUP_W = 308;
 
-  // 1. Load Leaflet
+  // 1. Load Leaflet + cluster plugin
   useEffect(() => {
     loadCss(LEAFLET_CSS);
+    loadCss(CLUSTER_CSS);
+    loadCss(CLUSTER_CSS_DEFAULT);
     loadScript(LEAFLET_JS)
+      .then(() => loadScript(CLUSTER_JS, () => !!(window.L as LeafletStatic & { markerClusterGroup?: unknown })?.markerClusterGroup))
       .then(() => setReady(true))
       .catch(() => setError(true));
   }, []);
@@ -263,6 +332,16 @@ export function MapView({
     });
     map.setView(KZ_CENTER, KZ_ZOOM);
     leafletMap.current = map;
+
+    // Вставляем div в overlay-pane (z-index 400) — между тайлами (200) и маркерами (600)
+    setTimeout(() => {
+      if (!mapRef.current) return;
+      const overlayPane = mapRef.current.querySelector('.leaflet-overlay-pane') as HTMLElement | null;
+      const hp = document.createElement('div');
+      hp.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;';
+      (overlayPane ?? mapRef.current).appendChild(hp);
+      heatPaneRef.current = hp;
+    }, 0);
 
     if (mapApiRef) {
       mapApiRef.current = {
@@ -291,25 +370,69 @@ export function MapView({
     const L = window.L;
     const map = leafletMap.current;
 
+    // Remove existing cluster group / markers
+    // Remove old markers / cluster
     markersMap.current.forEach(({ marker }) => marker.remove());
     markersMap.current.clear();
+    if (clusterRef.current) {
+      clusterRef.current.clearLayers();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      map.removeLayer(clusterRef.current as any);
+      clusterRef.current = null;
+    }
 
     const withCoords = listings.filter(l => l.lat != null && l.lng != null);
 
+    // Tier per listing ID, cached to prevent color flips on zoom/searchAsMove
+    // New listings get assigned based on current median; existing ones keep their tier
+    const sortedPrices = [...withCoords].map(l => l.price).sort((a, b) => a - b);
+    const median = sortedPrices[Math.floor(sortedPrices.length / 2)] ?? 0;
+    withCoords.forEach(l => {
+      if (!tiersCacheRef.current.has(l.id)) {
+        tiersCacheRef.current.set(l.id, l.price >= median ? 1 : 0);
+      }
+    });
+    const getTier = (id: string | number) => tiersCacheRef.current.get(id) ?? 0;
+
     const zl = mapZoomRef.current;
-    const anchorY = zl < 9 ? 10 : zl < 12 ? 16 : 32;
+    const anchorY = zl < 9 ? 12 : zl < 12 ? 16 : 22;
+
+    // Create cluster group if plugin is loaded
+    const useCluster = typeof L.markerClusterGroup === 'function';
+    const clusterGroup = useCluster ? L.markerClusterGroup!({
+      maxClusterRadius: 60,
+      disableClusteringAtZoom: 12,
+      minimumClusterSize: 2,
+      iconCreateFunction: (cluster: { getChildCount: () => number }) => {
+        const count = cluster.getChildCount();
+        const size = count >= 100 ? 52 : count >= 10 ? 44 : 36;
+        return L.divIcon({
+          html: `<div style="position:relative;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;overflow:visible;">
+            <div style="position:absolute;left:50%;top:50%;width:${size}px;height:${size}px;border-radius:50%;background:rgba(6,111,54,0.30);animation:dot-pulse 2.4s ease-out infinite;pointer-events:none;"></div>
+            <div style="position:relative;z-index:1;width:${size}px;height:${size}px;border-radius:50%;background:#066F36;border:3px solid #fff;box-shadow:0 2px 14px rgba(6,111,54,0.35);display:flex;align-items:center;justify-content:center;color:#fff;font-size:${count >= 100 ? 12 : 14}px;font-weight:800;font-family:ui-monospace,monospace;">${count}</div>
+          </div>`,
+          className: '',
+          iconSize: [size, size],
+          iconAnchor: [size / 2, size / 2],
+        });
+      },
+    }) : null;
+
     withCoords.forEach(listing => {
       const priceLabel = formatPrice(listing.price);
       const isHighlighted = highlightedId != null && String(highlightedId) === String(listing.id);
       const isVisited = visitedIds?.has(listing.id) ?? false;
+      const tier = getTier(listing.id);
+      const isDot = zl < 10;
       const icon = L.divIcon({
         className: '',
-        html: `<div style="transform:translateX(-50%)">${makeMarkerHtml(priceLabel, isHighlighted, false, isVisited, zl)}</div>`,
-        iconAnchor: [0, anchorY],
+        html: isDot
+          ? makeMarkerHtml(priceLabel, isHighlighted, false, isVisited, zl, tier)
+          : `<div style="animation:markerPop 0.3s cubic-bezier(0.34,1.56,0.64,1) both;">${makeMarkerHtml(priceLabel, isHighlighted, false, isVisited, zl, tier)}</div>`,
+        ...(isDot ? { iconSize: [28, 28], iconAnchor: [14, 14] } : { iconAnchor: [0, anchorY] }),
       });
 
       const marker = L.marker([listing.lat!, listing.lng!], { icon })
-        .addTo(map)
         .on('click', (e: LeafletMouseEvent) => {
           setPinPoint(e?.containerPoint ?? null);
           setActive(prev => prev?.id === listing.id ? null : listing);
@@ -317,8 +440,18 @@ export function MapView({
           onMarkerClick?.(listing);
         });
 
-      markersMap.current.set(listing.id, { marker, listing });
+      if (clusterGroup) {
+        clusterGroup.addLayer(marker);
+      } else {
+        (marker as LMarker & { addTo: (m: LMap) => LMarker }).addTo(map);
+      }
+      markersMap.current.set(listing.id, { marker, listing, tier });
     });
+
+    if (clusterGroup) {
+      clusterGroup.addTo(map);
+      clusterRef.current = clusterGroup;
+    }
 
     // Only auto-fit on first load — after that user controls zoom
     if (!initialFitDone.current) {
@@ -344,16 +477,19 @@ export function MapView({
     if (!ready || !window.L) return;
     const L = window.L;
     const zl = mapZoom;
-    const anchorY = zl < 9 ? 10 : zl < 12 ? 16 : 32;
-    markersMap.current.forEach(({ marker, listing }) => {
+    const anchorY = zl < 9 ? 12 : zl < 12 ? 16 : 22;
+    markersMap.current.forEach(({ marker, listing, tier }) => {
       const isHighlighted = highlightedId != null && String(highlightedId) === String(listing.id);
       const isActive = active != null && String(active.id) === String(listing.id);
       const isVisited = visitedIds?.has(listing.id) ?? false;
       const priceLabel = formatPrice(listing.price);
+      const isDot = zl < 10;
       marker.setIcon(L.divIcon({
         className: '',
-        html: `<div style="transform:translateX(-50%)">${makeMarkerHtml(priceLabel, isHighlighted, isActive, isVisited, zl)}</div>`,
-        iconAnchor: [0, anchorY],
+        html: isDot
+          ? makeMarkerHtml(priceLabel, isHighlighted, isActive, isVisited, zl, tier)
+          : `<div style="display:inline-block;transform:translateX(-50%);">${makeMarkerHtml(priceLabel, isHighlighted, isActive, isVisited, zl, tier)}</div>`,
+        ...(isDot ? { iconSize: [28, 28], iconAnchor: [14, 14] } : { iconAnchor: [0, anchorY] }),
       }));
     });
   }, [highlightedId, active, ready, visitedIds, mapZoom]);
@@ -379,7 +515,7 @@ export function MapView({
       const pts = listings
         .filter(l => l.lat != null && l.lng != null)
         .map(l => {
-          const p = map.latLngToContainerPoint([l.lat!, l.lng!]);
+          const p = map.latLngToLayerPoint([l.lat!, l.lng!]);
           return { x: p.x, y: p.y, price: l.price };
         });
       setHeatPoints(pts);
@@ -390,17 +526,47 @@ export function MapView({
       onBoundsChangeRef.current({ n: b.getNorth(), s: b.getSouth(), e: b.getEast(), w: b.getWest() });
     };
     compute();
-    map.on('moveend', compute);
+    // heat points only need recompute on zoom (layer coords stable with pan)
     map.on('zoomend', compute);
     map.on('moveend', emitBounds);
     map.on('zoomend', emitBounds);
     return () => {
-      map.off('moveend', compute);
       map.off('zoomend', compute);
       map.off('moveend', emitBounds);
       map.off('zoomend', emitBounds);
     };
   }, [ready, listings]);
+
+  // 5b. Обновляем тепловую карту в overlay-pane (z:400, между тайлами 200 и маркерами 600)
+  useEffect(() => {
+    const pane = heatPaneRef.current;
+    if (!pane) return;
+    if (!showHeatMap || heatPoints.length === 0) { pane.style.background = ''; return; }
+    const prices = heatPoints.map(p => p.price);
+    const minP = Math.min(...prices);
+    const maxP = Math.max(...prices);
+    const range = maxP - minP || 1;
+    const blobR = Math.max(40, Math.min(140, 520 / Math.pow(2, mapZoom - 5)));
+    const pad = blobR * 2;
+    const minX = Math.min(...heatPoints.map(p => p.x)) - pad;
+    const minY = Math.min(...heatPoints.map(p => p.y)) - pad;
+    const maxX = Math.max(...heatPoints.map(p => p.x)) + pad;
+    const maxY = Math.max(...heatPoints.map(p => p.y)) + pad;
+    pane.style.left   = `${minX}px`;
+    pane.style.top    = `${minY}px`;
+    pane.style.width  = `${maxX - minX}px`;
+    pane.style.height = `${maxY - minY}px`;
+    const gradients = heatPoints.map(p => {
+      const ratio = (p.price - minP) / range;
+      const alpha = (0.12 + ratio * 0.30).toFixed(2);
+      const rx = Math.round(blobR * 1.2);
+      const ry = Math.round(blobR);
+      const gx = Math.round(p.x - minX);
+      const gy = Math.round(p.y - minY);
+      return `radial-gradient(ellipse ${rx}px ${ry}px at ${gx}px ${gy}px, rgba(52,211,153,${alpha}) 0%, transparent 100%)`;
+    });
+    pane.style.background = gradients.join(',');
+  }, [showHeatMap, heatPoints, mapZoom]);
 
   // 6. Search-as-move indicator
   useEffect(() => {
@@ -436,10 +602,8 @@ export function MapView({
   }
 
   const LAYERS = [
-    { key: 'schema',    label: 'Схема',     heat: false, disabled: false },
-    { key: 'satellite', label: 'Спутник',   heat: false, disabled: false },
-    { key: 'cadastre',  label: 'Кадастр',   heat: false, disabled: true  },
-    { key: 'heat',      label: 'Тепло цен', heat: true,  disabled: false },
+    { key: 'schema',    label: 'Схема',   disabled: false },
+    { key: 'satellite', label: 'Спутник', disabled: false },
   ];
 
   return (
@@ -509,35 +673,33 @@ export function MapView({
       {/* TOP-RIGHT: layer tabs + zoom + drawing tools */}
       {showOverlays && (
         <div className="absolute top-4 right-4 flex flex-col gap-2 items-end" style={{ zIndex: 800 }}>
-          {/* Layer tabs */}
+          {/* Layer tabs + heatmap toggle */}
           <div className="bg-white/95 backdrop-blur-sm rounded-xl border border-zinc-200 shadow-sm p-1 flex gap-px text-[12px] font-medium">
-            {LAYERS.map(layer => {
-              const isActive = layer.heat ? showHeatMap : (tileLayer === layer.key && !showHeatMap);
-              return (
-                <button
-                  key={layer.key}
-                  onClick={() => {
-                    if (layer.disabled) return;
-                    if (layer.heat) {
-                      setShowHeatMap(prev => !prev);
-                    } else {
-                      setShowHeatMap(false);
-                      onTileLayerChange?.(layer.key);
-                    }
-                  }}
-                  title={layer.disabled ? 'Скоро' : layer.label}
-                  className={`px-3 h-7 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-zinc-900 text-white'
-                      : layer.disabled
-                        ? 'text-zinc-300 cursor-default'
-                        : 'text-zinc-600 hover:bg-zinc-100'
-                  }`}
-                >
-                  {layer.label}
-                </button>
-              );
-            })}
+            {LAYERS.map(layer => (
+              <button
+                key={layer.key}
+                onClick={() => { if (!layer.disabled) onTileLayerChange?.(layer.key); }}
+                title={layer.label}
+                className={`px-3 h-7 rounded-lg transition-colors ${
+                  tileLayer === layer.key
+                    ? 'bg-zinc-900 text-white'
+                    : layer.disabled
+                      ? 'text-zinc-300 cursor-default'
+                      : 'text-zinc-600 hover:bg-zinc-100'
+                }`}
+              >
+                {layer.label}
+              </button>
+            ))}
+            <div style={{ width: 1, background: '#e4e4e7', margin: '4px 2px' }}></div>
+            <button
+              onClick={() => setShowHeatMap(prev => !prev)}
+              className={`px-3 h-7 rounded-lg transition-colors ${
+                showHeatMap ? 'bg-emerald-500 text-white' : 'text-zinc-600 hover:bg-zinc-100'
+              }`}
+            >
+              Тепло цен
+            </button>
           </div>
 
           {/* Zoom controls */}
@@ -561,116 +723,10 @@ export function MapView({
               </svg>
             </button>
           </div>
-
-          {/* Drawing tools */}
-          <div className="bg-white/95 backdrop-blur-sm rounded-xl border border-zinc-200 shadow-sm p-1 flex flex-col">
-            <button
-              onClick={() => {
-                if (!leafletMap.current || !window.L) return;
-                const L = window.L;
-                const map = leafletMap.current;
-                if (drawMode === 'polygon') {
-                  setDrawMode('none');
-                  drawPointsRef.current = [];
-                  if (drawLayerRef.current) { map.removeLayer(drawLayerRef.current); drawLayerRef.current = null; }
-                  return;
-                }
-                setDrawMode('polygon');
-                drawPointsRef.current = [];
-                if (drawLayerRef.current) { map.removeLayer(drawLayerRef.current); drawLayerRef.current = null; }
-                const onClick = (e: { latlng: { lat: number; lng: number } }) => {
-                  drawPointsRef.current = [...drawPointsRef.current, [e.latlng.lat, e.latlng.lng]];
-                  if (drawLayerRef.current) map.removeLayer(drawLayerRef.current);
-                  if (drawPointsRef.current.length >= 2) {
-                    drawLayerRef.current = L.polygon(drawPointsRef.current, {
-                      color: '#066F36', fillColor: '#066F36', fillOpacity: 0.08,
-                      weight: 2, dashArray: '6 4',
-                    }).addTo(map);
-                  }
-                };
-                const onDblClick = () => {
-                  map.off('click', onClick);
-                  map.off('dblclick', onDblClick);
-                  setDrawMode('none');
-                };
-                map.on('click', onClick);
-                map.on('dblclick', onDblClick);
-              }}
-              className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${drawMode === 'polygon' ? 'bg-primary text-white' : 'hover:bg-zinc-100 text-zinc-600'}`}
-              title={drawMode === 'polygon' ? 'Завершить' : 'Нарисовать область'}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 17l6-6 4 4 8-8" />
-                <circle cx="3" cy="17" r="1.5" fill="currentColor" />
-                <circle cx="9" cy="11" r="1.5" fill="currentColor" />
-                <circle cx="13" cy="15" r="1.5" fill="currentColor" />
-                <circle cx="21" cy="7"  r="1.5" fill="currentColor" />
-              </svg>
-            </button>
-            <button
-              onClick={() => {
-                if (!leafletMap.current || !window.L) return;
-                const L = window.L;
-                const map = leafletMap.current;
-                if (drawMode === 'radius') {
-                  setDrawMode('none');
-                  if (drawLayerRef.current) { map.removeLayer(drawLayerRef.current); drawLayerRef.current = null; }
-                  return;
-                }
-                setDrawMode('radius');
-                if (drawLayerRef.current) { map.removeLayer(drawLayerRef.current); drawLayerRef.current = null; }
-                const onClick = (e: { latlng: { lat: number; lng: number } }) => {
-                  if (drawLayerRef.current) map.removeLayer(drawLayerRef.current);
-                  drawLayerRef.current = L.circle([e.latlng.lat, e.latlng.lng], {
-                    radius: 25000, color: '#066F36', fillColor: '#066F36', fillOpacity: 0.06, weight: 2, dashArray: '6 4',
-                  }).addTo(map);
-                  map.off('click', onClick);
-                  setDrawMode('none');
-                };
-                map.on('click', onClick);
-              }}
-              className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${drawMode === 'radius' ? 'bg-primary text-white' : 'hover:bg-zinc-100 text-zinc-600'}`}
-              title={drawMode === 'radius' ? 'Отменить' : 'Радиус 25км от точки'}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="9" strokeDasharray="3 3" />
-                <circle cx="12" cy="12" r="2" fill="currentColor" />
-              </svg>
-            </button>
-            {(drawLayerRef.current || drawMode !== 'none') && (
-              <button
-                onClick={() => {
-                  if (drawLayerRef.current && leafletMap.current) leafletMap.current.removeLayer(drawLayerRef.current);
-                  drawLayerRef.current = null; drawPointsRef.current = []; setDrawMode('none');
-                }}
-                className="w-9 h-9 rounded-lg hover:bg-red-50 text-red-400 flex items-center justify-center transition-colors"
-                title="Очистить"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-              </button>
-            )}
-          </div>
         </div>
       )}
 
-      {/* HEAT MAP overlay — blobs positioned at actual listing coords */}
-      {showHeatMap && heatPoints.length > 0 && (() => {
-        const maxPrice = Math.max(...heatPoints.map(p => p.price));
-        const gradients = heatPoints.map(p => {
-          const ratio = maxPrice > 0 ? p.price / maxPrice : 0.5;
-          const r = Math.round(255 * Math.min(1, ratio * 2));
-          const g = Math.round(180 * Math.max(0, 1 - ratio));
-          const alpha = 0.12 + ratio * 0.22;
-          return `radial-gradient(ellipse 80px 60px at ${p.x}px ${p.y}px, rgba(${r},${g},0,${alpha.toFixed(2)}) 0%, transparent 100%)`;
-        });
-        return (
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{ zIndex: 450, background: gradients.join(','), mixBlendMode: 'multiply' }}
-          />
-        );
-      })()}
-
+      {/* HEAT MAP — плотность + цена в видимом окне */}
       {/* SEARCH-AS-MOVE indicator */}
       {isMoving && searchAsMove && (
         <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 850 }}>
@@ -692,38 +748,41 @@ export function MapView({
 
       {/* BOTTOM-LEFT: Compare strip */}
       {compareList && compareList.length > 0 && (
-        <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-white rounded-2xl border border-zinc-200 shadow-lg p-2" style={{ zIndex: 900 }}>
-          <div className="px-2.5 py-1.5 shrink-0">
-            <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">Сравнение</div>
-            <div className="text-[12.5px] font-bold text-zinc-900">{compareList.length} из 4</div>
+        <div className="absolute bottom-4 left-4 flex items-center gap-3 bg-white rounded-2xl border border-zinc-200 shadow-xl p-3" style={{ zIndex: 900 }}>
+          <div className="shrink-0">
+            <div className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400 mb-0.5">Сравнение</div>
+            <div className="text-[13px] font-bold text-zinc-900 tabular-nums">{compareList.length} <span className="font-normal text-zinc-400">из 4</span></div>
           </div>
-          <div className="flex items-center gap-1.5">
+          <span className="w-px h-10 bg-zinc-100 shrink-0" />
+          <div className="flex items-center gap-2">
             {compareList.map(item => (
-              <div key={item.id} className="relative w-12 h-12 rounded-lg bg-zinc-100 overflow-hidden ring-2 ring-primary ring-offset-1">
+              <div key={item.id} className="relative w-14 h-14 rounded-xl bg-zinc-100 overflow-hidden ring-2 ring-primary/70 ring-offset-1 shrink-0">
                 {item.image
                   ? <img src={item.image} className="w-full h-full object-cover" alt="" loading="lazy" />
                   : <div className="w-full h-full bg-gradient-to-br from-zinc-100 to-zinc-200" />
                 }
                 <button
                   onClick={() => onRemoveCompare?.(item.id)}
-                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-zinc-900 text-white text-[9px] flex items-center justify-center"
+                  className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-zinc-900/80 backdrop-blur-sm text-white text-[10px] leading-none flex items-center justify-center hover:bg-zinc-700 transition-colors"
                   style={{ zIndex: 1 }}
                 >×</button>
-                <span className="absolute bottom-0 left-0 right-0 bg-zinc-900/80 text-white text-[8px] font-bold py-0.5 text-center rounded-b-lg">
-                  {fmtM(item.price)}м
-                </span>
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900/90 to-transparent pt-2 pb-0.5 px-0.5">
+                  <span className="block text-white text-[9px] font-bold text-center tabular-nums">
+                    {fmtM(item.price)}м
+                  </span>
+                </div>
               </div>
             ))}
             {compareList.length < 4 && (
-              <div className="w-12 h-12 rounded-lg border-2 border-dashed border-zinc-300 flex items-center justify-center text-zinc-400 text-xl">+</div>
+              <div className="w-14 h-14 rounded-xl border-2 border-dashed border-zinc-200 flex items-center justify-center text-zinc-300 text-2xl shrink-0">+</div>
             )}
           </div>
-          <span className="w-px h-10 bg-zinc-200 shrink-0" />
+          <span className="w-px h-10 bg-zinc-100 shrink-0" />
           <button
             onClick={onCompare}
-            className="h-10 px-4 rounded-xl bg-zinc-900 text-white text-[12px] font-semibold hover:bg-primary transition-colors flex items-center gap-1.5 shrink-0"
+            className="h-10 px-5 rounded-xl bg-primary text-white text-[12.5px] font-semibold hover:bg-primary/90 active:scale-95 transition-all flex items-center gap-1.5 shrink-0 shadow-sm"
           >
-            Сравнить →
+            Сравнить <span className="opacity-70">→</span>
           </button>
         </div>
       )}
@@ -772,6 +831,15 @@ export function MapView({
   );
 }
 
+function relDate(dateStr: string): string {
+  const d = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86_400_000);
+  if (d === 0) return 'сегодня';
+  if (d === 1) return 'вчера';
+  if (d < 7)  return `${d} дн`;
+  if (d < 30) return `${Math.floor(d / 7)} нед`;
+  return `${Math.floor(d / 30)} мес`;
+}
+
 // ─── Active card positioned near pin ─────────────────────────────────────────
 function ActiveCard({
   active, pinPoint, imgError, setImgError, setActive, setPinPoint, mapRef, popupW,
@@ -785,72 +853,105 @@ function ActiveCard({
   mapRef: React.RefObject<HTMLDivElement | null>;
   popupW: number;
 }) {
-  const mapW = mapRef.current?.offsetWidth ?? 800;
-  const POPUP_H = 310;
+  const mapW = mapRef.current?.offsetWidth  ?? 800;
+  const mapH = mapRef.current?.offsetHeight ?? 600;
+  const POPUP_H = 340;
+  const GAP = 20;
 
-  let left = (pinPoint?.x ?? mapW - popupW - 20) + 20;
-  if (left + popupW > mapW - 8) left = (pinPoint?.x ?? popupW + 36) - popupW - 20;
-  left = Math.max(8, Math.min(left, mapW - popupW - 8));
+  const px = pinPoint?.x ?? mapW / 2;
+  const py = pinPoint?.y ?? mapH / 2;
 
-  const py = pinPoint?.y ?? POPUP_H + 30;
-  const showBelow = py < POPUP_H + 20;
-  const topPx = showBelow ? py + 24 : py;
+  // Position: starts 16px to the right of the pin center, above the pin
+  let left = px + 16;
+  // Clamp so card doesn't overflow right edge
+  if (left + popupW > mapW - 8) left = px - popupW - 16;
+  left = Math.max(8, left);
+
+  const showBelow = py < POPUP_H + GAP + 40;
+  const topPx = showBelow ? py + GAP : py - GAP;
   const transformY = showBelow ? '0%' : '-100%';
+
+  const typeLabel = active.purpose || active.landType || '';
+  const perSotka = active.area && active.area > 0 ? Math.round(active.price / active.area) : 0;
+
+  // Если заголовок — хлебные крошки (дублирует локацию) — строим читаемый из данных
+  const cityName = active.location.split(',')[0].trim();
+  const looksLikeBreadcrumb = cityName && active.title.toLowerCase().includes(cityName.toLowerCase());
+  const displayTitle = looksLikeBreadcrumb
+    ? `Участок${active.area ? ` ${active.area} сот` : ''}${cityName ? ` в ${cityName}` : ''}`
+    : active.title;
+
+  // 3 чипа внизу карточки
+  const statCols: Array<{ label: string; value: string; accent?: boolean }> = [];
+  if (typeLabel) statCols.push({ label: 'Назначение', value: typeLabel });
+  if (active.area && active.area > 0) statCols.push({ label: 'Площадь', value: `${active.area} сот` });
+  if (active.hasStateAct !== undefined) statCols.push({ label: 'Кадастр', value: active.hasStateAct ? 'проверен' : 'нет акта', accent: active.hasStateAct });
+  // добиваем до 3 коммуникациями если нужно
+  if (statCols.length < 3) {
+    const comms = [active.hasElectricity && 'Свет', active.hasGas && 'Газ', active.hasWater && 'Вода', active.hasRoadAccess && 'Дорога'].filter(Boolean) as string[];
+    if (comms.length) statCols.push({ label: 'Коммуникации', value: comms.join(', ') });
+  }
+  const stats = statCols.slice(0, 3);
 
   return (
     <div style={{ zIndex: 900, position: 'absolute', left, top: topPx, width: popupW, transform: `translateY(${transformY})` }}>
-      {/* Pointer triangle — bottom when popup is above pin */}
-      {!showBelow && (
-        <div className="absolute -bottom-2 left-6 w-4 h-4 bg-white border-r border-b border-zinc-200 rotate-45" style={{ zIndex: 1 }} />
-      )}
-      {/* Pointer triangle — top when popup is below pin */}
-      {showBelow && (
-        <div className="absolute -top-2 left-6 w-4 h-4 bg-white border-l border-t border-zinc-200 rotate-45" style={{ zIndex: 1 }} />
-      )}
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-2xl overflow-hidden">
-        <div className="relative h-36 bg-zinc-100">
+      <div className="bg-white rounded-2xl border border-zinc-100 shadow-2xl overflow-hidden">
+        {/* Image */}
+        <div className="relative h-[120px] bg-zinc-100">
           {active.image && !imgError ? (
-            <img
-              src={active.image}
-              alt={active.title}
-              className="w-full h-full object-cover"
-              onError={() => setImgError(true)}
-            />
+            <img src={active.image} alt={active.title} className="w-full h-full object-cover" onError={() => setImgError(true)} />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-zinc-100 to-zinc-200 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-zinc-300">
-                <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" />
-              </svg>
-            </div>
+            <div className="w-full h-full plot-img" />
           )}
           <button
             onClick={() => { setActive(null); setPinPoint(null); }}
             className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/40 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/60 transition"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M18 6 6 18" /><path d="m6 6 12 12" />
-            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
           </button>
-          {(active.purpose || active.landType) && (
-            <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/50 backdrop-blur-sm text-white text-[10px] font-bold uppercase tracking-wide">
-              {active.purpose || active.landType}
-            </span>
-          )}
         </div>
+
+        {/* Content */}
         <div className="p-3.5">
-          <p className="text-[10.5px] font-medium text-zinc-500 uppercase tracking-wider truncate">{active.location}</p>
-          <h4 className="mt-0.5 font-bold text-[16px] leading-tight text-zinc-900 line-clamp-2">{active.title}</h4>
-          <div className="mt-3 flex items-end justify-between">
-            <div className="font-black text-[20px] text-zinc-900 leading-none tracking-tight">
-              {formatPrice(active.price)}
+          {/* Тип · локация */}
+          <p className="text-[10.5px] font-medium text-zinc-500 uppercase tracking-wider truncate">
+            {[typeLabel, active.location].filter(Boolean).join(' · ')}
+          </p>
+
+          {/* Заголовок */}
+          <h4 className="mt-0.5 font-semibold text-[14.5px] leading-snug text-zinc-900 line-clamp-2">{displayTitle}</h4>
+
+          {/* Цена + кнопка */}
+          <div className="mt-2.5 flex items-end justify-between gap-2">
+            <div>
+              <div className="font-black tracking-tight text-[19px] text-zinc-900 leading-none tabular-nums">
+                {formatPrice(active.price)}
+              </div>
+              {perSotka > 0 && (
+                <div className="mt-0.5 text-[10.5px] font-mono text-zinc-500 tabular-nums">
+                  {formatPrice(perSotka)} / сотка
+                </div>
+              )}
             </div>
             <Link
               href={listingUrl(active)}
-              className="h-9 px-4 rounded-xl bg-zinc-900 text-white text-[11.5px] font-semibold flex items-center gap-1 hover:bg-primary transition-colors"
+              className="shrink-0 h-8 px-3.5 rounded-xl bg-zinc-900 text-white text-[11px] font-semibold flex items-center gap-1 hover:bg-primary transition-colors"
             >
               Открыть →
             </Link>
           </div>
+
+          {/* 3 чипа */}
+          {stats.length > 0 && (
+            <div className="mt-3 pt-2.5 border-t border-zinc-100 grid gap-x-2" style={{ gridTemplateColumns: `repeat(${stats.length}, 1fr)` }}>
+              {stats.map(s => (
+                <div key={s.label}>
+                  <div className="text-[9px] font-mono uppercase tracking-wider text-zinc-400 mb-0.5">{s.label}</div>
+                  <div className={`text-[12px] font-bold tabular-nums leading-tight ${s.accent ? 'text-primary' : 'text-zinc-800'}`}>{s.value}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -31,8 +31,8 @@ export function HomeSearch({ locations }: { locations: string[] }) {
 
   return (
     <div ref={ref} className="relative flex w-full max-w-xl">
-      <div className="flex flex-1 items-center gap-2 bg-white rounded-xl border border-zinc-200 shadow-sm px-4 py-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all">
-        <MapPin className="size-4 text-zinc-400 shrink-0" strokeWidth={2} />
+      <div className="flex flex-1 items-center gap-2 bg-white rounded-xl border border-[var(--line)] shadow-[var(--sh-1)] px-4 py-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+        <MapPin className="size-4 text-[var(--ink-400)] shrink-0" strokeWidth={2} />
         <input
           type="text"
           placeholder="Город, район, трасса..."
@@ -40,10 +40,10 @@ export function HomeSearch({ locations }: { locations: string[] }) {
           onChange={e => { setCity(e.target.value); setShow(true); }}
           onFocus={() => setShow(true)}
           onKeyDown={e => e.key === 'Enter' && go()}
-          className="flex-1 bg-transparent text-[15px] text-zinc-900 placeholder:text-zinc-400 outline-none"
+          className="flex-1 bg-transparent text-[15px] text-[var(--ink-900)] placeholder:text-[var(--ink-400)] outline-none"
         />
         {city && (
-          <button onClick={() => setCity('')} className="text-zinc-300 hover:text-zinc-500 transition-colors">
+          <button onClick={() => setCity('')} className="text-[var(--ink-300)] hover:text-[var(--ink-500)] transition-colors">
             <X className="size-4" />
           </button>
         )}
@@ -57,15 +57,15 @@ export function HomeSearch({ locations }: { locations: string[] }) {
       </button>
 
       {show && suggestions.length > 0 && (
-        <div className="absolute top-full left-0 right-12 mt-2 bg-white rounded-xl border border-zinc-200 shadow-xl overflow-hidden z-50">
+        <div className="absolute top-full left-0 right-12 mt-2 bg-white rounded-xl border border-[var(--line)] shadow-[var(--sh-3)] overflow-hidden z-50">
           {suggestions.map(loc => (
             <button
               key={loc}
               onMouseDown={e => e.preventDefault()}
               onClick={() => { setCity(loc); setShow(false); go(); }}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-zinc-700 hover:bg-zinc-50 text-left transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-[var(--ink-700)] hover:bg-[var(--paper)] text-left transition-colors"
             >
-              <MapPin className="size-3.5 text-zinc-400 shrink-0" strokeWidth={2} />
+              <MapPin className="size-3.5 text-[var(--ink-400)] shrink-0" strokeWidth={2} />
               {loc}
             </button>
           ))}

@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { MapPin } from 'lucide-react';
 import { Listing } from '@/types/listing';
 import { listingUrl } from '@/lib/listing-url';
 import { CardMediaSlider } from './card-media-slider';
@@ -9,82 +8,81 @@ interface ListingCardProps {
   mediaAspect?: string;
 }
 
-const CHIPS = [
-  { key: 'hasElectricity', label: 'Свет',    color: 'bg-yellow-400'  },
-  { key: 'hasGas',         label: 'Газ',      color: 'bg-orange-400'  },
-  { key: 'hasWater',       label: 'Вода',     color: 'bg-cyan-400'    },
-  { key: 'hasRoadAccess',  label: 'Дорога',   color: 'bg-stone-400'   },
-  { key: 'hasStateAct',    label: 'Госакт',   color: 'bg-emerald-500' },
-  { key: 'isDivisible',    label: 'Делимый',  color: 'bg-violet-400'  },
-] as const;
+const fmt = (n: number) => new Intl.NumberFormat('ru-RU').format(n);
+const fmtM   = (n: number) => (n / 1_000_000).toFixed(1).replace(/\.0$/, '');
 
 export function ListingCard({ listing, mediaAspect = '4/3' }: ListingCardProps) {
-  const price    = new Intl.NumberFormat('ru-RU').format(listing.price);
-  const perSotka = new Intl.NumberFormat('ru-RU').format(Math.round(listing.price / listing.area));
-  const allMedia = (listing.images && listing.images.length > 0) ? listing.images : listing.image ? [listing.image] : [];
+  const perSotka  = listing.area > 0 ? Math.round(listing.price / listing.area) : 0;
+  const allMedia  = (listing.images && listing.images.length > 0) ? listing.images : listing.image ? [listing.image] : [];
   const typeLabel = listing.purpose || listing.landType;
-  const address   = (listing as Listing & { address?: string }).address || listing.location;
 
-  const chips = CHIPS.filter(c => listing[c.key]);
+  // Build 3 stats columns
+  const statCols: Array<{ label: string; value: string; accent?: boolean }> = [];
+  if (listing.area > 0) statCols.push({ label: 'Площадь', value: `${listing.area} сот` });
+  if (typeLabel) statCols.push({ label: 'Назначение', value: typeLabel });
+  if (listing.hasStateAct !== undefined) {
+    statCols.push({ label: 'Кадастр', value: listing.hasStateAct ? 'проверен' : 'нет акта', accent: listing.hasStateAct });
+  } else {
+    const comms = [listing.hasElectricity && 'Свет', listing.hasGas && 'Газ', listing.hasWater && 'Вода', listing.hasRoadAccess && 'Дорога'].filter(Boolean) as string[];
+    if (comms.length) statCols.push({ label: 'Коммуникации', value: comms.slice(0, 2).join(', ') });
+  }
+  const stats = statCols.slice(0, 3);
 
   return (
     <Link
       href={listingUrl(listing)}
-      className="group flex h-full flex-col overflow-hidden rounded-2xl bg-white border border-zinc-200 hover:border-primary/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+      className="group flex h-full flex-col overflow-hidden rounded-[var(--r-lg)] bg-white border border-[var(--line)] shadow-[var(--sh-1)] hover:shadow-[var(--sh-2)] transition-all duration-200"
     >
-      {/* Фото */}
-      <div className="relative w-full overflow-hidden bg-zinc-100 shrink-0" style={{ aspectRatio: mediaAspect }}>
+      {/* Image */}
+      <div className="relative w-full overflow-hidden bg-[var(--paper-2)] shrink-0" style={{ aspectRatio: mediaAspect }}>
         <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-[1.03]">
           <CardMediaSlider images={allMedia} title={listing.title} />
         </div>
-
-        {/* Градиент снизу */}
-        <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/20 to-transparent pointer-events-none z-10" />
-
-        {/* Счётчик фото — всегда виден (touch-устройства не поддерживают hover) */}
-        {allMedia.length > 1 && (
-          <div className="absolute bottom-2 right-2 z-20 flex items-center gap-1 bg-black/40 backdrop-blur-sm text-white text-[11px] font-semibold px-2 py-0.5 rounded-full">
-            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-            {allMedia.length}
-          </div>
+        {(listing as Listing & { isNegotiable?: boolean }).isNegotiable && (
+          <span className="absolute top-2.5 left-2.5 z-10 px-1.5 py-0.5 rounded-[var(--r-xs)] bg-[var(--color-warning-soft)] text-[var(--color-warning)] text-[9px] font-bold uppercase tracking-wide">
+            Торг
+          </span>
         )}
       </div>
 
-      {/* Контент */}
-      <div className="flex flex-1 flex-col px-3 pt-3 pb-3 gap-2 sm:px-4 sm:pt-4 sm:pb-4 sm:gap-3">
+      {/* Content */}
+      <div className="flex flex-1 flex-col p-3.5">
 
-        {/* Тип · Площадь */}
-        <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-zinc-400 font-medium">
-          {typeLabel && <span className="text-zinc-600 font-semibold">{typeLabel}</span>}
-          {typeLabel && <span>·</span>}
-          <span>{listing.area} сот.</span>
+        {/* Type · Location */}
+        <p className="text-[10.5px] font-medium text-[var(--ink-400)] uppercase tracking-wider truncate">
+          {[typeLabel, listing.address || listing.location].filter(Boolean).join(' · ')}
+        </p>
+
+        {/* Title */}
+        <h3 className="mt-0.5 font-semibold text-[14.5px] leading-snug text-[var(--ink-900)] line-clamp-2">
+          {listing.title}
+        </h3>
+
+        {/* Price + CTA */}
+        <div className="mt-2.5 flex items-end justify-between gap-2">
+          <div>
+            <div className="font-black tracking-tight text-[19px] text-[var(--ink-900)] leading-none tabular-nums">
+              {fmtM(listing.price)} млн ₸
+            </div>
+            {perSotka > 0 && (
+              <div className="mt-0.5 text-[10.5px] font-mono text-[var(--ink-400)] tabular-nums">
+                {fmt(perSotka)} / сотка
+              </div>
+            )}
+          </div>
+          <span className="shrink-0 h-8 px-3.5 rounded-[var(--r-md)] bg-[var(--ink-900)] text-white text-[11px] font-semibold flex items-center gap-1 group-hover:bg-[var(--brand-600)] transition-colors">
+            Открыть →
+          </span>
         </div>
 
-        {/* Цена */}
-        <div className="-mt-0.5">
-          <p className="text-lg sm:text-2xl font-bold text-zinc-900 leading-none tabular-nums tracking-tight">
-            {price} ₸
-          </p>
-          <p className="text-[11px] sm:text-xs text-zinc-400 mt-1 tabular-nums">{perSotka} ₸/сот.</p>
-        </div>
-
-        {/* Адрес */}
-        <div className="flex items-center gap-1 min-w-0">
-          <MapPin className="size-3 sm:size-3.5 shrink-0 text-zinc-400" />
-          <span className="text-[11px] sm:text-[12.5px] text-zinc-500 truncate">{address}</span>
-        </div>
-
-        {/* Коммуникации с pulse-точками */}
-        {chips.length > 0 && (
-          <div className="flex flex-wrap gap-x-2 gap-y-1.5 pt-2 border-t border-zinc-100 sm:gap-x-3 sm:pt-2.5">
-            {chips.slice(0, 4).map(({ label, color }) => (
-              <span key={label} className="flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-[12px] text-zinc-500">
-                <span className="relative flex size-1.5 sm:size-2">
-                  <span className={`absolute inline-flex h-full w-full rounded-full ${color} opacity-60 animate-ping`} />
-                  <span className={`relative inline-flex size-full rounded-full ${color}`} />
-                </span>
-                {label}
-              </span>
+        {/* Stats strip */}
+        {stats.length > 0 && (
+          <div className="mt-3 pt-2.5 border-t border-[var(--line-soft)] grid gap-x-2" style={{ gridTemplateColumns: `repeat(${stats.length}, 1fr)` }}>
+            {stats.map(s => (
+              <div key={s.label}>
+                <div className="text-[9px] font-mono uppercase tracking-wider text-[var(--ink-400)] mb-0.5">{s.label}</div>
+                <div className={`text-[12px] font-bold tabular-nums leading-tight ${s.accent ? 'text-primary' : 'text-[var(--ink-700)]'}`}>{s.value}</div>
+              </div>
             ))}
           </div>
         )}

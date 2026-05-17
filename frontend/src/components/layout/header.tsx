@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Plus } from 'lucide-react';
+import { Menu, X, Plus, Bookmark } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
+
+const LS_BOOKMARKS = '6sotok_bookmarks';
 
 const NAV = [
   { label: 'Купить',     href: '/catalog',   match: '/catalog' },
@@ -17,8 +19,19 @@ const NAV = [
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [bookmarkCount, setBookmarkCount] = useState(0);
   const pathname = usePathname();
   const { user } = useAuth();
+
+  useEffect(() => {
+    const read = () => {
+      try { setBookmarkCount(JSON.parse(localStorage.getItem(LS_BOOKMARKS) ?? '[]').length); } catch {}
+    };
+    read();
+    window.addEventListener('storage', read);
+    window.addEventListener('bookmarks-updated', read);
+    return () => { window.removeEventListener('storage', read); window.removeEventListener('bookmarks-updated', read); };
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = isMenuOpen ? 'hidden' : '';
@@ -27,13 +40,14 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-white border-b border-zinc-200">
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-[var(--line)]">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 flex h-[52px] items-center gap-4">
 
           {/* Logo */}
           <Link href="/" className="flex items-center shrink-0 hover:opacity-80 transition-opacity">
-            <span className="text-[19px] font-black tracking-tight leading-none">
-              <span className="text-primary">6</span><span className="text-zinc-900">sotok.kz</span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-flex items-center justify-center w-[26px] h-[26px] bg-primary text-white font-black text-[13px] rounded-[7px] shrink-0">6</span>
+              <span className="text-[18px] font-black tracking-[-0.045em] leading-none text-[var(--ink-900)]">sotok<span className="text-primary">.kz</span></span>
             </span>
           </Link>
 
@@ -70,6 +84,20 @@ export function Header() {
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               RU · KZT
             </button>
+
+            {/* Favorites */}
+            <Link
+              href="/favorites"
+              className="hidden md:flex items-center gap-1.5 text-[13px] font-medium text-zinc-500 hover:text-zinc-900 transition-colors px-2.5 py-1.5 rounded-md hover:bg-zinc-50 relative"
+            >
+              <Bookmark className={`w-4 h-4 ${pathname?.startsWith('/favorites') ? 'fill-primary text-primary' : ''}`} />
+              <span>Избранное</span>
+              {bookmarkCount > 0 && (
+                <span className="flex items-center justify-center w-4 h-4 rounded-full bg-primary text-white text-[9px] font-bold">
+                  {bookmarkCount}
+                </span>
+              )}
+            </Link>
 
             {/* Login */}
             <Link
@@ -117,7 +145,7 @@ export function Header() {
         <div className="flex items-center justify-between px-5 h-[52px] border-b border-zinc-100 shrink-0">
           <Link href="/" onClick={() => setIsMenuOpen(false)} className="flex items-center">
             <span className="text-[18px] font-black tracking-tight leading-none">
-              <span className="text-primary">6</span><span className="text-zinc-900">sotok.kz</span>
+              <span className="text-primary">6</span><span className="text-[var(--ink-900)]">sotok</span><span className="text-primary">.kz</span>
             </span>
           </Link>
           <button onClick={() => setIsMenuOpen(false)} className="p-2 rounded-lg text-zinc-500 hover:bg-zinc-100 transition-colors">
