@@ -14,11 +14,9 @@ export function Footer() {
 
           {/* Brand */}
           <div className="col-span-2 lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <img src="/logo.svg" alt="6sotok" className="h-10 w-auto" />
-              <span className="text-xl font-black tracking-tight text-zinc-900">
-                6sotok<span className="text-primary">.kz</span>
-              </span>
+            <Link href="/" className="flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
+              <img src="/logo-solid.svg" alt="6sotok" className="h-9 w-auto" />
+              <span className="text-xl font-black tracking-[-0.04em] text-zinc-900">6sotok<span className="text-primary">.kz</span></span>
             </Link>
             <p className="text-[14px] text-zinc-500 font-normal leading-relaxed max-w-xs">
               Маркетплейс земельных участков в Казахстане. Найдите идеальный участок для жизни и бизнеса.

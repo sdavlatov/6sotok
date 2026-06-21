@@ -2,29 +2,31 @@ import Link from 'next/link';
 import { Listing } from '@/types/listing';
 import { listingUrl } from '@/lib/listing-url';
 import { CardMediaSlider } from './card-media-slider';
+import { UTILITY_DOTS, plotClass } from '@/lib/listing-card-utils';
 
 interface ListingCardProps {
   listing: Listing;
   mediaAspect?: string;
 }
 
-const fmt = (n: number) => new Intl.NumberFormat('ru-RU').format(n);
-const fmtM   = (n: number) => (n / 1_000_000).toFixed(1).replace(/\.0$/, '');
+const fmt  = (n: number) => new Intl.NumberFormat('ru-RU').format(n);
+const fmtM = (n: number) => (n / 1_000_000).toFixed(1).replace(/\.0$/, '');
 
 export function ListingCard({ listing, mediaAspect = '4/3' }: ListingCardProps) {
-  const perSotka  = listing.area > 0 ? Math.round(listing.price / listing.area) : 0;
-  const allMedia  = (listing.images && listing.images.length > 0) ? listing.images : listing.image ? [listing.image] : [];
+  const perSotka = listing.area > 0 ? Math.round(listing.price / listing.area) : 0;
+  const allMedia = (listing.images && listing.images.length > 0) ? listing.images : listing.image ? [listing.image] : [];
   const typeLabel = listing.purpose || listing.landType;
+  const dots = UTILITY_DOTS.filter(d => listing[d.key as keyof Listing]);
 
-  // Build 3 stats columns
+  // 3 stats strip
   const statCols: Array<{ label: string; value: string; accent?: boolean }> = [];
   if (listing.area > 0) statCols.push({ label: 'Площадь', value: `${listing.area} сот` });
   if (typeLabel) statCols.push({ label: 'Назначение', value: typeLabel });
   if (listing.hasStateAct !== undefined) {
     statCols.push({ label: 'Кадастр', value: listing.hasStateAct ? 'проверен' : 'нет акта', accent: listing.hasStateAct });
   } else {
-    const comms = [listing.hasElectricity && 'Свет', listing.hasGas && 'Газ', listing.hasWater && 'Вода', listing.hasRoadAccess && 'Дорога'].filter(Boolean) as string[];
-    if (comms.length) statCols.push({ label: 'Коммуникации', value: comms.slice(0, 2).join(', ') });
+    const comms = [listing.hasElectricity && 'Свет', listing.hasGas && 'Газ', listing.hasWater && 'Вода'].filter(Boolean) as string[];
+    if (comms.length) statCols.push({ label: 'Коммуникации', value: comms.join(', ') });
   }
   const stats = statCols.slice(0, 3);
 
@@ -34,11 +36,11 @@ export function ListingCard({ listing, mediaAspect = '4/3' }: ListingCardProps) 
       className="group flex h-full flex-col overflow-hidden rounded-[var(--r-lg)] bg-white border border-[var(--line)] shadow-[var(--sh-1)] hover:shadow-[var(--sh-2)] transition-all duration-200"
     >
       {/* Image */}
-      <div className="relative w-full overflow-hidden bg-[var(--paper-2)] shrink-0" style={{ aspectRatio: mediaAspect }}>
+      <div className={`relative w-full overflow-hidden shrink-0 ${plotClass(listing.landType)}`} style={{ aspectRatio: mediaAspect }}>
         <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-[1.03]">
           <CardMediaSlider images={allMedia} title={listing.title} />
         </div>
-        {(listing as Listing & { isNegotiable?: boolean }).isNegotiable && (
+        {listing.isNegotiable && (
           <span className="absolute top-2.5 left-2.5 z-10 px-1.5 py-0.5 rounded-[var(--r-xs)] bg-[var(--color-warning-soft)] text-[var(--color-warning)] text-[9px] font-bold uppercase tracking-wide">
             Торг
           </span>
@@ -75,13 +77,25 @@ export function ListingCard({ listing, mediaAspect = '4/3' }: ListingCardProps) 
           </span>
         </div>
 
-        {/* Stats strip */}
-        {stats.length > 0 && (
+        {/* Utility dots */}
+        {dots.length > 0 && (
+          <div className="mt-2.5 pt-2.5 border-t border-[var(--line-soft)] flex flex-wrap gap-x-3 gap-y-1">
+            {dots.map(d => (
+              <span key={d.key} className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--ink-500)' }}>
+                <span className="size-2 rounded-full shrink-0" style={{ background: d.color }} />
+                {d.label}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Stats strip (only if no dots) */}
+        {dots.length === 0 && stats.length > 0 && (
           <div className="mt-3 pt-2.5 border-t border-[var(--line-soft)] grid gap-x-2" style={{ gridTemplateColumns: `repeat(${stats.length}, 1fr)` }}>
             {stats.map(s => (
               <div key={s.label}>
                 <div className="text-[9px] font-mono uppercase tracking-wider text-[var(--ink-400)] mb-0.5">{s.label}</div>
-                <div className={`text-[12px] font-bold tabular-nums leading-tight ${s.accent ? 'text-primary' : 'text-[var(--ink-700)]'}`}>{s.value}</div>
+                <div className="text-[12px] font-bold tabular-nums leading-tight" style={{ color: s.accent ? 'var(--brand)' : 'var(--ink-700)' }}>{s.value}</div>
               </div>
             ))}
           </div>

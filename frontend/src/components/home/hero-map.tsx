@@ -318,55 +318,57 @@ export function HeroMap({
       <div ref={ref} className="w-full h-full" />
 
       {/* Counter badge — dimmed when panel open */}
-      <div className={`absolute top-4 left-4 z-[400] bg-white/95 backdrop-blur rounded-xl border border-zinc-200/60 px-3 py-2 shadow-sm pointer-events-none transition-opacity duration-200 ${sel ? 'opacity-30' : 'opacity-100'}`}>
-        <div className="text-[10.5px] font-mono uppercase tracking-wider text-zinc-500">в окне карты</div>
-        <div className="text-[15px] font-black tracking-[-0.035em] text-zinc-900">{visibleCount.toLocaleString('ru-RU')} участков</div>
+      <div className={`absolute top-4 left-4 z-[400] bg-white/95 backdrop-blur rounded-xl px-3 py-2 pointer-events-none transition-opacity duration-200 ${sel ? 'opacity-30' : 'opacity-100'}`} style={{ border: '1px solid var(--line)', boxShadow: 'var(--sh-1)' }}>
+        <div className="text-[10.5px] font-mono uppercase tracking-wider" style={{ color: 'var(--ink-400)' }}>в окне карты</div>
+        <div className="text-[15px] font-black tracking-[-0.035em]" style={{ color: 'var(--ink-900)' }}>{visibleCount.toLocaleString('ru-RU')} участков</div>
       </div>
 
       {/* Floating card — bottom right */}
       {sel && (
         <div className="absolute bottom-4 left-3 right-3 sm:left-auto sm:right-4 sm:w-[260px] z-[500] pointer-events-auto">
-          <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.18)] overflow-hidden border border-zinc-100">
+          <div className="bg-white overflow-hidden" style={{ borderRadius: 'var(--r-lg)', border: '1px solid var(--line)', boxShadow: 'var(--sh-3)' }}>
             {/* Close */}
             <button
               onClick={() => setSelected(null)}
-              className="absolute top-3 right-3 z-10 w-7 h-7 bg-zinc-100 hover:bg-zinc-200 rounded-full flex items-center justify-center text-zinc-500 text-base leading-none transition-colors"
+              className="absolute top-3 right-3 z-10 w-7 h-7 rounded-full flex items-center justify-center text-base leading-none transition-colors hover:opacity-80"
+              style={{ background: 'var(--paper-2)', color: 'var(--ink-500)' }}
             >×</button>
 
             {/* Image */}
             {sel.image ? (
-              <div className="relative h-32 overflow-hidden bg-zinc-100">
+              <div className="relative h-32 overflow-hidden" style={{ background: 'var(--paper-2)' }}>
                 <img src={sel.image} alt={sel.title} className="w-full h-full object-cover" />
                 {sel.isPremium && (
-                  <span className="absolute top-2 left-2 bg-zinc-900/80 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md">★ Премиум</span>
+                  <span className="absolute top-2 left-2 bg-black/70 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md">★ Премиум</span>
                 )}
                 {sel.isViewed && (
-                  <span className="absolute top-2 right-10 bg-zinc-100/90 text-zinc-500 text-[10px] font-semibold px-2 py-1 rounded-md">Просмотрено</span>
+                  <span className="absolute top-2 right-10 text-[10px] font-semibold px-2 py-1 rounded-md" style={{ background: 'var(--paper-2)', color: 'var(--ink-400)' }}>Просмотрено</span>
                 )}
               </div>
             ) : sel.isPremium ? (
-              <div className="h-16 bg-gradient-to-r from-[#021A0E] to-[#066F36] flex items-center justify-center">
+              <div className="h-16 flex items-center justify-center" style={{ background: 'var(--brand-ink)' }}>
                 <span className="text-white text-[11px] font-bold tracking-widest">★ ПРЕМИУМ</span>
               </div>
             ) : null}
 
             {/* Info row */}
             <div className="px-4 pt-3 pb-4">
-              <div className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">{meta}</div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--ink-400)' }}>{meta}</div>
               <div className="flex items-end justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="text-[14px] font-bold text-zinc-900 leading-snug line-clamp-2">{sel.title}</div>
+                  <div className="text-[14px] font-bold leading-snug line-clamp-2" style={{ color: 'var(--ink-900)' }}>{sel.title}</div>
                   {priceStr && (
-                    <div className="mt-1.5 text-[17px] font-black text-zinc-900 tracking-tight leading-none">{priceStr}</div>
+                    <div className="mt-1.5 text-[17px] font-black tracking-tight leading-none" style={{ color: 'var(--ink-900)' }}>{priceStr}</div>
                   )}
                   {perSotka && (
-                    <div className="mt-0.5 text-[10px] font-mono text-zinc-400">{perSotka}</div>
+                    <div className="mt-0.5 text-[10px] font-mono" style={{ color: 'var(--ink-400)' }}>{perSotka}</div>
                   )}
                 </div>
                 <Link
                   href={`/listing/${sel.slug}`}
                   onClick={() => handleOpen(sel.slug)}
-                  className="shrink-0 px-4 h-9 rounded-xl bg-zinc-900 hover:bg-primary text-white text-[12.5px] font-semibold flex items-center gap-1 transition-colors whitespace-nowrap"
+                  className="shrink-0 px-4 h-9 text-white text-[12.5px] font-semibold flex items-center gap-1 transition-colors whitespace-nowrap hover:opacity-90"
+                  style={{ borderRadius: 'var(--r-md)', background: 'var(--ink-900)' }}
                 >
                   Открыть →
                 </Link>

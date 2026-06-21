@@ -151,45 +151,57 @@ body {
   color: var(--ink-400);
 }
 
-/* ── Plot image placeholders ── */
-.plot-img {
+/* ── Plot image placeholders (type-aware) ── */
+
+/* PLOT — ИЖС / МЖС (45°, зелёный) */
+.plot-ijs, .plot-img {
   background-color: #e7ecdf;
   background-image:
-    repeating-linear-gradient(45deg, rgba(6,111,54,0.08) 0, rgba(6,111,54,0.08) 1px, transparent 1px, transparent 12px),
+    repeating-linear-gradient(45deg, rgba(6,111,54,0.09) 0, rgba(6,111,54,0.09) 1px, transparent 1px, transparent 12px),
     radial-gradient(ellipse 200px 120px at 30% 70%, rgba(44,166,78,0.25), transparent 70%),
-    radial-gradient(ellipse 160px 100px at 75% 30%, rgba(212,192,132,0.4), transparent 70%);
+    radial-gradient(ellipse 160px 100px at 75% 30%, rgba(212,192,132,0.35), transparent 70%);
 }
-.plot-img-2 {
+
+/* SOIL — Сельхоз / КХ / ЛПХ (−45°, коричневый) */
+.plot-soil, .plot-img-2 {
   background-color: #e9e3d4;
   background-image:
-    repeating-linear-gradient(-45deg, rgba(120,90,40,0.08) 0, rgba(120,90,40,0.08) 1px, transparent 1px, transparent 14px),
+    repeating-linear-gradient(-45deg, rgba(120,90,40,0.09) 0, rgba(120,90,40,0.09) 1px, transparent 1px, transparent 14px),
     radial-gradient(ellipse 220px 160px at 60% 50%, rgba(180,140,80,0.3), transparent 70%);
 }
-.plot-img-3 {
+
+/* WATER — У воды / Рекреация (0° горизонталь, голубой) */
+.plot-water, .plot-img-3 {
   background-color: #dfe7ec;
   background-image:
-    repeating-linear-gradient(0deg, rgba(60,90,120,0.06) 0, rgba(60,90,120,0.06) 1px, transparent 1px, transparent 10px),
+    repeating-linear-gradient(0deg, rgba(60,90,120,0.07) 0, rgba(60,90,120,0.07) 1px, transparent 1px, transparent 10px),
     radial-gradient(ellipse 240px 140px at 40% 60%, rgba(120,160,190,0.35), transparent 70%),
-    radial-gradient(ellipse 100px 80px at 80% 30%, rgba(44,166,78,0.18), transparent 70%);
+    radial-gradient(ellipse 100px 80px at 80% 30%, rgba(44,166,78,0.15), transparent 70%);
 }
-.plot-img-4 {
+
+/* GRASS — Дача / луг (90° вертикаль, зелёный) */
+.plot-grass, .plot-img-4 {
   background-color: #e8eadd;
   background-image:
-    repeating-linear-gradient(90deg, rgba(80,100,50,0.07) 0, rgba(80,100,50,0.07) 2px, transparent 2px, transparent 18px),
+    repeating-linear-gradient(90deg, rgba(80,100,50,0.08) 0, rgba(80,100,50,0.08) 2px, transparent 2px, transparent 14px),
     radial-gradient(ellipse 200px 130px at 50% 40%, rgba(140,160,90,0.3), transparent 70%);
 }
-.plot-img-5 {
-  background-color: #efeae0;
+
+/* ROCK — Промбаза / Коммерция (−30°, серый) */
+.plot-rock, .plot-img-5 {
+  background-color: #e8e7e4;
   background-image:
-    repeating-linear-gradient(45deg, rgba(60,60,60,0.06) 0, rgba(60,60,60,0.06) 1px, transparent 1px, transparent 10px),
-    radial-gradient(ellipse 180px 120px at 30% 50%, rgba(180,180,180,0.35), transparent 70%),
-    radial-gradient(ellipse 140px 100px at 75% 60%, rgba(100,110,90,0.2), transparent 70%);
+    repeating-linear-gradient(-30deg, rgba(80,80,80,0.07) 0, rgba(80,80,80,0.07) 2px, transparent 2px, transparent 14px),
+    radial-gradient(ellipse 180px 120px at 35% 55%, rgba(150,150,140,0.3), transparent 70%);
 }
-.plot-img-6 {
+
+/* ALPINE — Горы / склон (−30°, светло-зелёный) */
+.plot-alpine, .plot-img-6 {
   background-color: #e3ebde;
   background-image:
     repeating-linear-gradient(-30deg, rgba(6,111,54,0.10) 0, rgba(6,111,54,0.10) 2px, transparent 2px, transparent 16px),
-    radial-gradient(ellipse 220px 140px at 55% 50%, rgba(44,166,78,0.2), transparent 70%);
+    radial-gradient(ellipse 220px 140px at 55% 45%, rgba(44,166,78,0.22), transparent 70%),
+    radial-gradient(ellipse 120px 90px at 20% 75%, rgba(212,192,132,0.25), transparent 70%);
 }
 
 /* ── Compare page grid ── */

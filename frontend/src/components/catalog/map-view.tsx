@@ -22,6 +22,7 @@ export interface MapItem {
   hasWater?: boolean;
   hasRoadAccess?: boolean;
   createdAt?: string;
+  listingCategory?: 'land' | 'business';
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -201,7 +202,7 @@ const TIER_COLORS: Array<{ bg: string; text: string; pulse: string; shadow: stri
   { bg: '#111827', text: '#ffffff', pulse: 'rgba(74,222,128,0.62)', shadow: '0 2px 12px rgba(0,0,0,0.28)' },
 ];
 
-function makeMarkerHtml(priceLabel: string, highlighted: boolean, active: boolean, visited = false, zoom = 12, tier = 1): string {
+function makeMarkerHtml(priceLabel: string, highlighted: boolean, active: boolean, visited = false, zoom = 12, tier = 1, isBusiness = false): string {
   const isDot = zoom < 10;
 
   let bg: string, textColor: string, shadow: string, pulseColor: string;
@@ -230,7 +231,6 @@ function makeMarkerHtml(priceLabel: string, highlighted: boolean, active: boolea
   }
 
   if (isDot) {
-    // Match hero-map mkDotIcon style: 16px core + 3px white border + 28px expanding ring
     let coreBg: string, ringBg: string;
     if (active) {
       coreBg = '#ffffff'; ringBg = '';
@@ -238,8 +238,11 @@ function makeMarkerHtml(priceLabel: string, highlighted: boolean, active: boolea
       coreBg = '#a1a1aa'; ringBg = 'rgba(113,113,122,0.25)';
     } else if (highlighted) {
       coreBg = '#066F36'; ringBg = 'rgba(6,111,54,0.45)';
+    } else if (isBusiness) {
+      // Бизнес-объявление — оранжевая точка (дизайн-система)
+      coreBg = '#F59E0B'; ringBg = 'rgba(245,158,11,0.30)';
     } else {
-      coreBg = '#066F36'; ringBg = 'rgba(6,111,54,0.35)';
+      coreBg = '#111827'; ringBg = 'rgba(17,24,39,0.20)';
     }
     const ring = ringBg
       ? `<div style="position:absolute;left:50%;top:50%;width:28px;height:28px;border-radius:50%;background:${ringBg};animation:dot-pulse 2.2s ease-out infinite;pointer-events:none;"></div>`
@@ -250,17 +253,30 @@ function makeMarkerHtml(priceLabel: string, highlighted: boolean, active: boolea
     </div>`;
   }
 
-  const label    = zoom < 12 ? priceLabel.replace(' млн ₸', 'м').replace(' тыс ₸', 'к') : priceLabel;
+  const rawLabel = zoom < 12 ? priceLabel.replace(' млн ₸', 'м').replace(' тыс ₸', 'к') : priceLabel;
   const fontSize = zoom < 12 ? '10.5px' : '11.5px';
-  const padding  = zoom < 12 ? '3px 8px'  : '5px 11px';
   const scale    = active || highlighted ? 'scale(1.08)' : 'scale(1)';
   const pulse = hasPulse
     ? `<span style="position:absolute;inset:0;border-radius:20px;background:${pulseColor};animation:sonarPulse 3.5s ease-in-out infinite;pointer-events:none;transform-origin:center;"></span>`
     : '';
 
+  if (highlighted) {
+    const starSize = zoom < 12 ? 16 : 20;
+    const starSvg = `<svg width="${Math.round(starSize*0.5)}" height="${Math.round(starSize*0.5)}" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>`;
+    const pad = zoom < 12 ? `3px 8px 3px 3px` : `4px 10px 4px 4px`;
+    return `<span style="position:relative;display:inline-flex;align-items:center;transform:${scale};transition:transform 0.15s;">
+      ${pulse}
+      <span style="position:relative;z-index:1;display:inline-flex;align-items:center;gap:5px;background:#111827;color:#ffffff;border-radius:20px;padding:${pad};font-size:${fontSize};font-weight:800;white-space:nowrap;box-shadow:${shadow};cursor:pointer;font-family:ui-monospace,system-ui,sans-serif;letter-spacing:-0.02em;">
+        <span style="width:${starSize}px;height:${starSize}px;border-radius:50%;background:#066F36;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">${starSvg}</span>
+        ${rawLabel}
+      </span>
+    </span>`;
+  }
+
+  const padding  = zoom < 12 ? '3px 8px'  : '5px 11px';
   return `<span style="position:relative;display:inline-flex;align-items:center;transform:${scale};transition:transform 0.15s;">
     ${pulse}
-    <span style="position:relative;z-index:1;display:inline-flex;align-items:center;background:${bg};color:${textColor};border-radius:20px;padding:${padding};font-size:${fontSize};font-weight:800;white-space:nowrap;box-shadow:${shadow};cursor:pointer;font-family:ui-monospace,system-ui,sans-serif;letter-spacing:-0.02em;">${label}</span>
+    <span style="position:relative;z-index:1;display:inline-flex;align-items:center;background:${bg};color:${textColor};border-radius:20px;padding:${padding};font-size:${fontSize};font-weight:800;white-space:nowrap;box-shadow:${shadow};cursor:pointer;font-family:ui-monospace,system-ui,sans-serif;letter-spacing:-0.02em;">${rawLabel}</span>
   </span>`;
 }
 
@@ -401,15 +417,21 @@ export function MapView({
     const useCluster = typeof L.markerClusterGroup === 'function';
     const clusterGroup = useCluster ? L.markerClusterGroup!({
       maxClusterRadius: 60,
-      disableClusteringAtZoom: 12,
+      disableClusteringAtZoom: 14,  // zoom ≥14 → individual dots (design spec)
       minimumClusterSize: 2,
       iconCreateFunction: (cluster: { getChildCount: () => number }) => {
         const count = cluster.getChildCount();
-        const size = count >= 100 ? 52 : count >= 10 ? 44 : 36;
+        // S <100 → 36px green | M 100-500 → 44px green | L >500 → 52px ink-dark
+        const isL = count > 500;
+        const isM = count >= 100;
+        const size = isL ? 52 : isM ? 44 : 36;
+        const bg   = isL ? '#021A0E' : '#066F36';
+        const pulse = isL ? 'rgba(2,26,14,0.25)' : 'rgba(6,111,54,0.28)';
+        const label = count >= 1000 ? `${(count / 1000).toFixed(1)}k` : String(count);
         return L.divIcon({
           html: `<div style="position:relative;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;overflow:visible;">
-            <div style="position:absolute;left:50%;top:50%;width:${size}px;height:${size}px;border-radius:50%;background:rgba(6,111,54,0.30);animation:dot-pulse 2.4s ease-out infinite;pointer-events:none;"></div>
-            <div style="position:relative;z-index:1;width:${size}px;height:${size}px;border-radius:50%;background:#066F36;border:3px solid #fff;box-shadow:0 2px 14px rgba(6,111,54,0.35);display:flex;align-items:center;justify-content:center;color:#fff;font-size:${count >= 100 ? 12 : 14}px;font-weight:800;font-family:ui-monospace,monospace;">${count}</div>
+            <div style="position:absolute;left:50%;top:50%;width:${size}px;height:${size}px;border-radius:50%;background:${pulse};animation:dot-pulse 2.4s ease-out infinite;pointer-events:none;"></div>
+            <div style="position:relative;z-index:1;width:${size}px;height:${size}px;border-radius:50%;background:${bg};border:3px solid #fff;box-shadow:0 2px 14px rgba(0,0,0,0.28);display:flex;align-items:center;justify-content:center;color:#fff;font-size:${isL ? 11 : isM ? 12 : 14}px;font-weight:800;font-family:ui-monospace,monospace;">${label}</div>
           </div>`,
           className: '',
           iconSize: [size, size],
@@ -424,11 +446,12 @@ export function MapView({
       const isVisited = visitedIds?.has(listing.id) ?? false;
       const tier = getTier(listing.id);
       const isDot = zl < 10;
+      const isBiz = listing.listingCategory === 'business';
       const icon = L.divIcon({
         className: '',
         html: isDot
-          ? makeMarkerHtml(priceLabel, isHighlighted, false, isVisited, zl, tier)
-          : `<div style="animation:markerPop 0.3s cubic-bezier(0.34,1.56,0.64,1) both;">${makeMarkerHtml(priceLabel, isHighlighted, false, isVisited, zl, tier)}</div>`,
+          ? makeMarkerHtml(priceLabel, isHighlighted, false, isVisited, zl, tier, isBiz)
+          : `<div style="animation:markerPop 0.3s cubic-bezier(0.34,1.56,0.64,1) both;">${makeMarkerHtml(priceLabel, isHighlighted, false, isVisited, zl, tier, isBiz)}</div>`,
         ...(isDot ? { iconSize: [28, 28], iconAnchor: [14, 14] } : { iconAnchor: [0, anchorY] }),
       });
 
@@ -595,23 +618,23 @@ export function MapView({
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full bg-zinc-100 text-zinc-500 text-sm">
+      <div className="flex items-center justify-center h-full text-sm" style={{ background: 'var(--paper-2)', color: 'var(--ink-400)' }}>
         Не удалось загрузить карту. Проверьте интернет.
       </div>
     );
   }
 
   const LAYERS = [
-    { key: 'schema',    label: 'Схема',   disabled: false },
-    { key: 'satellite', label: 'Спутник', disabled: false },
+    { key: 'schema',    label: 'Схема'   },
+    { key: 'satellite', label: 'Спутник' },
   ];
 
   return (
     <div className="relative w-full h-full">
       {/* Loading */}
       {!ready && (
-        <div className="absolute inset-0 flex items-center justify-center bg-zinc-100 z-10">
-          <div className="flex flex-col items-center gap-2 text-zinc-400">
+        <div className="absolute inset-0 flex items-center justify-center z-10" style={{ background: 'var(--paper-2)' }}>
+          <div className="flex flex-col items-center gap-2" style={{ color: 'var(--ink-300)' }}>
             <svg className="animate-spin w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -631,26 +654,26 @@ export function MapView({
         <div className="absolute top-4 left-4 flex flex-col gap-2" style={{ zIndex: 800 }}>
           {/* Stats box */}
           {statsCount !== undefined && (
-            <div className="bg-white/95 backdrop-blur-sm rounded-xl border border-zinc-200 shadow-sm overflow-hidden flex divide-x divide-zinc-100 text-[12px]">
-              <div className="px-3 py-2">
-                <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">видимо</div>
-                <div className="font-black tracking-tight text-[15px] text-zinc-900">
+            <div className="bg-white/95 backdrop-blur-sm rounded-xl overflow-hidden flex divide-x text-[12px]" style={{ border: '1px solid var(--line)', borderColor: 'var(--line)', boxShadow: 'var(--sh-1)' }}>
+              <div className="px-3 py-2" style={{ borderColor: 'var(--line-soft)' }}>
+                <div className="text-[10px] font-mono uppercase tracking-wider" style={{ color: 'var(--ink-400)' }}>видимо</div>
+                <div className="font-black tracking-tight text-[15px]" style={{ color: 'var(--ink-900)' }}>
                   {statsCount.toLocaleString('ru-RU')}
                 </div>
               </div>
               {(statsMedian ?? 0) > 0 && (
-                <div className="px-3 py-2">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">медиана</div>
-                  <div className="font-black tracking-tight text-[15px] text-zinc-900">
-                    {fmtM(statsMedian!)}&nbsp;млн
+                <div className="px-3 py-2" style={{ borderColor: 'var(--line-soft)' }}>
+                  <div className="text-[10px] font-mono uppercase tracking-wider" style={{ color: 'var(--ink-400)' }}>медиана</div>
+                  <div className="font-black tracking-tight text-[15px]" style={{ color: 'var(--ink-900)' }}>
+                    {fmtM(statsMedian!)} млн
                   </div>
                 </div>
               )}
               {(statsPerSotka ?? 0) > 0 && (
-                <div className="px-3 py-2">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">за сотку</div>
+                <div className="px-3 py-2" style={{ borderColor: 'var(--line-soft)' }}>
+                  <div className="text-[10px] font-mono uppercase tracking-wider" style={{ color: 'var(--ink-400)' }}>за сотку</div>
                   <div className="font-black tracking-tight text-[15px] text-primary">
-                    {fmtM(statsPerSotka!)}&nbsp;млн
+                    {fmtM(statsPerSotka!)} млн
                   </div>
                 </div>
               )}
@@ -659,8 +682,8 @@ export function MapView({
 
           {/* Search-as-move toggle */}
           {onSearchAsMoveChange && (
-            <label className="bg-white/95 backdrop-blur-sm rounded-xl border border-zinc-200 shadow-sm px-3 py-2 flex items-center gap-2 cursor-pointer text-[12px] font-medium text-zinc-700 select-none">
-              <span className={`relative flex-shrink-0 w-8 h-4 rounded-full transition-colors duration-200 ${searchAsMove ? 'bg-primary' : 'bg-zinc-300'}`}>
+            <label className="bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2 flex items-center gap-2 cursor-pointer text-[12px] font-medium select-none" style={{ border: '1px solid var(--line)', boxShadow: 'var(--sh-1)', color: 'var(--ink-700)' }}>
+              <span className={`relative flex-shrink-0 w-8 h-4 rounded-full transition-colors duration-200 ${searchAsMove ? 'bg-primary' : ''}`} style={searchAsMove ? {} : { background: 'var(--ink-200)' }}>
                 <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow-sm transition-transform duration-200 ${searchAsMove ? 'translate-x-4' : 'translate-x-0.5'}`} />
               </span>
               Искать при движении
@@ -670,53 +693,34 @@ export function MapView({
         </div>
       )}
 
-      {/* TOP-RIGHT: layer tabs + zoom + drawing tools */}
+      {/* TOP-RIGHT: zoom controls */}
       {showOverlays && (
         <div className="absolute top-4 right-4 flex flex-col gap-2 items-end" style={{ zIndex: 800 }}>
-          {/* Layer tabs + heatmap toggle */}
-          <div className="bg-white/95 backdrop-blur-sm rounded-xl border border-zinc-200 shadow-sm p-1 flex gap-px text-[12px] font-medium">
-            {LAYERS.map(layer => (
-              <button
-                key={layer.key}
-                onClick={() => { if (!layer.disabled) onTileLayerChange?.(layer.key); }}
-                title={layer.label}
-                className={`px-3 h-7 rounded-lg transition-colors ${
-                  tileLayer === layer.key
-                    ? 'bg-zinc-900 text-white'
-                    : layer.disabled
-                      ? 'text-zinc-300 cursor-default'
-                      : 'text-zinc-600 hover:bg-zinc-100'
-                }`}
-              >
-                {layer.label}
-              </button>
-            ))}
-            <div style={{ width: 1, background: '#e4e4e7', margin: '4px 2px' }}></div>
-            <button
-              onClick={() => setShowHeatMap(prev => !prev)}
-              className={`px-3 h-7 rounded-lg transition-colors ${
-                showHeatMap ? 'bg-emerald-500 text-white' : 'text-zinc-600 hover:bg-zinc-100'
-              }`}
-            >
-              Тепло цен
-            </button>
-          </div>
-
           {/* Zoom controls */}
-          <div className="bg-white/95 backdrop-blur-sm rounded-xl border border-zinc-200 shadow-sm p-1 flex flex-col">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl p-1 flex flex-col" style={{ border: '1px solid var(--line)', boxShadow: 'var(--sh-1)' }}>
             <button
               onClick={() => leafletMap.current?.zoomIn()}
-              className="w-9 h-9 rounded-lg hover:bg-zinc-100 text-zinc-700 font-bold text-lg flex items-center justify-center transition-colors"
+              className="w-9 h-9 rounded-lg font-bold text-lg flex items-center justify-center transition-colors hover:bg-[var(--paper-2)]"
+              style={{ color: 'var(--ink-700)' }}
             >+</button>
-            <span className="h-px bg-zinc-100 mx-1.5" />
+            <span className="h-px mx-1.5" style={{ background: 'var(--line-soft)' }} />
             <button
               onClick={() => leafletMap.current?.zoomOut()}
-              className="w-9 h-9 rounded-lg hover:bg-zinc-100 text-zinc-700 font-bold text-lg flex items-center justify-center transition-colors"
+              className="w-9 h-9 rounded-lg font-bold text-lg flex items-center justify-center transition-colors hover:bg-[var(--paper-2)]"
+              style={{ color: 'var(--ink-700)' }}
             >−</button>
-            <span className="h-px bg-zinc-100 mx-1.5" />
+            <span className="h-px mx-1.5" style={{ background: 'var(--line-soft)' }} />
             <button
-              className="w-9 h-9 rounded-lg hover:bg-zinc-100 text-zinc-600 flex items-center justify-center transition-colors"
+              className="w-9 h-9 rounded-lg flex items-center justify-center transition-colors hover:bg-[var(--paper-2)]"
+              style={{ color: 'var(--ink-500)' }}
               title="Моё местоположение"
+              onClick={() => {
+                if (!navigator.geolocation || !leafletMap.current) return;
+                navigator.geolocation.getCurrentPosition(
+                  (pos) => leafletMap.current?.setView([pos.coords.latitude, pos.coords.longitude], 13),
+                  () => {}
+                );
+              }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
@@ -738,7 +742,7 @@ export function MapView({
             }}
           />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-            <div className="bg-white/95 backdrop-blur-sm rounded-full px-4 py-1.5 text-[12px] font-semibold text-primary border border-zinc-200 shadow-lg flex items-center gap-2">
+            <div className="bg-white/95 backdrop-blur-sm rounded-full px-4 py-1.5 text-[12px] font-semibold text-primary flex items-center gap-2" style={{ border: '1px solid var(--line)', boxShadow: 'var(--sh-2)' }}>
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
               Поиск…
             </div>
@@ -746,27 +750,48 @@ export function MapView({
         </div>
       )}
 
+      {/* BOTTOM-LEFT: Layer tabs */}
+      {showOverlays && onTileLayerChange && (
+        <div className="absolute left-4 flex flex-col gap-2 items-start" style={{ zIndex: 800, bottom: compareList && compareList.length > 0 ? '76px' : '16px' }}>
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl p-1 flex gap-px text-[12px] font-medium" style={{ border: '1px solid var(--line)', boxShadow: 'var(--sh-1)' }}>
+            {LAYERS.map(layer => (
+              <button
+                key={layer.key}
+                onClick={() => onTileLayerChange(layer.key)}
+                className="px-3 h-7 rounded-lg transition-colors"
+                style={tileLayer === layer.key
+                  ? { background: 'var(--ink-900)', color: '#fff' }
+                  : { color: 'var(--ink-500)' }
+                }
+              >
+                {layer.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* BOTTOM-LEFT: Compare strip */}
       {compareList && compareList.length > 0 && (
-        <div className="absolute bottom-4 left-4 flex items-center gap-3 bg-white rounded-2xl border border-zinc-200 shadow-xl p-3" style={{ zIndex: 900 }}>
+        <div className="absolute bottom-4 left-4 flex items-center gap-3 bg-white rounded-2xl p-3" style={{ zIndex: 900, border: '1px solid var(--line)', boxShadow: 'var(--sh-3)' }}>
           <div className="shrink-0">
-            <div className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400 mb-0.5">Сравнение</div>
-            <div className="text-[13px] font-bold text-zinc-900 tabular-nums">{compareList.length} <span className="font-normal text-zinc-400">из 4</span></div>
+            <div className="text-[10px] font-semibold uppercase tracking-widest mb-0.5" style={{ color: 'var(--ink-400)' }}>Сравнение</div>
+            <div className="text-[13px] font-bold tabular-nums" style={{ color: 'var(--ink-900)' }}>{compareList.length} <span className="font-normal" style={{ color: 'var(--ink-400)' }}>из 4</span></div>
           </div>
-          <span className="w-px h-10 bg-zinc-100 shrink-0" />
+          <span className="w-px h-10 shrink-0" style={{ background: 'var(--line-soft)' }} />
           <div className="flex items-center gap-2">
             {compareList.map(item => (
-              <div key={item.id} className="relative w-14 h-14 rounded-xl bg-zinc-100 overflow-hidden ring-2 ring-primary/70 ring-offset-1 shrink-0">
+              <div key={item.id} className="relative w-14 h-14 rounded-xl overflow-hidden ring-2 ring-primary/70 ring-offset-1 shrink-0" style={{ background: 'var(--paper-2)' }}>
                 {item.image
                   ? <img src={item.image} className="w-full h-full object-cover" alt="" loading="lazy" />
-                  : <div className="w-full h-full bg-gradient-to-br from-zinc-100 to-zinc-200" />
+                  : <div className="w-full h-full" style={{ background: 'linear-gradient(135deg, var(--paper-2), var(--paper-3))' }} />
                 }
                 <button
                   onClick={() => onRemoveCompare?.(item.id)}
-                  className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-zinc-900/80 backdrop-blur-sm text-white text-[10px] leading-none flex items-center justify-center hover:bg-zinc-700 transition-colors"
+                  className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/70 backdrop-blur-sm text-white text-[10px] leading-none flex items-center justify-center hover:bg-black/90 transition-colors"
                   style={{ zIndex: 1 }}
                 >×</button>
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900/90 to-transparent pt-2 pb-0.5 px-0.5">
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent pt-2 pb-0.5 px-0.5">
                   <span className="block text-white text-[9px] font-bold text-center tabular-nums">
                     {fmtM(item.price)}м
                   </span>
@@ -774,10 +799,10 @@ export function MapView({
               </div>
             ))}
             {compareList.length < 4 && (
-              <div className="w-14 h-14 rounded-xl border-2 border-dashed border-zinc-200 flex items-center justify-center text-zinc-300 text-2xl shrink-0">+</div>
+              <div className="w-14 h-14 rounded-xl border-2 border-dashed flex items-center justify-center text-2xl shrink-0" style={{ borderColor: 'var(--line)', color: 'var(--ink-300)' }}>+</div>
             )}
           </div>
-          <span className="w-px h-10 bg-zinc-100 shrink-0" />
+          <span className="w-px h-10 shrink-0" style={{ background: 'var(--line-soft)' }} />
           <button
             onClick={onCompare}
             className="h-10 px-5 rounded-xl bg-primary text-white text-[12.5px] font-semibold hover:bg-primary/90 active:scale-95 transition-all flex items-center gap-1.5 shrink-0 shadow-sm"
@@ -790,25 +815,25 @@ export function MapView({
       {/* BOTTOM-RIGHT: Analytics card (hidden when active pin popup is shown) */}
       {!active && showOverlays && (statsPerSotka ?? 0) > 0 && (
         <div className="absolute bottom-4 right-4 w-[260px]" style={{ zIndex: 900 }}>
-          <div className="bg-white rounded-2xl border border-zinc-200 shadow-lg p-4">
+          <div className="bg-white rounded-2xl p-4" style={{ border: '1px solid var(--line)', boxShadow: 'var(--sh-2)' }}>
             <div className="flex items-center justify-between mb-3">
-              <div className="text-[10.5px] font-mono uppercase tracking-wider text-zinc-500">в окне карты</div>
+              <div className="text-[10.5px] font-mono uppercase tracking-wider" style={{ color: 'var(--ink-400)' }}>в окне карты</div>
               <Link href="/analytics" className="text-[10.5px] font-mono text-primary font-bold hover:underline">Аналитика →</Link>
             </div>
-            <div className="font-black tracking-tight text-[26px] leading-none text-zinc-900">
+            <div className="font-black tracking-tight text-[26px] leading-none" style={{ color: 'var(--ink-900)' }}>
               {fmtM(statsPerSotka!)} млн ₸
             </div>
-            <div className="text-[11px] text-zinc-500 mt-0.5">средняя цена за сотку</div>
+            <div className="text-[11px] mt-0.5" style={{ color: 'var(--ink-400)' }}>средняя цена за сотку</div>
             <div className="mt-4 flex items-end gap-1 h-12">
               {[30, 42, 38, 55, 48, 62, 70, 78, 88, 100].map((h, i) => (
                 <div
                   key={i}
-                  className={`flex-1 rounded-sm ${i >= 8 ? 'bg-primary' : i >= 5 ? 'bg-zinc-300' : 'bg-zinc-200'}`}
-                  style={{ height: `${h}%` }}
+                  className={`flex-1 rounded-sm ${i >= 8 ? 'bg-primary' : ''}`}
+                  style={{ height: `${h}%`, background: i >= 8 ? undefined : i >= 5 ? 'var(--ink-200)' : 'var(--paper-3)' }}
                 />
               ))}
             </div>
-            <div className="mt-1.5 flex items-center justify-between font-mono text-[9.5px] text-zinc-400">
+            <div className="mt-1.5 flex items-center justify-between font-mono text-[9.5px]" style={{ color: 'var(--ink-400)' }}>
               <span>авг&apos;25</span>
               <span className="text-primary font-bold">↑ 18% / год</span>
             </div>
@@ -895,9 +920,9 @@ function ActiveCard({
 
   return (
     <div style={{ zIndex: 900, position: 'absolute', left, top: topPx, width: popupW, transform: `translateY(${transformY})` }}>
-      <div className="bg-white rounded-2xl border border-zinc-100 shadow-2xl overflow-hidden">
+      <div className="bg-white overflow-hidden" style={{ borderRadius: 'var(--r-lg)', border: '1px solid var(--line)', boxShadow: 'var(--sh-3)' }}>
         {/* Image */}
-        <div className="relative h-[120px] bg-zinc-100">
+        <div className="relative h-[120px]" style={{ background: 'var(--paper-2)' }}>
           {active.image && !imgError ? (
             <img src={active.image} alt={active.title} className="w-full h-full object-cover" onError={() => setImgError(true)} />
           ) : (
@@ -914,40 +939,41 @@ function ActiveCard({
         {/* Content */}
         <div className="p-3.5">
           {/* Тип · локация */}
-          <p className="text-[10.5px] font-medium text-zinc-500 uppercase tracking-wider truncate">
+          <p className="text-[10.5px] font-medium uppercase tracking-wider truncate" style={{ color: 'var(--ink-400)' }}>
             {[typeLabel, active.location].filter(Boolean).join(' · ')}
           </p>
 
           {/* Заголовок */}
-          <h4 className="mt-0.5 font-semibold text-[14.5px] leading-snug text-zinc-900 line-clamp-2">{displayTitle}</h4>
+          <h4 className="mt-0.5 font-semibold text-[14.5px] leading-snug line-clamp-2" style={{ color: 'var(--ink-900)' }}>{displayTitle}</h4>
 
           {/* Цена + кнопка */}
           <div className="mt-2.5 flex items-end justify-between gap-2">
             <div>
-              <div className="font-black tracking-tight text-[19px] text-zinc-900 leading-none tabular-nums">
+              <div className="font-black tracking-tight text-[19px] leading-none tabular-nums" style={{ color: 'var(--ink-900)' }}>
                 {formatPrice(active.price)}
               </div>
               {perSotka > 0 && (
-                <div className="mt-0.5 text-[10.5px] font-mono text-zinc-500 tabular-nums">
+                <div className="mt-0.5 text-[10.5px] font-mono tabular-nums" style={{ color: 'var(--ink-400)' }}>
                   {formatPrice(perSotka)} / сотка
                 </div>
               )}
             </div>
             <Link
               href={listingUrl(active)}
-              className="shrink-0 h-8 px-3.5 rounded-xl bg-zinc-900 text-white text-[11px] font-semibold flex items-center gap-1 hover:bg-primary transition-colors"
+              className="shrink-0 h-8 px-3.5 text-white text-[11px] font-semibold flex items-center gap-1 transition-colors hover:opacity-90"
+              style={{ borderRadius: 'var(--r-md)', background: 'var(--ink-900)' }}
             >
               Открыть →
             </Link>
           </div>
 
-          {/* 3 чипа */}
+          {/* 3 стата */}
           {stats.length > 0 && (
-            <div className="mt-3 pt-2.5 border-t border-zinc-100 grid gap-x-2" style={{ gridTemplateColumns: `repeat(${stats.length}, 1fr)` }}>
+            <div className="mt-3 pt-2.5 grid gap-x-2" style={{ borderTop: '1px solid var(--line-soft)', gridTemplateColumns: `repeat(${stats.length}, 1fr)` }}>
               {stats.map(s => (
                 <div key={s.label}>
-                  <div className="text-[9px] font-mono uppercase tracking-wider text-zinc-400 mb-0.5">{s.label}</div>
-                  <div className={`text-[12px] font-bold tabular-nums leading-tight ${s.accent ? 'text-primary' : 'text-zinc-800'}`}>{s.value}</div>
+                  <div className="text-[9px] font-mono uppercase tracking-wider mb-0.5" style={{ color: 'var(--ink-400)' }}>{s.label}</div>
+                  <div className="text-[12px] font-bold tabular-nums leading-tight" style={{ color: s.accent ? 'var(--brand)' : 'var(--ink-700)' }}>{s.value}</div>
                 </div>
               ))}
             </div>

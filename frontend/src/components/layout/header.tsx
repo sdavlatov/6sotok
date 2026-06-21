@@ -44,11 +44,9 @@ export function Header() {
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 flex h-[52px] items-center gap-4">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center shrink-0 hover:opacity-80 transition-opacity">
-            <span className="flex items-center gap-1.5">
-              <span className="inline-flex items-center justify-center w-[26px] h-[26px] bg-primary text-white font-black text-[13px] rounded-[7px] shrink-0">6</span>
-              <span className="text-[18px] font-black tracking-[-0.045em] leading-none text-[var(--ink-900)]">sotok<span className="text-primary">.kz</span></span>
-            </span>
+          <Link href="/" className="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity">
+            <img src="/logo-solid.svg" alt="" aria-hidden="true" className="h-7 w-auto" />
+            <span className="text-[18px] font-black tracking-[-0.045em] leading-none text-[var(--ink-900)]">6sotok<span className="text-primary">.kz</span></span>
           </Link>
 
           {/* Desktop nav */}
@@ -143,10 +141,9 @@ export function Header() {
         }`}
       >
         <div className="flex items-center justify-between px-5 h-[52px] border-b border-zinc-100 shrink-0">
-          <Link href="/" onClick={() => setIsMenuOpen(false)} className="flex items-center">
-            <span className="text-[18px] font-black tracking-tight leading-none">
-              <span className="text-primary">6</span><span className="text-[var(--ink-900)]">sotok</span><span className="text-primary">.kz</span>
-            </span>
+          <Link href="/" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2">
+            <img src="/logo-solid.svg" alt="" aria-hidden="true" className="h-7 w-auto" />
+            <span className="text-[18px] font-black tracking-[-0.045em] leading-none text-[var(--ink-900)]">6sotok<span className="text-primary">.kz</span></span>
           </Link>
           <button onClick={() => setIsMenuOpen(false)} className="p-2 rounded-lg text-zinc-500 hover:bg-zinc-100 transition-colors">
             <X className="w-5 h-5" />

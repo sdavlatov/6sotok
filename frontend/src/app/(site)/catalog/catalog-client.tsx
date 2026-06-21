@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { SlidersHorizontal, List, Map, X, Search, Bookmark } from 'lucide-react';
+import { SlidersHorizontal, List, Map, X, Search, Bookmark, Navigation, ChevronLeft, ArrowUpDown } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import type { MapItem, MapApi, CompareItem } from '@/components/catalog/map-view';
 import { formatPrice } from '@/components/catalog/map-view';
@@ -14,6 +14,7 @@ const MapView = dynamic(
 import { CatalogFilters, DualSlider, Histogram } from '@/components/catalog/filters';
 import { CatalogSort } from '@/components/catalog/sort';
 import { LAND_CATEGORIES } from '@/lib/listing-constants';
+import { UTILITY_DOTS, plotClass } from '@/lib/listing-card-utils';
 import { KZ_CITIES } from '@/lib/kz-cities';
 import type { Listing } from '@/types/listing';
 import { listingUrl } from '@/lib/listing-url';
@@ -95,13 +96,7 @@ function SidebarCard({ listing, active, bookmarked, visited, inCompare, onEnter,
     ? `${new Intl.NumberFormat('ru-RU').format(Math.round(ps * 100))} ₸/га`
     : `${new Intl.NumberFormat('ru-RU').format(ps)} ₸/сот`;
 
-  const chips = [
-    listing.hasElectricity && 'Свет',
-    listing.hasGas && 'Газ',
-    listing.hasWater && 'Вода',
-    listing.hasRoadAccess && 'Дорога',
-    (listing as Listing & { hasStateAct?: boolean }).hasStateAct && 'Госакт',
-  ].filter((x): x is string => typeof x === 'string');
+  const chips = UTILITY_DOTS.filter(d => listing[d.key as keyof Listing]);
 
   return (
     <div ref={cardRef}>
@@ -117,11 +112,11 @@ function SidebarCard({ listing, active, bookmarked, visited, inCompare, onEnter,
         ].join(' ')}
       >
         <div className="flex gap-3">
-          <div className="relative w-[120px] h-[88px] rounded-xl overflow-hidden shrink-0 bg-[var(--paper-2)]">
+          <div className={`relative w-[120px] h-[88px] rounded-xl overflow-hidden shrink-0 ${plotClass(listing.landType)}`}>
             {img ? (
               <img src={img} alt={listing.title} className="w-full h-full object-cover" loading="lazy" />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-zinc-100 to-zinc-200" />
+              <div className="w-full h-full" style={{ background: 'linear-gradient(135deg, var(--paper-2), var(--paper-3))' }} />
             )}
             {visited && (
               <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/40 text-white text-[9px] font-medium">
@@ -134,7 +129,7 @@ function SidebarCard({ listing, active, bookmarked, visited, inCompare, onEnter,
               </span>
             )}
             {listing.area > 0 && (
-              <span className="absolute bottom-1.5 left-1.5 font-mono text-[9px] text-zinc-700 bg-white/80 px-1 rounded">
+              <span className="absolute bottom-1.5 left-1.5 font-mono text-[9px] bg-white/80 px-1 rounded" style={{ color: 'var(--ink-600)' }}>
                 {fmtArea(listing.area)}
               </span>
             )}
@@ -148,7 +143,7 @@ function SidebarCard({ listing, active, bookmarked, visited, inCompare, onEnter,
               <button
                 onClick={onBookmark}
                 className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
-                  bookmarked ? 'text-amber-500 bg-amber-50' : 'text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100'
+                  bookmarked ? 'text-amber-500 bg-amber-50' : 'hover:bg-[var(--paper-2)]'
                 }`}
               >
                 <Bookmark className={`w-[15px] h-[15px] ${bookmarked ? 'fill-amber-500' : ''}`} />
@@ -169,7 +164,7 @@ function SidebarCard({ listing, active, bookmarked, visited, inCompare, onEnter,
                 )}
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
-                <span className="text-[10px] font-mono text-zinc-400" suppressHydrationWarning>
+                <span className="text-[10px] font-mono" style={{ color: 'var(--ink-400)' }} suppressHydrationWarning>
                   {relDate(listing.createdAt)}
                 </span>
                 <button
@@ -178,7 +173,7 @@ function SidebarCard({ listing, active, bookmarked, visited, inCompare, onEnter,
                   className={`w-5 h-5 rounded border flex items-center justify-center text-[9px] font-bold transition-colors ${
                     inCompare
                       ? 'bg-primary border-primary text-white'
-                      : 'border-zinc-300 text-zinc-400 hover:border-primary hover:text-primary'
+                      : 'hover:border-primary hover:text-primary'
                   }`}
                 >
                   {inCompare ? '✓' : '+'}
@@ -186,10 +181,11 @@ function SidebarCard({ listing, active, bookmarked, visited, inCompare, onEnter,
               </div>
             </div>
             {chips.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1">
-                {chips.map(c => (
-                  <span key={c} className="px-1.5 py-0.5 rounded-[var(--r-xs)] bg-[var(--paper-3)] text-[var(--ink-500)] text-[10px] font-medium">
-                    {c}
+              <div className="mt-2 flex flex-wrap gap-x-2.5 gap-y-1">
+                {chips.map(d => (
+                  <span key={d.key} className="flex items-center gap-1 text-[10.5px]" style={{ color: 'var(--ink-500)' }}>
+                    <span className="size-1.5 rounded-full shrink-0" style={{ background: d.color }} />
+                    {d.label}
                   </span>
                 ))}
               </div>
@@ -198,6 +194,68 @@ function SidebarCard({ listing, active, bookmarked, visited, inCompare, onEnter,
         </div>
       </Link>
     </div>
+  );
+}
+
+// ── Mobile peek card — horizontal (photo left 80×80, text right) ──────────────
+function MobileHorizontalCard({ listing, bookmarked, onBookmark, areaUnit, active }: {
+  listing: Listing;
+  bookmarked: boolean;
+  onBookmark: (e: React.MouseEvent) => void;
+  areaUnit: 'sot' | 'ga';
+  active?: boolean;
+}) {
+  const img = listing.images?.[0] ?? listing.image ?? null;
+  const typeLabel = listing.purpose || listing.landType || '';
+
+  return (
+    <Link
+      href={listingUrl(listing)}
+      style={{
+        width: 248, height: 80, flexShrink: 0, borderRadius: 14, overflow: 'hidden',
+        border: active ? '1.5px solid #066F36' : '1px solid #e4e4e7',
+        background: '#fff',
+        boxShadow: active ? '0 4px 14px rgba(6,111,54,.15)' : '0 2px 8px rgba(0,0,0,.05)',
+        display: 'flex', textDecoration: 'none',
+      }}
+    >
+      {/* Photo */}
+      <div className={plotClass(listing.landType)} style={{ width: 80, flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
+        {img ? (
+          <img src={img} alt={listing.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} loading="lazy" />
+        ) : (
+          <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg,#f4f4f5,#e4e4e7)' }} />
+        )}
+        {listing.area > 0 && (
+          <span style={{ position: 'absolute', bottom: 4, left: 4, fontSize: 8, fontFamily: 'monospace', background: 'rgba(0,0,0,.45)', color: '#fff', padding: '1px 4px', borderRadius: 3, fontWeight: 600 }}>
+            {areaUnit === 'ga' ? `${(listing.area / 100).toFixed(1)}га` : `${listing.area}сот`}
+          </span>
+        )}
+      </div>
+      {/* Text */}
+      <div style={{ flex: 1, minWidth: 0, padding: '9px 10px 9px 10px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontSize: 9.5, fontWeight: 600, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.05em', lineHeight: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {typeLabel || listing.location}
+          </div>
+          <div style={{ marginTop: 2, fontSize: 12, fontWeight: 700, color: '#09090b', lineHeight: 1.25, letterSpacing: '-0.02em', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+            {listing.title}
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
+          <span style={{ fontSize: 14, fontWeight: 900, color: '#09090b', letterSpacing: '-0.04em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+            {fmtM(listing.price)}<span style={{ fontSize: 10, fontWeight: 600 }}> млн ₸</span>
+          </span>
+          <button
+            onClick={onBookmark}
+            aria-label="В избранное"
+            style={{ width: 24, height: 24, borderRadius: 999, background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, padding: 0 }}
+          >
+            <Bookmark style={{ width: 13, height: 13, color: bookmarked ? '#f59e0b' : '#a1a1aa', fill: bookmarked ? '#f59e0b' : 'none' }} />
+          </button>
+        </div>
+      </div>
+    </Link>
   );
 }
 
@@ -277,6 +335,7 @@ export function CatalogClient({
   const cardRefs      = useRef<Record<string | number, HTMLDivElement | null>>({});
   const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mapApi        = useRef<MapApi | null>(null);
+  const mobileMapApi  = useRef<MapApi | null>(null);
   const sidebarScrollRef = useRef<HTMLDivElement>(null);
   const observerRef   = useRef<IntersectionObserver | null>(null);
 
@@ -286,6 +345,13 @@ export function CatalogClient({
   const [showSaved, setShowSaved] = useState(false);
   const [visitedIds, setVisitedIds] = useState<Set<string | number>>(new Set());
   const [mapBounds, setMapBounds] = useState<{ n: number; s: number; e: number; w: number } | null>(null);
+
+  // Mobile bottom sheet
+  const [mobileSnap, setMobileSnap] = useState<'peek' | 'half' | 'full'>('peek');
+  const [mobileSelectedId, setMobileSelectedId] = useState<string | number | null>(null);
+  const mobileSheetRef   = useRef<HTMLDivElement>(null);
+  const mobileDragRef    = useRef({ active: false, startY: 0, startH: 0 });
+  const mobileContainerRef = useRef<HTMLDivElement>(null);
 
   // Price popover
   const [showPricePopover, setShowPricePopover] = useState(false);
@@ -695,11 +761,63 @@ export function CatalogClient({
     ? selectedCities.map(c => c.split(/[,·]/)[0].trim()).join(', ')
     : null;
 
+  // ── Mobile marker click ────────────────────────────────────────────────────
+  const handleMobileMarkerClick = useCallback((listing: MapItem) => {
+    setMobileSelectedId(listing.id);
+    setHoveredId(listing.id);
+    if (highlightTimer.current) clearTimeout(highlightTimer.current);
+    highlightTimer.current = setTimeout(() => { setHoveredId(null); }, 2500);
+    setVisitedIds(prev => { const next = new Set(prev); next.add(listing.id); return next; });
+  }, []);
+
+  // ── Mobile sheet drag handlers ─────────────────────────────────────────────
+  const handleSheetDragStart = useCallback((e: React.PointerEvent) => {
+    if (!mobileSheetRef.current) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    mobileDragRef.current = { active: true, startY: e.clientY, startH: mobileSheetRef.current.clientHeight };
+  }, []);
+
+  const handleSheetDragMove = useCallback((e: React.PointerEvent) => {
+    if (!mobileDragRef.current.active || !mobileSheetRef.current || !mobileContainerRef.current) return;
+    const dy = mobileDragRef.current.startY - e.clientY;
+    const containerH = mobileContainerRef.current.clientHeight;
+    const newH = Math.max(80, Math.min(containerH - 10, mobileDragRef.current.startH + dy));
+    mobileSheetRef.current.style.transition = 'none';
+    mobileSheetRef.current.style.height = `${newH}px`;
+  }, []);
+
+  const handleSheetDragEnd = useCallback(() => {
+    if (!mobileDragRef.current.active || !mobileSheetRef.current || !mobileContainerRef.current) return;
+    mobileDragRef.current.active = false;
+    const currentH = mobileSheetRef.current.clientHeight;
+    const H = mobileContainerRef.current.clientHeight;
+    const snaps: Array<['peek' | 'half' | 'full', number]> = [
+      ['peek', 140],
+      ['half', Math.floor(H * 0.5)],
+      ['full', H - 10],
+    ];
+    const [newSnap, newH] = snaps.sort((a, b) => Math.abs(currentH - a[1]) - Math.abs(currentH - b[1]))[0];
+    mobileSheetRef.current.style.transition = 'height 320ms cubic-bezier(0.32,0.72,0,1)';
+    mobileSheetRef.current.style.height = `${newH}px`;
+    setMobileSnap(newSnap);
+  }, []);
+
+  // Sync sheet height when snap changes programmatically
+  useEffect(() => {
+    const sheet = mobileSheetRef.current;
+    const container = mobileContainerRef.current;
+    if (!sheet || !container) return;
+    const H = container.clientHeight;
+    const h = mobileSnap === 'peek' ? 140 : mobileSnap === 'half' ? Math.floor(H * 0.5) : H - 10;
+    sheet.style.transition = 'height 320ms cubic-bezier(0.32,0.72,0,1)';
+    sheet.style.height = `${h}px`;
+  }, [mobileSnap]);
+
   return (
     <div className="fixed inset-0 flex flex-col bg-white isolate" style={{ top: '52px', zIndex: 40 }}>
 
-      {/* ── Top bar — breadcrumbs only ──────────────────────────────────────── */}
-      <div className="h-9 bg-[var(--paper)] border-b border-[var(--line-soft)] flex items-center px-4 gap-3 shrink-0 relative z-20">
+      {/* ── Top bar — breadcrumbs only (desktop only) ───────────────────────── */}
+      <div className="h-9 bg-[var(--paper)] border-b border-[var(--line-soft)] hidden lg:flex items-center px-4 gap-3 shrink-0 relative z-20">
         <nav className="flex items-center gap-1.5 text-[12px] text-zinc-500 min-w-0">
           <Link href="/" className="hover:text-zinc-900 transition-colors whitespace-nowrap">Главная</Link>
           <span className="text-zinc-300">/</span>
@@ -719,8 +837,8 @@ export function CatalogClient({
         <div className="flex-1" />
       </div>
 
-      {/* ── Filter bar ─────────────────────────────────────────────────────── */}
-      <div className="bg-white border-b border-[var(--line)] flex items-center px-3 gap-1.5 shrink-0 relative z-20" style={{ minHeight: 50 }}>
+      {/* ── Filter bar (desktop only) ──────────────────────────────────────── */}
+      <div className="bg-white border-b border-[var(--line)] hidden lg:flex items-center px-3 gap-1.5 shrink-0 relative z-20" style={{ minHeight: 50 }}>
 
         {/* Type segmenter */}
         <div className="shrink-0 flex items-center bg-zinc-100 rounded-lg p-0.5 text-[13px] font-medium gap-px">
@@ -838,13 +956,6 @@ export function CatalogClient({
 
         <div className="flex-1 min-w-2" />
 
-        {/* Right side: mobile toggle + search + filters + reset */}
-        <div className="shrink-0 lg:hidden flex items-center rounded-lg border border-zinc-200 bg-zinc-50 p-0.5 gap-px">
-          <button onClick={() => setViewMode('list')} className={`flex items-center justify-center rounded-md w-8 h-7 transition-all ${viewMode === 'list' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-400'}`}><List className="w-3.5 h-3.5" /></button>
-          <button onClick={() => setViewMode('map')} className={`flex items-center justify-center rounded-md w-8 h-7 transition-all ${viewMode === 'map' ? 'bg-primary text-white shadow-sm' : 'text-zinc-400'}`}><Map className="w-3.5 h-3.5" /></button>
-        </div>
-
-
         <button
           onClick={() => setShowSaved(v => !v)}
           className={`shrink-0 h-8 px-3 rounded-lg border text-[12.5px] font-medium transition flex items-center gap-1.5 whitespace-nowrap ${
@@ -958,36 +1069,251 @@ export function CatalogClient({
           />
         </section>
 
-        {/* Mobile content */}
-        <div className="lg:hidden flex-1 overflow-hidden">
-          {viewMode === 'list' ? (
-            <div className="h-full overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
-              {filteredListings.length === 0 ? (
-                <EmptyState onReset={resetAll} />
+        {/* ── Mobile — map-first (A/B/C artboards from TZ) ───────────────────── */}
+        <div ref={mobileContainerRef} className="lg:hidden flex-1 relative overflow-hidden">
+
+          {/* Map layer — zIndex:0 isolates Leaflet's internal pane z-indexes.
+              Do NOT pass onTileLayerChange or onSearchAsMoveChange here —
+              that would set showOverlays=true in MapView and render its own
+              controls on top of our custom overlay UI. */}
+          <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+            <MapView
+              listings={mapListings}
+              onMarkerClick={handleMobileMarkerClick}
+              tileLayer={tileLayer}
+              mapApiRef={mobileMapApi}
+              highlightedId={mobileSelectedId ?? hoveredId}
+              searchAsMove={searchAsMove}
+              compareList={compareList}
+              onRemoveCompare={id => setCompareList(prev => prev.filter(c => c.id !== id))}
+              onBoundsChange={setMapBounds}
+              visitedIds={visitedIds}
+            />
+          </div>
+
+          {/* ── Floating top bar ── */}
+          <div style={{ position: 'absolute', top: 10, left: 12, right: 12, zIndex: 500, display: 'flex', gap: 8, alignItems: 'center' }}>
+            {/* Search capsule */}
+            <div style={{ flex: 1, height: 46, background: 'rgba(255,255,255,.97)', backdropFilter: 'blur(10px)', borderRadius: 16, boxShadow: '0 4px 16px rgba(0,0,0,.10),0 0 0 1px rgba(0,0,0,.05)', display: 'flex', alignItems: 'center', padding: '0 4px 0 4px', gap: 0, overflow: 'hidden' }}>
+              {location ? (
+                <button
+                  onClick={() => confirmLocation('')}
+                  aria-label="Сбросить место"
+                  style={{ width: 38, height: 38, borderRadius: 12, border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, color: '#52525b' }}
+                >
+                  <ChevronLeft style={{ width: 18, height: 18 }} />
+                </button>
               ) : (
-                filteredListings.map(l => (
-                  <SidebarCard
-                    key={l.id}
-                    listing={l}
-                    active={false}
-                    bookmarked={bookmarkedIds.has(l.id)}
-                    visited={visitedIds.has(l.id)}
-                    inCompare={!!compareList.find(c => c.id === l.id)}
-                    onEnter={() => {}}
-                    onLeave={() => {}}
-                    cardRef={() => {}}
-                    onBookmark={e => toggleBookmark(l.id, e)}
-                    onCompare={e => toggleCompare(l, e)}
-                    areaUnit={areaUnit}
-                  />
-                ))
+                <div style={{ width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Search style={{ width: 15, height: 15, color: '#a1a1aa' }} />
+                </div>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 10, color: '#71717a', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', lineHeight: 1 }}>
+                  {location ? 'Местоположение' : 'Казахстан'}
+                </div>
+                <div style={{ marginTop: 1, fontSize: 13.5, fontWeight: 700, color: '#09090b', letterSpacing: '-0.025em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.2 }}>
+                  {location || 'Все участки'}
+                </div>
+              </div>
+              <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 8, background: '#f0fdf4', color: '#066F36', fontWeight: 700, flexShrink: 0, fontVariantNumeric: 'tabular-nums', marginRight: 6 }}>
+                {filteredListings.length.toLocaleString('ru-RU')}
+              </span>
+            </div>
+            {/* Filter button */}
+            <button
+              onClick={() => setIsFiltersOpen(true)}
+              aria-label="Фильтры"
+              style={{ width: 46, height: 46, borderRadius: 16, flexShrink: 0, background: activeFilterCount > 0 ? '#09090b' : 'rgba(255,255,255,.97)', backdropFilter: 'blur(10px)', color: activeFilterCount > 0 ? '#fff' : '#3f3f46', border: 'none', boxShadow: '0 4px 16px rgba(0,0,0,.12),0 0 0 1px rgba(0,0,0,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', cursor: 'pointer' }}
+            >
+              <SlidersHorizontal style={{ width: 17, height: 17 }} />
+              {activeFilterCount > 0 && (
+                <span style={{ position: 'absolute', top: 6, right: 6, width: 14, height: 14, borderRadius: 999, background: '#2CA64E', color: '#fff', fontSize: 8, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* ── Chips row ── */}
+          <div style={{ position: 'absolute', top: 64, left: 0, right: 0, zIndex: 499, display: 'flex', gap: 6, padding: '4px 12px 4px', overflowX: 'auto', scrollbarWidth: 'none' } as React.CSSProperties}>
+            <button
+              onClick={() => setSelectedCategories([])}
+              style={{ flexShrink: 0, height: 30, padding: '0 11px', borderRadius: 999, border: selectedCategories.length === 0 ? '1.5px solid #066F36' : '1px solid rgba(0,0,0,.12)', background: selectedCategories.length === 0 ? '#f0fdf4' : 'rgba(255,255,255,.92)', backdropFilter: 'blur(8px)', color: selectedCategories.length === 0 ? '#066F36' : '#3f3f46', fontSize: 12, fontWeight: selectedCategories.length === 0 ? 700 : 500, display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap', cursor: 'pointer' }}
+            >
+              Все
+              <span style={{ fontSize: 10, fontVariantNumeric: 'tabular-nums', color: selectedCategories.length === 0 ? '#066F36' : '#a1a1aa' }}>{filteredListings.length}</span>
+              {selectedCategories.length > 0 && <X style={{ width: 10, height: 10 }} onClick={e => { e.stopPropagation(); setSelectedCategories([]); }} />}
+            </button>
+            {LAND_CATEGORIES.map(cat => {
+              const active = selectedCategories.includes(cat);
+              const count = typeCountMap[cat];
+              if (!active && (count ?? 0) === 0) return null;
+              return (
+                <button key={cat} onClick={() => toggleCategory(cat)} style={{ flexShrink: 0, height: 30, padding: '0 11px', borderRadius: 999, border: active ? '1.5px solid #066F36' : '1px solid rgba(0,0,0,.12)', background: active ? '#f0fdf4' : 'rgba(255,255,255,.92)', backdropFilter: 'blur(8px)', color: active ? '#066F36' : '#3f3f46', fontSize: 12, fontWeight: active ? 700 : 500, display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap', cursor: 'pointer' }}>
+                  {cat}
+                  {count != null && count > 0 && <span style={{ fontSize: 10, fontVariantNumeric: 'tabular-nums', color: active ? '#066F36' : '#a1a1aa' }}>{count}</span>}
+                  {active && <X style={{ width: 10, height: 10 }} />}
+                </button>
+              );
+            })}
+            {priceChipLabel ? (
+              <button onClick={() => { setPriceFrom(''); setPriceTo(''); }} style={{ flexShrink: 0, height: 30, padding: '0 10px', borderRadius: 999, border: '1.5px solid #066F36', background: '#f0fdf4', backdropFilter: 'blur(8px)', color: '#066F36', fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap', cursor: 'pointer' }}>
+                до {priceChipLabel}<X style={{ width: 10, height: 10 }} />
+              </button>
+            ) : (
+              <button onClick={() => setIsFiltersOpen(true)} style={{ flexShrink: 0, height: 30, padding: '0 10px', borderRadius: 999, border: '1px dashed rgba(0,0,0,.2)', background: 'rgba(255,255,255,.85)', backdropFilter: 'blur(8px)', color: '#71717a', fontSize: 12, fontWeight: 500, display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap', cursor: 'pointer' }}>+ Цена</button>
+            )}
+            {areaChipLabel ? (
+              <button onClick={() => { setAreaFrom(''); setAreaTo(''); }} style={{ flexShrink: 0, height: 30, padding: '0 10px', borderRadius: 999, border: '1.5px solid #066F36', background: '#f0fdf4', backdropFilter: 'blur(8px)', color: '#066F36', fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap', cursor: 'pointer' }}>
+                {areaChipLabel}<X style={{ width: 10, height: 10 }} />
+              </button>
+            ) : (
+              <button onClick={() => setIsFiltersOpen(true)} style={{ flexShrink: 0, height: 30, padding: '0 10px', borderRadius: 999, border: '1px dashed rgba(0,0,0,.2)', background: 'rgba(255,255,255,.85)', backdropFilter: 'blur(8px)', color: '#71717a', fontSize: 12, fontWeight: 500, display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap', cursor: 'pointer' }}>+ Площадь</button>
+            )}
+            {hasUtilityFilter && (
+              <button onClick={() => { setHasElectricity(false); setHasGas(false); setHasWater(false); setHasSewer(false); setHasRoadAccess(false); }} style={{ flexShrink: 0, height: 30, padding: '0 10px', borderRadius: 999, border: '1.5px solid #066F36', background: '#f0fdf4', backdropFilter: 'blur(8px)', color: '#066F36', fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap', cursor: 'pointer' }}>
+                Коммуник. <X style={{ width: 10, height: 10 }} />
+              </button>
+            )}
+            {citiesChipLabel && (
+              <button onClick={() => setSelectedCities([])} style={{ flexShrink: 0, height: 30, padding: '0 10px', borderRadius: 999, border: '1.5px solid #066F36', background: '#f0fdf4', backdropFilter: 'blur(8px)', color: '#066F36', fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap', cursor: 'pointer' }}>
+                {citiesChipLabel} <X style={{ width: 10, height: 10 }} />
+              </button>
+            )}
+          </div>
+
+          {/* ── Zoom + layer controls (right side) ── */}
+          <div style={{ position: 'absolute', top: 108, right: 12, zIndex: 498, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ background: 'rgba(255,255,255,.97)', backdropFilter: 'blur(10px)', borderRadius: 14, boxShadow: '0 2px 10px rgba(0,0,0,.08),0 0 0 1px rgba(0,0,0,.05)', overflow: 'hidden' }}>
+              <button onClick={() => mobileMapApi.current?.zoomIn()} aria-label="+" style={{ width: 42, height: 42, border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3f3f46', fontSize: 20, fontWeight: 300, cursor: 'pointer' }}>+</button>
+              <div style={{ height: 1, background: '#f4f4f5', margin: '0 8px' }} />
+              <button onClick={() => mobileMapApi.current?.zoomOut()} aria-label="−" style={{ width: 42, height: 42, border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3f3f46', fontSize: 20, fontWeight: 300, cursor: 'pointer' }}>−</button>
+            </div>
+            <button
+              onClick={() => setTileLayer(t => t === 'schema' ? 'satellite' : 'schema')}
+              style={{ width: 42, height: 42, borderRadius: 14, border: 'none', background: 'rgba(255,255,255,.97)', backdropFilter: 'blur(10px)', boxShadow: '0 2px 10px rgba(0,0,0,.08),0 0 0 1px rgba(0,0,0,.05)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, cursor: 'pointer' }}
+            >
+              <span style={{ fontSize: 7, fontWeight: 700, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1 }}>слой</span>
+              <span style={{ fontSize: 9.5, fontWeight: 700, color: '#066F36', letterSpacing: '-0.02em', lineHeight: 1 }}>{tileLayer === 'schema' ? 'Схема' : 'Спутн'}</span>
+            </button>
+          </div>
+
+          {/* ── Bottom sheet ── */}
+          <div
+            ref={mobileSheetRef}
+            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 140, zIndex: 600, display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: '22px 22px 0 0', boxShadow: '0 -4px 24px rgba(0,0,0,.08),0 -1px 4px rgba(0,0,0,.04)', transition: 'height 300ms cubic-bezier(0.32,0.72,0,1)' }}
+          >
+            {/* Drag handle */}
+            <div
+              onPointerDown={handleSheetDragStart}
+              onPointerMove={handleSheetDragMove}
+              onPointerUp={handleSheetDragEnd}
+              style={{ padding: '10px 0 6px', display: 'flex', justifyContent: 'center', cursor: 'grab', userSelect: 'none', flexShrink: 0, touchAction: 'none' }}
+            >
+              <div style={{ width: 36, height: 4, borderRadius: 999, background: '#e4e4e7' }} />
+            </div>
+
+            {/* Sheet header */}
+            <div style={{ padding: '0 16px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexShrink: 0 }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 900, fontSize: 17, color: '#09090b', letterSpacing: '-0.04em', lineHeight: 1 }}>
+                  {filteredListings.length.toLocaleString('ru-RU')}{' '}
+                  {(() => {
+                    const n = filteredListings.length % 100, m = n % 10;
+                    if (n >= 11 && n <= 14) return 'участков';
+                    if (m === 1) return 'участок';
+                    if (m >= 2 && m <= 4) return 'участка';
+                    return 'участков';
+                  })()}
+                </div>
+                {mobileSnap !== 'peek' ? (
+                  <button
+                    onClick={() => {
+                      const opts = ['Сначала новые', 'Сначала дешевые', 'Дешевле за сотку'] as const;
+                      const idx = opts.indexOf(sortOrder as typeof opts[number]);
+                      setSortOrder(opts[(idx + 1) % opts.length]);
+                    }}
+                    style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 3, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                  >
+                    <ArrowUpDown style={{ width: 10, height: 10, color: '#71717a' }} />
+                    <span style={{ fontSize: 10, fontWeight: 600, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      {sortOrder === 'Сначала новые' ? 'Новые' : sortOrder === 'Сначала дешевые' ? 'Дешевле' : 'За сотку'}
+                    </span>
+                  </button>
+                ) : avgPerSotka > 0 ? (
+                  <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ width: 5, height: 5, borderRadius: 999, background: '#10b981', flexShrink: 0, display: 'inline-block' }} />
+                    <span style={{ fontSize: 10, fontWeight: 600, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.06em', fontVariantNumeric: 'tabular-nums' }}>
+                      ср. {fmtM(avgPerSotka)} млн/сот
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+              {mobileSnap === 'peek' ? (
+                <button
+                  onClick={() => setMobileSnap('half')}
+                  style={{ height: 34, padding: '0 14px', borderRadius: 999, background: '#f4f4f5', border: 'none', display: 'flex', alignItems: 'center', gap: 5, fontSize: 12.5, fontWeight: 600, color: '#09090b', cursor: 'pointer', flexShrink: 0 }}
+                >
+                  <List style={{ width: 13, height: 13 }} />Списком
+                </button>
+              ) : (
+                <button
+                  onClick={() => setMobileSnap('peek')}
+                  style={{ height: 34, padding: '0 14px', borderRadius: 999, background: '#09090b', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: 5, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}
+                >
+                  <Map style={{ width: 13, height: 13 }} />На карту
+                </button>
               )}
             </div>
-          ) : (
-            <div className="h-full relative">
-              <MapView listings={mapListings} onMarkerClick={() => {}} tileLayer={tileLayer} />
+
+            {/* Sheet content */}
+            <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
+              {mobileSnap === 'peek' ? (
+                /* Horizontal card carousel */
+                <div style={{ display: 'flex', gap: 10, padding: '2px 12px 16px', overflowX: 'auto', overflowY: 'hidden', scrollbarWidth: 'none', height: '100%', alignItems: 'center' } as React.CSSProperties}>
+                  {filteredListings.length === 0 ? (
+                    <span style={{ color: '#a1a1aa', fontSize: 13 }}>Ничего не найдено</span>
+                  ) : (
+                    filteredListings.slice(0, 20).map(l => (
+                      <MobileHorizontalCard
+                        key={l.id}
+                        listing={l}
+                        bookmarked={bookmarkedIds.has(l.id)}
+                        onBookmark={e => toggleBookmark(l.id, e)}
+                        areaUnit={areaUnit}
+                        active={mobileSelectedId === l.id}
+                      />
+                    ))
+                  )}
+                </div>
+              ) : (
+                /* Vertical list */
+                <div style={{ height: '100%', overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'thin' as const }}>
+                  {filteredListings.length === 0 ? (
+                    <EmptyState onReset={resetAll} />
+                  ) : (
+                    filteredListings.map(l => (
+                      <SidebarCard
+                        key={l.id}
+                        listing={l}
+                        active={hoveredId === l.id}
+                        bookmarked={bookmarkedIds.has(l.id)}
+                        visited={visitedIds.has(l.id)}
+                        inCompare={!!compareList.find(c => c.id === l.id)}
+                        onEnter={() => {}}
+                        onLeave={() => {}}
+                        cardRef={() => {}}
+                        onBookmark={e => toggleBookmark(l.id, e)}
+                        onCompare={e => toggleCompare(l, e)}
+                        areaUnit={areaUnit}
+                      />
+                    ))
+                  )}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </main>
 
