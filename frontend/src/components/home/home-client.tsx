@@ -607,20 +607,16 @@ export function HomeClient({ featured, landCount, businessCount, locationsCount 
                 <div className="flex-1 min-w-0"><div className="mono text-[10px] uppercase tracking-[0.16em] font-semibold" style={{ color: '#a8801a' }}>Раздел каталога</div><div className="font-extrabold tracking-tighter text-[24px] text-ink-900 leading-none mt-1">Готовый бизнес</div></div>
                 <div className="text-right shrink-0"><div className="font-extrabold text-[22px] tracking-tighter num leading-none text-ink-900">{businessCount || 0}</div><div className="mono text-[9px] uppercase tracking-wide text-ink-400 mt-1">объектов</div></div>
               </div>
-              <div className="p-4 grid grid-cols-2 gap-3">
-                {[['Автомойки и СТО', 'ph-rock', '64'], ['Кафе и рестораны', 'ph-rock', '52'], ['Магазины и аптеки', 'ph-soil', '38'], ['Гостиницы и базы', 'ph-grass', '60']].map(([name, cls, count]) => (
-                  <div key={name} className="rounded-xl overflow-hidden bg-white" style={{ border: '1px solid #ece2c6' }}>
-                    <div className={`${cls} aspect-[16/9] relative`} />
-                    <div className="px-2.5 py-2 flex items-center justify-between gap-1.5">
-                      <span className="text-[12.5px] font-bold text-ink-900 tracking-tight truncate">{name}</span>
-                      <span className="mono text-[10px] font-semibold num shrink-0" style={{ color: '#a8801a' }}>{count}</span>
-                    </div>
+              <div className="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[['Автомойки и СТО', 'ph-rock'], ['Кафе и рестораны', 'ph-rock'], ['Магазины и аптеки', 'ph-soil'], ['Гостиницы и базы', 'ph-grass']].map(([name, cls]) => (
+                  <div key={name} className={`${cls} relative aspect-[16/10] rounded-xl overflow-hidden`} style={{ border: '1px solid #ece2c6' }}>
+                    <span className="absolute bottom-2.5 left-2.5 right-2.5 flex items-end"><span className="text-[12.5px] font-bold text-ink-900 bg-white/85 backdrop-blur px-2 py-0.5 rounded">{name}</span></span>
                   </div>
                 ))}
               </div>
-              <div className="px-4 pb-4 -mt-1">
-                <div className="flex items-center justify-between rounded-lg px-3 h-10" style={{ background: '#fbf8ee', border: '1px solid #ece2c6' }}>
-                  <span className="text-[12px] text-ink-600">Салоны, пекарни и другое — тоже в разделе</span>
+              <div className="px-5 sm:px-6 pb-5 -mt-1">
+                <div className="flex items-center justify-between rounded-xl px-4 h-11" style={{ background: '#fbf8ee', border: '1px solid #ece2c6' }}>
+                  <span className="text-[12.5px] text-ink-600">Салоны, пекарни и другое — тоже в разделе</span>
                   <Link href="/business" className="mono text-[11px] font-semibold" style={{ color: '#a8801a' }}>Все →</Link>
                 </div>
               </div>
