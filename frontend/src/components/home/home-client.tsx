@@ -224,19 +224,25 @@ function Hero({ featured, landCount }: { featured: HomeFeatured[]; landCount: nu
 }
 
 /* ═══════════════════════ LIVE ТИКЕР ═══════════════════════ */
-function Ticker({ featured }: { featured: HomeFeatured[] }) {
-  const { format } = useCurrency();
-  const feed = featured.slice(0, 7);
+const FEED: { title: string; meta: string; v: string }[] = [
+  { title: 'Новый участок · ИЖС 12 соток', meta: 'Талгар, Алматинская обл.', v: '12,5 млн ₸' },
+  { title: 'Цена снижена на 8%', meta: 'Каскелен · участок 10 соток', v: '−1,1 млн' },
+  { title: '+312 просмотров за час', meta: 'Алматинская обл.', v: '' },
+  { title: 'Добавлен в избранное', meta: 'Коммерция · Шымкент, объездная', v: '' },
+  { title: 'Новый участок · у воды', meta: 'Капчагай, побережье', v: '24 млн ₸' },
+  { title: 'Сделка закрыта', meta: 'Иссык · дача 8 соток', v: '' },
+  { title: '+128 в поиске «ИЖС до 10 млн»', meta: 'за последний час', v: '' },
+];
+
+function Ticker() {
   const [i, setI] = useState(0);
   useEffect(() => {
-    if (feed.length <= 1) return;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduce) return;
-    const t = setInterval(() => setI(k => (k + 1) % feed.length), 3600);
+    const t = setInterval(() => setI(k => (k + 1) % FEED.length), 3600);
     return () => clearInterval(t);
-  }, [feed.length]);
-  if (!feed.length) return null;
-  const e = feed[i];
+  }, []);
+  const e = FEED[i];
   return (
     <div className="bg-white border-b border-paper-3">
       <div className="max-w-[1440px] mx-auto px-5 sm:px-6 h-12 flex items-center gap-3">
@@ -246,8 +252,8 @@ function Ticker({ featured }: { featured: HomeFeatured[] }) {
         <span className="w-px h-4 bg-paper-3 shrink-0" />
         <div key={i} className="feed-swap flex-1 min-w-0 flex items-center gap-2.5 overflow-hidden">
           <span className="font-semibold text-[13.5px] text-ink-900 truncate">{e.title}</span>
-          <span className="text-ink-400 text-[12.5px] truncate hidden sm:inline">· {e.location}</span>
-          <span className="ml-auto shrink-0 num font-bold text-[12.5px] text-brand-700 bg-brand-50 px-2 py-0.5 rounded">{format(e.price, { compact: true })}</span>
+          <span className="text-ink-400 text-[12.5px] truncate hidden sm:inline">· {e.meta}</span>
+          {e.v && <span className="ml-auto shrink-0 num font-bold text-[12.5px] text-brand-700 bg-brand-50 px-2 py-0.5 rounded">{e.v}</span>}
         </div>
         <Link href="/catalog" className="shrink-0 mono text-[10px] uppercase tracking-[0.1em] text-ink-400 hover:text-brand-600 transition hidden sm:inline">Всё на карте →</Link>
       </div>
@@ -256,13 +262,20 @@ function Ticker({ featured }: { featured: HomeFeatured[] }) {
 }
 
 /* ═══════════════════════ МАСТЕР ПОДБОРА ═══════════════════════ */
-const GOALS = [
-  { id: 'dom', label: 'Построить дом', sub: 'ИЖС для постоянного проживания', tone: 'ph-plot', base: 612, type: 'izhs' },
-  { id: 'dacha', label: 'Дача и отдых', sub: 'Садовые участки для сезона', tone: 'ph-grass', base: 208, type: 'dacha' },
-  { id: 'business', label: 'Под бизнес', sub: 'Коммерческая земля под доход', tone: 'ph-rock', base: 236, type: 'kommertsiya' },
-  { id: 'invest', label: 'Инвестиции', sub: 'Купить сейчас — продать дороже', tone: 'ph-mountain', base: 142, type: '' },
-  { id: 'farm', label: 'Фермерство', sub: 'Сельхоз и КХ, большие массивы', tone: 'ph-soil', base: 86, type: 'selhoz' },
-  { id: 'any', label: 'Пока не определился', sub: 'Показать все участки по бюджету', tone: 'ph-plot', base: 1284, type: '' },
+type Sample = [string, string, string, string]; // [место, площадь, цена, ph-класс]
+const GOALS: { id: string; label: string; sub: string; tone: string; base: number; type: string; samples: Sample[] }[] = [
+  { id: 'dom', label: 'Построить дом', sub: 'ИЖС для постоянного проживания', tone: 'ph-plot', base: 612, type: 'izhs',
+    samples: [['Каскелен · ИЖС', '10 соток', '12,5 млн ₸', 'ph-plot'], ['Талгар · ИЖС', '12 соток', '18 млн ₸', 'ph-plot'], ['Бесагаш · вид на горы', '9 соток', '24 млн ₸', 'ph-mountain']] },
+  { id: 'dacha', label: 'Дача и отдых', sub: 'Садовые участки для сезона', tone: 'ph-grass', base: 208, type: 'dacha',
+    samples: [['Иссык · дача', '8 соток', '9,8 млн ₸', 'ph-grass'], ['Тургень · сад', '6 соток', '6,5 млн ₸', 'ph-grass'], ['Капшагай · у воды', '15 соток', '24 млн ₸', 'ph-water']] },
+  { id: 'business', label: 'Под бизнес', sub: 'Коммерческая земля под доход', tone: 'ph-rock', base: 236, type: 'kommertsiya',
+    samples: [['Кордай · трасса', '12 соток', '45 млн ₸', 'ph-rock'], ['Шымкент · объездная', '25 соток', '60 млн ₸', 'ph-rock'], ['Алматы · БАКАД', '9 соток', '28 млн ₸', 'ph-soil']] },
+  { id: 'invest', label: 'Инвестиции', sub: 'Купить сейчас — продать дороже', tone: 'ph-mountain', base: 142, type: '',
+    samples: [['Или · массив', '20 соток', '32 млн ₸', 'ph-water'], ['БАКАД · под застройку', '30 соток', '54 млн ₸', 'ph-mountain'], ['Талгар · участок', '14 соток', '21 млн ₸', 'ph-plot']] },
+  { id: 'farm', label: 'Фермерство', sub: 'Сельхоз и КХ, большие массивы', tone: 'ph-soil', base: 86, type: 'selhoz',
+    samples: [['Енбекшиказахский · КХ', '2 га', '18 млн ₸', 'ph-soil'], ['Жамбылская обл · поле', '5 га', '30 млн ₸', 'ph-soil'], ['Или · поливная', '3 га', '22 млн ₸', 'ph-grass']] },
+  { id: 'any', label: 'Пока не определился', sub: 'Показать все участки по бюджету', tone: 'ph-plot', base: 1284, type: '',
+    samples: [['Каскелен · ИЖС', '10 соток', '12,5 млн ₸', 'ph-plot'], ['Иссык · дача', '8 соток', '9,8 млн ₸', 'ph-grass'], ['Капшагай · у воды', '15 соток', '24 млн ₸', 'ph-water']] },
 ];
 const REGIONS = [
   { id: 'almaty_city', label: 'Алматы', f: 0.9 }, { id: 'astana_city', label: 'Астана', f: 0.6 },
@@ -393,6 +406,14 @@ function QuizFinder() {
                 <div className="flex items-baseline gap-2 mt-1"><span className="font-black text-[40px] tracking-tighter text-brand-600 num">{fmtNum(matchCount())}</span><span className="text-[14px] text-ink-500">участков</span></div></div>
               <div className="text-right text-[12.5px] text-ink-500 max-w-[48%] leading-snug">{goalObj.label} · {budLabel(budget)}<br />{selRegion?.label}</div>
             </div>
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {goalObj.samples.map(s => (
+                <Link key={s[0]} href={catalogHref} className="tile rounded-xl border border-paper-3 overflow-hidden bg-white hover:border-brand-300 transition">
+                  <div className={`${s[3]} aspect-[16/10] relative`}><span className="absolute top-2 left-2 mono text-[9px] uppercase bg-white/80 px-1.5 py-0.5 rounded text-ink-600">{s[1]}</span></div>
+                  <div className="p-3"><div className="font-extrabold tracking-tighter text-[15px] text-brand-600 num">{s[2]}</div><div className="text-[12px] text-ink-500 mt-0.5 truncate">{s[0]}</div></div>
+                </Link>
+              ))}
+            </div>
             <div className="mt-6 flex items-center gap-3 flex-wrap">
               <Link href={catalogHref} className="px-6 h-12 rounded-xl bg-brand-600 text-white font-semibold text-[14.5px] inline-flex items-center gap-2 hover:bg-brand-700 transition shadow-[0_12px_32px_-12px_rgba(6,111,54,.55)]">Смотреть все {fmtNum(matchCount())} <span>→</span></Link>
               <button onClick={() => { setStep(1); setGoal(null); setRegion(null); setBudget(15); }} className="px-4 h-12 rounded-xl border border-paper-3 text-ink-600 font-semibold text-[14px] hover:border-ink-400 transition">Начать заново</button>
@@ -416,7 +437,7 @@ export function HomeClient({ featured, landCount, businessCount, locationsCount 
   return (
     <div className="home-scope bg-paper text-ink-900">
       <Hero featured={featured} landCount={landCount} />
-      <Ticker featured={featured} />
+      <Ticker />
 
       {/* 02 · Подбор участка */}
       <section className="bg-white border-b border-paper-3">
@@ -586,16 +607,19 @@ export function HomeClient({ featured, landCount, businessCount, locationsCount 
                 <div className="flex-1 min-w-0"><div className="mono text-[10px] uppercase tracking-[0.16em] font-semibold" style={{ color: '#a8801a' }}>Раздел каталога</div><div className="font-extrabold tracking-tighter text-[24px] text-ink-900 leading-none mt-1">Готовый бизнес</div></div>
                 <div className="text-right shrink-0"><div className="font-extrabold text-[22px] tracking-tighter num leading-none text-ink-900">{businessCount || 0}</div><div className="mono text-[9px] uppercase tracking-wide text-ink-400 mt-1">объектов</div></div>
               </div>
-              <div className="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {[['Автомойки и СТО', 'ph-rock'], ['Кафе и рестораны', 'ph-rock'], ['Магазины и аптеки', 'ph-soil'], ['Гостиницы и базы', 'ph-grass']].map(([name, cls]) => (
-                  <div key={name} className={`${cls} relative aspect-[16/10] rounded-xl overflow-hidden`} style={{ border: '1px solid #ece2c6' }}>
-                    <span className="absolute bottom-2.5 left-2.5 right-2.5 flex items-end"><span className="text-[12.5px] font-bold text-ink-900 bg-white/85 backdrop-blur px-2 py-0.5 rounded">{name}</span></span>
+              <div className="p-4 grid grid-cols-2 gap-2">
+                {[['Автомойки и СТО', 'ph-rock', '64'], ['Кафе и рестораны', 'ph-rock', '52'], ['Магазины и аптеки', 'ph-soil', '38'], ['Гостиницы и базы', 'ph-grass', '60']].map(([name, cls, count]) => (
+                  <div key={name} className={`${cls} relative h-[62px] rounded-lg overflow-hidden flex items-end`} style={{ border: '1px solid #ece2c6' }}>
+                    <span className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between gap-1">
+                      <span className="text-[11px] font-bold text-ink-900 bg-white/85 backdrop-blur px-1.5 py-0.5 rounded truncate">{name}</span>
+                      <span className="mono text-[9.5px] font-semibold text-ink-600 bg-white/85 backdrop-blur px-1 py-0.5 rounded num shrink-0">{count}</span>
+                    </span>
                   </div>
                 ))}
               </div>
-              <div className="px-5 sm:px-6 pb-5 -mt-1">
-                <div className="flex items-center justify-between rounded-xl px-4 h-11" style={{ background: '#fbf8ee', border: '1px solid #ece2c6' }}>
-                  <span className="text-[12.5px] text-ink-600">Салоны, пекарни и другое — тоже в разделе</span>
+              <div className="px-4 pb-4 -mt-1">
+                <div className="flex items-center justify-between rounded-lg px-3 h-10" style={{ background: '#fbf8ee', border: '1px solid #ece2c6' }}>
+                  <span className="text-[12px] text-ink-600">Салоны, пекарни и другое — тоже в разделе</span>
                   <Link href="/business" className="mono text-[11px] font-semibold" style={{ color: '#a8801a' }}>Все →</Link>
                 </div>
               </div>
