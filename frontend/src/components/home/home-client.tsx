@@ -607,13 +607,14 @@ export function HomeClient({ featured, landCount, businessCount, locationsCount 
                 <div className="flex-1 min-w-0"><div className="mono text-[10px] uppercase tracking-[0.16em] font-semibold" style={{ color: '#a8801a' }}>Раздел каталога</div><div className="font-extrabold tracking-tighter text-[24px] text-ink-900 leading-none mt-1">Готовый бизнес</div></div>
                 <div className="text-right shrink-0"><div className="font-extrabold text-[22px] tracking-tighter num leading-none text-ink-900">{businessCount || 0}</div><div className="mono text-[9px] uppercase tracking-wide text-ink-400 mt-1">объектов</div></div>
               </div>
-              <div className="p-4 grid grid-cols-2 gap-2">
+              <div className="p-4 grid grid-cols-2 gap-3">
                 {[['Автомойки и СТО', 'ph-rock', '64'], ['Кафе и рестораны', 'ph-rock', '52'], ['Магазины и аптеки', 'ph-soil', '38'], ['Гостиницы и базы', 'ph-grass', '60']].map(([name, cls, count]) => (
-                  <div key={name} className={`${cls} relative h-[62px] rounded-lg overflow-hidden flex items-end`} style={{ border: '1px solid #ece2c6' }}>
-                    <span className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between gap-1">
-                      <span className="text-[11px] font-bold text-ink-900 bg-white/85 backdrop-blur px-1.5 py-0.5 rounded truncate">{name}</span>
-                      <span className="mono text-[9.5px] font-semibold text-ink-600 bg-white/85 backdrop-blur px-1 py-0.5 rounded num shrink-0">{count}</span>
-                    </span>
+                  <div key={name} className="rounded-xl overflow-hidden bg-white" style={{ border: '1px solid #ece2c6' }}>
+                    <div className={`${cls} aspect-[16/9] relative`} />
+                    <div className="px-2.5 py-2 flex items-center justify-between gap-1.5">
+                      <span className="text-[12.5px] font-bold text-ink-900 tracking-tight truncate">{name}</span>
+                      <span className="mono text-[10px] font-semibold num shrink-0" style={{ color: '#a8801a' }}>{count}</span>
+                    </div>
                   </div>
                 ))}
               </div>
