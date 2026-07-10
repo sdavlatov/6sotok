@@ -1,27 +1,40 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { UserPlus } from 'lucide-react'
-import { Container } from '@/components/layout/container'
+import { Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { AuthShell } from '@/components/auth/auth-shell'
 import { AuthCard } from '@/components/auth/auth-card'
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const next = searchParams.get('next') || '/profile'
 
   return (
-    <div className="min-h-[calc(100vh-80px)] bg-zinc-50 flex items-center">
-      <Container>
-        <div className="mx-auto max-w-sm w-full py-12">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center bg-primary-soft p-3 rounded-2xl mb-4">
-              <UserPlus className="size-6 text-primary" />
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Добро пожаловать</h1>
-            <p className="mt-1.5 text-sm text-zinc-500">Войдите или создайте аккаунт</p>
-          </div>
-          <AuthCard defaultTab="register" onSuccess={() => router.push('/profile')} />
-        </div>
-      </Container>
-    </div>
+    <AuthShell variant="register">
+      <div className="mb-8">
+        <p
+          className="mb-3 font-mono uppercase text-primary"
+          style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.12em' }}
+        >
+          Создать аккаунт
+        </p>
+        <h1 className="text-[30px] sm:text-[40px] font-black leading-[1.04] tracking-[-0.05em] text-[var(--ink-900)]">
+          Это займёт 30 секунд
+        </h1>
+        <p className="mt-3.5 text-[16px] leading-relaxed text-[var(--ink-500)]">
+          Через Google за пару кликов — или заполните форму ниже.
+        </p>
+      </div>
+      <AuthCard next={next} defaultTab="register" onSuccess={() => router.push(next)} />
+    </AuthShell>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
   )
 }

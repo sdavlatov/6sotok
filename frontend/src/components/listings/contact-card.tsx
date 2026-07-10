@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ListingSeller } from '@/types/listing';
 import { pushDataLayer } from '@/lib/analytics';
+import { useCurrency } from '@/context/currency-context';
 
 interface ContactCardProps {
   price: number;
@@ -138,8 +139,10 @@ export function ContactCard({
   const [phoneVisible, setPhoneVisible] = useState(false);
   const [viewingOpen, setViewingOpen] = useState(false);
 
-  const { main: priceMln, unit: priceUnit } = formatPriceMln(price);
-  const fmtPerSotka = new Intl.NumberFormat('ru-RU').format(pricePerSotka);
+  const { cur, format } = useCurrency();
+  const { main: priceMln, unit: priceUnit } = cur === 'usd'
+    ? { main: format(price), unit: '' }
+    : formatPriceMln(price);
   const cleanPhone = seller?.phone?.replace(/\D/g, '') ?? '';
   const url = listingUrl ?? `https://6sotok.kz/listing/${slug ?? ''}`;
   const waText = encodeURIComponent(`Здравствуйте! Интересует участок «${title ?? ''}» за ${priceMln} ${priceUnit}.\n${url}`);
@@ -173,7 +176,7 @@ export function ContactCard({
           <span className="font-black text-[26px] leading-none tracking-tight text-[var(--ink-400)]">{priceUnit}</span>
         </div>
         <div className="mt-2 text-[12px] text-[var(--ink-400)] tabular-nums">
-          {fmtPerSotka} ₸ / сотку
+          {format(pricePerSotka, { perSotka: true })}
         </div>
 
         {/* Продавец */}

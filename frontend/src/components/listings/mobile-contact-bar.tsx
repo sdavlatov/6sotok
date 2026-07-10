@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { pushDataLayer } from '@/lib/analytics'
+import { useCurrency } from '@/context/currency-context'
 import type { ListingSeller } from '@/types/listing'
 
 interface MobileContactBarProps {
@@ -26,8 +27,8 @@ const WaSvg = () => (
 
 export function MobileContactBar({ price, pricePerSotka, seller, slug, title, listingUrl }: MobileContactBarProps) {
   const [phoneVisible, setPhoneVisible] = useState(false)
-  const formattedPrice = new Intl.NumberFormat('ru-RU').format(price)
-  const formattedPerSotka = new Intl.NumberFormat('ru-RU').format(pricePerSotka)
+  const { format } = useCurrency()
+  const formattedPrice = format(price)
   const cleanPhone = seller?.phone?.replace(/\D/g, '') ?? ''
   const url = listingUrl ?? `https://6sotok.kz/listing/${slug ?? ''}`
   const waText = encodeURIComponent(`Здравствуйте! Интересует участок «${title ?? ''}» за ${formattedPrice} ₸.\n${url}`)
@@ -41,9 +42,9 @@ export function MobileContactBar({ price, pricePerSotka, seller, slug, title, li
       {/* Строка цены */}
       <div className="flex items-baseline gap-2 px-4 pt-3 pb-2">
         <span className="text-[24px] font-bold tracking-tight text-zinc-900 tabular-nums leading-none">
-          {formattedPrice} ₸
+          {formattedPrice}
         </span>
-        <span className="text-[12px] text-zinc-400 tabular-nums">{formattedPerSotka} ₸/сот.</span>
+        <span className="text-[12px] text-zinc-400 tabular-nums">{format(pricePerSotka, { perSotka: true })}</span>
       </div>
 
       {/* Кнопки */}

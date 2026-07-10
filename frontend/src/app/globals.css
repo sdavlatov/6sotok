@@ -30,6 +30,36 @@
   --color-card:       #ffffff;
   --color-muted:      #7d8074;
   --color-border:     #e3e1d9;
+
+  /* ── Токены макета главной/хедера (site-header/footer/index AIDA) ── */
+  --color-brand:     #066F36;
+  --color-brand-600: #066F36;
+  --color-brand-700: #055a2c;
+  --color-brand-500: #2CA64E;
+  --color-brand-300: #7FD495;
+  --color-brand-100: #D6EFE5;
+  --color-brand-50:  #f0fdf4;
+  --color-brand-ink: #021A0E;
+
+  --color-ink-900: #14160f;
+  --color-ink-800: #1a1c16;
+  --color-ink-700: #2a2d23;
+  --color-ink-600: #44473c;
+  --color-ink-500: #5b5e54;
+  --color-ink-400: #7d8074;
+  --color-ink-300: #a3a59a;
+
+  --color-paper:   #fafaf7;
+  --color-paper-2: #f4f3ef;
+  --color-paper-3: #ecebe5;
+
+  --color-util-light: #F4B400;
+  --color-util-gas:   #E97B27;
+  --color-util-water: #2196F3;
+
+  /* letter-spacing из кастомного tailwind.config макета */
+  --tracking-tightest:  -0.05em;
+  --tracking-tighter-2: -0.035em;
 }
 
 :root {
@@ -362,3 +392,69 @@ body {
 }
 .glow-btn:hover::before { opacity: 0.7; }
 
+
+/* Auth — дрейф чипов и мигающая каретка (из макета) */
+@keyframes auth-drift {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+@keyframes auth-caret {
+  50% { opacity: 0; }
+}
+.auth-drift { animation: auth-drift 3.6s ease-in-out infinite; }
+.auth-caret { animation: auth-caret 1.05s steps(1) infinite; }
+
+/* Auth — поля и кнопки 1:1 из макета (значения из HTML) */
+.auth-label {
+  font-family: var(--font-mono), 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ink-500);
+}
+.auth-input {
+  width: 100%; height: 48px; padding: 0 14px;
+  border: 1px solid var(--line); background: #fff; border-radius: 12px;
+  font-weight: 500; font-size: 14.5px; color: var(--ink-900);
+  letter-spacing: -0.01em; transition: all .12s;
+}
+.auth-input::placeholder { color: var(--ink-300); font-weight: 400; }
+.auth-input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 4px rgba(6,111,54,0.10); }
+.auth-input-wrap:focus-within { border-color: var(--brand); box-shadow: 0 0 0 4px rgba(6,111,54,0.10); }
+.auth-btn-ink {
+  height: 52px; border-radius: 12px; background: var(--brand-ink); color: #fff;
+  font-weight: 700; font-size: 14.5px; letter-spacing: -0.015em; cursor: pointer;
+  transition: background .15s, box-shadow .15s, transform .15s;
+}
+.auth-btn-ink:hover {
+  background: #06311b; /* деликатно светлее near-black, не кричит */
+  box-shadow: 0 10px 26px -10px rgba(2,26,14,0.6);
+  transform: translateY(-1px);
+}
+.auth-btn-ink:active { transform: translateY(0); }
+.auth-btn-brand {
+  height: 52px; border-radius: 12px; background: var(--brand); color: #fff;
+  font-weight: 700; font-size: 14.5px; letter-spacing: -0.015em; box-shadow: var(--sh-brand); cursor: pointer;
+  transition: background .15s, box-shadow .15s, transform .15s;
+}
+.auth-btn-brand:hover {
+  background: var(--brand-hover, #055a2b); /* явно темнее базового */
+  box-shadow: 0 10px 26px -8px rgba(6,111,54,0.55);
+  transform: translateY(-1px);
+}
+.auth-btn-brand:active { transform: translateY(0); }
+.auth-provider {
+  height: 48px; border-radius: 12px; border: 1px solid var(--line); background: #fff;
+  font-weight: 600; font-size: 13.5px; color: var(--ink-900); cursor: pointer; transition: all .12s;
+}
+.auth-provider:hover { background: var(--paper-2); border-color: #cfcdc3; }
+/* В CTA-ряду регистрации Google такой же высоты, как «Создать аккаунт» */
+.auth-provider--lg { height: 52px; }
+
+/* Auth — невалидное поле (своя валидация вместо браузерной) */
+.auth-input[aria-invalid="true"],
+.auth-input-wrap[aria-invalid="true"] {
+  border-color: var(--color-danger) !important;
+  box-shadow: 0 0 0 4px rgba(176,68,56,0.10) !important;
+}
+
+/* Прячем нативную иконку показа пароля (Edge/IE) — у нас своя */
+input::-ms-reveal, input::-ms-clear { display: none; }

@@ -6,6 +6,22 @@ export const Users: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
   },
+  access: {
+    // Публичная саморегистрация (вход по email/паролю)
+    create: () => true,
+    // Читать список/чужих может только админ; себя — через /api/users/me
+    read: ({ req: { user } }) => {
+      if (user?.role === 'admin') return true
+      if (user) return { id: { equals: user.id } }
+      return false
+    },
+    update: ({ req: { user } }) => {
+      if (user?.role === 'admin') return true
+      if (user) return { id: { equals: user.id } }
+      return false
+    },
+    delete: ({ req: { user } }) => user?.role === 'admin',
+  },
   fields: [
     {
       name: 'name',
@@ -17,6 +33,29 @@ export const Users: CollectionConfig = {
       name: 'phone',
       type: 'text',
       label: 'Телефон',
+    },
+    {
+      name: 'city',
+      type: 'text',
+      label: 'Город / регион',
+    },
+    {
+      name: 'googleId',
+      type: 'text',
+      label: 'Google ID',
+      admin: { readOnly: true, description: 'Заполняется при входе через Google' },
+      index: true,
+    },
+    {
+      name: 'accountType',
+      type: 'select',
+      label: 'Тип аккаунта',
+      defaultValue: 'owner',
+      options: [
+        { label: 'Хозяин', value: 'owner' },
+        { label: 'Агент', value: 'agent' },
+        { label: 'Бизнес', value: 'business' },
+      ],
     },
     {
       name: 'isAgency',
@@ -40,6 +79,8 @@ export const Users: CollectionConfig = {
         { label: 'Продавец', value: 'seller' },
       ],
       access: {
+        // нельзя выставить себе роль при саморегистрации — только админ
+        create: ({ req: { user } }) => user?.role === 'admin',
         update: ({ req: { user } }) => user?.role === 'admin',
       },
     },

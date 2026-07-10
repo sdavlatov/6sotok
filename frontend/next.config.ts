@@ -9,6 +9,13 @@ const nextConfig: NextConfig = {
       '@payload-config': './payload.config.ts',
     },
   },
+  async redirects() {
+    return [
+      // Слитые страницы
+      { source: '/about', destination: '/contacts', permanent: false },
+      { source: '/add-business', destination: '/add-listing', permanent: false },
+    ]
+  },
 }
 
 export default withPayload(nextConfig)

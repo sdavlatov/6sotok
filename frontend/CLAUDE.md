@@ -6,6 +6,18 @@ Always respond in Russian unless explicitly requested otherwise.
 Responses must be short and concise. No summaries at end of response.
 В конце каждой сессии обновлять раздел "Последние изменения" ниже.
 
+**Согласованные решения проекта (auth, страницы, хедер, главная, монетизация): см. `docs/decisions.md`.**
+
+---
+
+## Последние изменения (2026-07-09)
+
+- **Хедер/футер**: перенесены web-компоненты `site-header.js`/`site-footer.js` (макет AIDA) в React → `components/layout/header.tsx` и `footer.tsx`. Shadow DOM → scoped `<style>` (`.sixsotok-header`/`.sixsotok-footer`). i18n RU/KZ/EN, авто-курс $→₸, мобильное раскрытие хедера, счётчик избранного из `6sotok_bookmarks`, «Войти/Профиль» через `useAuth`.
+- **Глобальная валюта**: `context/currency-context.tsx` (`CurrencyProvider`/`useCurrency`) — единый источник языка+валюты+курса. Подключён в `(site)/layout.tsx`. Компонент `components/ui/price.tsx` `<Price value compact perSotka/>`. Цены динамически пересчитываются ₸↔$ при переключении в хедере. Подключено в: `listing-card`, `business-card`, `contact-card`, `mobile-contact-bar`, главная.
+- **Главная**: полностью заменена на порт макета «index (Главная AIDA)» → `app/(site)/page.tsx` (server, тянет данные) + `components/home/home-client.tsx` (client) + `components/home/home.css`. Живое: ротация рекламной hero-карточки, live-тикер, 3-шаговый мастер подбора (бюджет-слайдер + поиск по регионам). Старые home-компоненты (split-view, home-filter и т.д.) больше не используются.
+- **globals.css**: в `@theme` добавлены токены макета (`--color-brand-*`, `--color-ink-*`, `--color-paper-*`, `--color-util-*`, `--tracking-tightest`), чтобы Tailwind-классы макета резолвились.
+- **categories-grid.tsx**: `Cow` → `Tractor` (иконка переименована в новых lucide).
+
 ---
 
 ## Последние изменения (2026-05-07)

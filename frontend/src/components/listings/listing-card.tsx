@@ -3,6 +3,7 @@ import { Listing } from '@/types/listing';
 import { listingUrl } from '@/lib/listing-url';
 import { CardMediaSlider } from './card-media-slider';
 import { UTILITY_DOTS, plotClass } from '@/lib/listing-card-utils';
+import { Price } from '@/components/ui/price';
 
 interface ListingCardProps {
   listing: Listing;
@@ -63,13 +64,9 @@ export function ListingCard({ listing, mediaAspect = '4/3' }: ListingCardProps) 
         {/* Price + CTA */}
         <div className="mt-2.5 flex items-end justify-between gap-2">
           <div>
-            <div className="font-black tracking-tight text-[19px] text-[var(--ink-900)] leading-none tabular-nums">
-              {fmtM(listing.price)} млн ₸
-            </div>
+            <Price value={listing.price} compact className="font-black tracking-tight text-[19px] text-[var(--ink-900)] leading-none tabular-nums" />
             {perSotka > 0 && (
-              <div className="mt-0.5 text-[10.5px] font-mono text-[var(--ink-400)] tabular-nums">
-                {fmt(perSotka)} / сотка
-              </div>
+              <Price value={perSotka} perSotka className="mt-0.5 block text-[10.5px] font-mono text-[var(--ink-400)] tabular-nums" />
             )}
           </div>
           <span className="shrink-0 h-8 px-3.5 rounded-[var(--r-md)] bg-[var(--ink-900)] text-white text-[11px] font-semibold flex items-center gap-1 group-hover:bg-[var(--brand-600)] transition-colors">

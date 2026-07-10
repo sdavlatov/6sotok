@@ -370,7 +370,7 @@ export default function ProfilePage() {
               </div>
 
               <Link
-                href={tab === 'land' ? '/add-listing' : '/add-business'}
+                href="/add-listing"
                 className="flex items-center gap-1.5 bg-primary hover:bg-primary-hover text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
               >
                 <Plus className="size-4" />
@@ -416,7 +416,7 @@ export default function ProfilePage() {
                     </div>
                     <p className="text-base font-semibold text-[var(--ink-700)] mb-1">Нет бизнес-объявлений</p>
                     <p className="text-sm text-[var(--ink-400)] mb-4">Разместите кафе, магазин, склад или другой объект</p>
-                    <Link href="/add-business"
+                    <Link href="/add-listing"
                       className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white font-semibold px-5 py-2.5 rounded-xl transition-colors text-sm">
                       <Plus className="size-4" />Добавить бизнес
                     </Link>

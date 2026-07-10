@@ -2,13 +2,13 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { getMe, login, logout, register, updateMe, User } from '@/lib/auth'
+import { AccountType, getMe, login, logout, register, updateMe, User } from '@/lib/auth'
 
 interface AuthContextType {
   user: User | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (data: { name: string; email: string; password: string; phone?: string }) => Promise<void>
+  signUp: (data: { name: string; email: string; password: string; phone?: string; city?: string; accountType?: AccountType }) => Promise<void>
   signOut: () => Promise<void>
   refreshUser: () => Promise<void>
   updateUser: (fields: Partial<Pick<User, 'name' | 'phone'>>) => Promise<void>
@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(u)
   }
 
-  const signUp = async (data: { name: string; email: string; password: string; phone?: string }) => {
+  const signUp = async (data: { name: string; email: string; password: string; phone?: string; city?: string; accountType?: AccountType }) => {
     await register(data)
     const u = await login(data.email, data.password)
     setUser(u)

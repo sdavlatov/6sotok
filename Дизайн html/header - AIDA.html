@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>6sotok.kz — Хедер (десктоп + мобайл)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green:#066F36; --green-2:#2CA64E; --ink:#021A0E;
+    --ink-900:#0d1410; --ink-600:#4c5650; --ink-400:#7d8a82;
+    --paper:#fbfbf9; --paper-2:#f3f4f0; --card:#ffffff; --line:#e6e7e1;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; font-family:'Inter',system-ui,sans-serif; color:var(--ink-900); background:var(--paper); -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:1280px; margin:0 auto; padding:54px 28px 90px; }
+
+  .eyebrow{ font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:var(--green); }
+  h1.title{ margin:16px 0 0; font-weight:900; font-size:60px; line-height:.95; letter-spacing:-.05em; max-width:16ch; }
+  h1.title .m{ color:#a7afa8; }
+  .sub{ margin-top:20px; font-size:16.5px; line-height:1.55; color:var(--ink-600); max-width:62ch; }
+  .meta{ margin-top:26px; display:flex; gap:30px; flex-wrap:wrap; padding-top:22px; border-top:1px dashed var(--line); }
+  .meta .it .l{ font:500 10.5px/1 'JetBrains Mono',monospace; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-400); }
+  .meta .it .v{ margin-top:6px; font-weight:800; font-size:15px; letter-spacing:-.02em; }
+  .meta .it .v b{ color:var(--green); }
+
+  section{ margin-top:60px; }
+  .sec-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:18px; }
+  .sec-n{ font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--green); }
+  .sec-t{ margin:10px 0 0; font-weight:900; font-size:32px; letter-spacing:-.035em; }
+  .sec-d{ margin:8px 0 0; font-size:14.5px; color:var(--ink-600); line-height:1.5; max-width:64ch; }
+  .pill{ font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:.06em; color:var(--ink-600); background:var(--card); border:1px solid var(--line); border-radius:99px; padding:8px 12px; white-space:nowrap; }
+
+  .frame{ background:var(--card); border:1px solid var(--line); border-radius:18px; overflow:hidden; box-shadow:0 1px 2px rgba(13,20,16,.04), 0 18px 50px -28px rgba(13,20,16,.18); }
+  .frame-bar{ height:38px; display:flex; align-items:center; gap:7px; padding:0 14px; background:var(--paper-2); border-bottom:1px solid var(--line); }
+  .frame-bar i{ width:11px; height:11px; border-radius:50%; background:#d6d8d0; }
+  .frame-bar .url{ margin-left:12px; font:500 11px/1 'JetBrains Mono',monospace; color:var(--ink-400); }
+  .scaler{ position:relative; overflow:hidden; background:#fbfbf9; }
+  .scaler iframe.dtop{ width:1280px; height:460px; border:0; display:block; transform-origin:top left; }
+
+  .mob-grid{ display:grid; grid-template-columns:auto 1fr; gap:46px; align-items:start; }
+  @media (max-width:860px){ .mob-grid{ grid-template-columns:1fr; gap:30px; } }
+  .phone{ width:392px; max-width:100%; margin:0 auto; background:#0d1410; border-radius:46px; padding:11px; box-shadow:0 40px 80px -30px rgba(13,20,16,.55), 0 2px 0 rgba(255,255,255,.06) inset; }
+  .phone .screen{ position:relative; border-radius:36px; overflow:hidden; background:#fff; height:780px; display:flex; flex-direction:column; }
+  .phone .statusbar{ position:relative; height:46px; flex-shrink:0; background:#fff; display:flex; align-items:center; justify-content:space-between; padding:0 26px; z-index:5; }
+  .phone .statusbar .time{ font-weight:700; font-size:14px; letter-spacing:-.01em; color:#0d1410; }
+  .phone .statusbar .sig{ font:700 12px/1 'JetBrains Mono',monospace; color:#0d1410; letter-spacing:.04em; }
+  .phone .notch{ position:absolute; top:9px; left:50%; transform:translateX(-50%); width:108px; height:28px; background:#0d1410; border-radius:99px; }
+  .phone iframe{ width:100%; flex:1; border:0; display:block; }
+  .mob-notes{ padding-top:6px; }
+  .mob-notes h3{ margin:0 0 4px; font-weight:800; font-size:18px; letter-spacing:-.025em; }
+  .toggle{ margin-top:16px; display:inline-flex; gap:6px; background:var(--card); border:1px solid var(--line); border-radius:11px; padding:5px; }
+  .toggle button{ border:0; background:none; cursor:pointer; font:600 12.5px 'Inter'; color:var(--ink-600); padding:8px 14px; border-radius:8px; transition:all .14s; }
+  .toggle button.on{ background:var(--green); color:#fff; }
+  .steps{ margin:20px 0 0; padding:0; list-style:none; counter-reset:s; }
+  .steps li{ position:relative; padding:14px 0 14px 44px; border-top:1px dashed var(--line); font-size:14.5px; line-height:1.5; color:var(--ink-600); }
+  .steps li:first-child{ border-top:0; }
+  .steps li b{ color:var(--ink-900); font-weight:700; }
+  .steps li::before{ counter-increment:s; content:counter(s); position:absolute; left:0; top:13px; width:28px; height:28px; border-radius:9px; background:#eef3ee; color:var(--green); font:800 13px/28px 'Inter'; text-align:center; }
+
+  .feat{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:8px; }
+  @media (max-width:860px){ .feat{ grid-template-columns:1fr; } }
+  .fc{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px; }
+  .fc .k{ font:600 10.5px/1 'JetBrains Mono',monospace; letter-spacing:.12em; text-transform:uppercase; color:var(--green); }
+  .fc h4{ margin:12px 0 8px; font-weight:800; font-size:17px; letter-spacing:-.025em; }
+  .fc p{ margin:0; font-size:13.5px; line-height:1.55; color:var(--ink-600); }
+  .fc code{ font:500 12px 'JetBrains Mono',monospace; background:var(--paper-2); padding:1px 6px; border-radius:5px; color:var(--green); }
+
+  pre.snip{ margin:14px 0 0; background:var(--ink); color:rgba(255,255,255,.86); border-radius:14px; padding:18px 20px; overflow-x:auto; font:500 12.5px/1.7 'JetBrains Mono',monospace; }
+  pre.snip .c{ color:rgba(255,255,255,.42); } pre.snip .g{ color:var(--green-2); } pre.snip .a{ color:#7FD495; }
+
+  footer{ margin-top:76px; padding-top:26px; border-top:1px dashed var(--line); display:flex; justify-content:space-between; align-items:center; gap:20px; flex-wrap:wrap; font:500 11px/1 'JetBrains Mono',monospace; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-400); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">→ компонент · единый хедер</div>
+  <h1 class="title">Одна шапка <span class="m">на весь сайт<br>и мобильную версию.</span></h1>
+  <p class="sub">Логотип, меню Купить · Продать · Бизнес · Аналитика · Агентствам, переключатель языка и валюты с авто-курсом ₸/$, «Избранное», «Войти» и зелёная «+ Разместить участок». Одна десктоп-версия, одна мобильная. Готово к передаче в код.</p>
+  <div class="meta">
+    <div class="it"><div class="l">Компонент</div><div class="v"><code style="font-family:'JetBrains Mono',monospace">&lt;site-header&gt;</code></div></div>
+    <div class="it"><div class="l">Версии</div><div class="v">Десктоп · <b>Мобайл</b></div></div>
+    <div class="it"><div class="l">Языки</div><div class="v">RU · KZ · EN</div></div>
+    <div class="it"><div class="l">Валюта</div><div class="v">₸ KZT · $ USD <b>(авто-курс)</b></div></div>
+  </div>
+
+  <!-- DESKTOP -->
+  <section>
+    <div class="sec-head">
+      <div>
+        <div class="sec-n">01 · десктоп</div>
+        <h2 class="sec-t">Десктоп-версия</h2>
+        <p class="sec-d">Высота 68px. Логотип, меню, справа — язык/валюта с курсом доллара, «Избранное» со счётчиком, «Войти» и зелёная кнопка. Откройте «Рус · ₸» — активные язык и валюта подсвечены зелёным с галочкой.</p>
+      </div>
+      <span class="pill">≥ 1025px</span>
+    </div>
+    <div class="frame">
+      <div class="frame-bar"><i></i><i></i><i></i><span class="url">6sotok.kz</span></div>
+      <div class="scaler"><iframe class="dtop" src="header-frame.html?active=buy" title="Десктоп хедер" scrolling="yes"></iframe></div>
+    </div>
+  </section>
+
+  <!-- MOBILE -->
+  <section>
+    <div class="sec-head">
+      <div>
+        <div class="sec-n">02 · мобайл</div>
+        <h2 class="sec-t">Мобильная версия — хедер сам разворачивается</h2>
+        <p class="sec-d">Никакой отдельной плавающей «шторки». По тапу на «Меню» сам хедер плавно раскрывается вниз в единую панель на кадастровой сетке: разделы-участки с нумерацией, язык и валюта, «Избранное» и «Войти» карточками, кнопка «Разместить участок» во всю ширину.</p>
+      </div>
+      <span class="pill">≤ 1024px · авто</span>
+    </div>
+    <div class="mob-grid">
+      <div class="phone">
+        <div class="screen">
+          <div class="statusbar"><span class="time">9:41</span><span class="notch"></span><span class="sig">5G&nbsp;&nbsp;100</span></div>
+          <iframe id="mobFrame" src="header-frame.html?active=buy" title="Мобильный хедер"></iframe>
+        </div>
+      </div>
+      <div class="mob-notes">
+        <h3>Как это работает</h3>
+        <div class="toggle">
+          <button id="tgClosed" class="on">Свёрнуто</button>
+          <button id="tgOpen">Развёрнуто</button>
+        </div>
+        <ul class="steps">
+          <li><b>Свёрнуто</b> — только логотип и кнопка «Меню». Чисто, ничего не наезжает друг на друга.</li>
+          <li><b>Тап по «Меню»</b> — три полоски морфятся в крестик, а сам хедер плавно «прорастает» вниз в панель.</li>
+          <li><b>Разделы</b> крупные, с номерами 01–05. Активный подсвечен как выбранный участок.</li>
+          <li><b>Язык и валюта</b> — сегмент-контрол, выбранный вариант на белой плашке, тут же курс $→₸.</li>
+          <li><b>Избранное и Войти</b> — белыми карточками, «Разместить участок» — зелёной кнопкой во всю ширину.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section>
+    <div class="sec-head">
+      <div>
+        <div class="sec-n">03 · что внутри</div>
+        <h2 class="sec-t">Детали для кодера</h2>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="fc">
+        <div class="k">язык · валюта</div>
+        <h4>Авто-курс $ → ₸</h4>
+        <p>RU / KZ / EN и ₸ / $. Курс тянется автоматически (источник — НБ РК, с резервным авто-источником), кешируется на 6 ч, выбор сохраняется между страницами в localStorage.</p>
+      </div>
+      <div class="fc">
+        <div class="k">избранное</div>
+        <h4>Закладка + счётчик</h4>
+        <p>Иконка-закладка (как «сохранить», не сердце) с числом сохранённых. На десктопе — с текстом, на мобайле — отдельной строкой в развёрнутой панели.</p>
+      </div>
+      <div class="fc">
+        <div class="k">подключение</div>
+        <h4>Один тег на странице</h4>
+        <p>Shadow DOM — стили изолированы, не конфликтуют с CSS сайта. Текущий раздел подсвечивается атрибутом <code>active</code>.</p>
+        <pre class="snip"><span class="c">&lt;!-- в &lt;head&gt; или перед &lt;/body&gt; --&gt;</span>
+&lt;<span class="g">script</span> src="site-header.js" defer&gt;&lt;/<span class="g">script</span>&gt;
+
+<span class="c">&lt;!-- где нужен хедер --&gt;</span>
+&lt;<span class="g">site-header</span> <span class="a">active</span>="buy"&gt;&lt;/<span class="g">site-header</span>&gt;</pre>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>6sotok.kz · единый хедер</span>
+    <span>site-header.js · v2</span>
+  </footer>
+
+</div>
+<script>
+  function scaleFrames(){
+    document.querySelectorAll('.scaler').forEach(s=>{
+      const ifr=s.querySelector('iframe.dtop'); if(!ifr) return;
+      const scale=s.clientWidth/1280;
+      ifr.style.transform='scale('+scale+')';
+      s.style.height=(460*scale)+'px';
+    });
+  }
+  window.addEventListener('resize',scaleFrames);
+  window.addEventListener('load',scaleFrames);
+  scaleFrames();
+
+  // тумблер свёрнуто/развёрнуто для мобильного превью
+  const mf=document.getElementById('mobFrame'), tc=document.getElementById('tgClosed'), to=document.getElementById('tgOpen');
+  function setMenu(open){
+    try{
+      const h=mf.contentDocument.querySelector('site-header'); if(!h) return;
+      const btn=h.shadowRoot.getElementById('menuBtn');
+      const isOpen=h.hasAttribute('data-menu');
+      if(open!==isOpen) btn.click();
+    }catch(e){}
+    tc.classList.toggle('on',!open); to.classList.toggle('on',open);
+  }
+  tc.addEventListener('click',()=>setMenu(false));
+  to.addEventListener('click',()=>setMenu(true));
+</script>
+</body>
+</html>

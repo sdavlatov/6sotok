@@ -1,9 +1,13 @@
+export type AccountType = 'owner' | 'agent' | 'business'
+
 export interface User {
   id: string
   name: string
   email: string
   phone?: string
+  city?: string
   isAgency?: boolean
+  accountType?: AccountType
   role: 'admin' | 'seller'
 }
 
@@ -24,12 +28,18 @@ export async function register(payload: {
   email: string
   password: string
   phone?: string
+  city?: string
+  accountType?: AccountType
 }): Promise<void> {
+  const body = {
+    ...payload,
+    isAgency: payload.accountType === 'agent',
+  }
   const res = await fetch('/api/users', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
   })
   const data = await res.json()
   if (!res.ok) throw new Error(data.errors?.[0]?.message || 'Ошибка регистрации')

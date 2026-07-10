@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>6sotok · footer frame</title>
+<style>
+  :root{ --green:#066F36; --green-2:#2CA64E; --ink:#021A0E; --paper-2:#f5f6f3; --line:#e6e7e1; --ink-900:#0d1410; --ink-600:#4c5650; --ink-400:#7d8a82; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{
+    font-family:'Inter',system-ui,sans-serif; background:#fbfbf9; color:var(--ink-900);
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh; display:flex; flex-direction:column;
+  }
+  a{ color:inherit; }
+  a:hover{ color:var(--green); }
+
+  /* демо-контекст сверху, чтобы футер жил на «странице», а не в вакууме */
+  .demo-body{
+    flex:1;
+    padding:34px 24px 70px;
+    background-image:
+      linear-gradient(rgba(6,111,54,.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(6,111,54,.045) 1px, transparent 1px);
+    background-size:48px 48px;
+  }
+  .wrap{ max-width:1440px; margin:0 auto; }
+  .ey{ font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--green); }
+  h1{ font-weight:900; letter-spacing:-.04em; font-size:38px; line-height:1.0; margin:14px 0 0; max-width:16ch; }
+  h1 .m{ color:#9aa39c; }
+  p.lead{ margin:16px 0 0; color:var(--ink-600); font-size:15px; line-height:1.55; max-width:52ch; }
+
+  .meta{ margin-top:26px; display:flex; gap:10px; flex-wrap:wrap; }
+  .chip{ display:inline-flex; align-items:center; gap:8px; height:34px; padding:0 14px; border-radius:99px;
+    background:#fff; border:1px solid var(--line); font:600 12px/1 'JetBrains Mono',monospace; color:var(--ink-600); }
+  .chip b{ color:var(--ink-900); font-weight:700; }
+  .chip .dot{ width:7px; height:7px; border-radius:99px; background:var(--green-2); }
+
+  .snip{ margin-top:22px; max-width:520px; background:#0d1410; color:#e7ede8; border-radius:14px; padding:16px 18px;
+    font:500 12.5px/1.7 'JetBrains Mono',monospace; letter-spacing:.01em; overflow:auto; }
+  .snip .c{ color:#7d8a82; }
+  .snip .g{ color:#7FD495; }
+  .snip .a{ color:#f0d58a; }
+
+  .ph{
+    margin-top:26px; height:180px; border-radius:18px; border:1px solid var(--line);
+    background-color:#e7ecdf;
+    background-image:
+      repeating-linear-gradient(45deg, rgba(6,111,54,.08) 0, rgba(6,111,54,.08) 1px, transparent 1px, transparent 12px),
+      radial-gradient(ellipse 320px 160px at 26% 60%, rgba(44,166,78,.25), transparent 70%),
+      radial-gradient(ellipse 220px 140px at 80% 34%, rgba(212,192,132,.38), transparent 70%);
+    position:relative;
+  }
+  .ph .tag{ position:absolute; left:14px; bottom:12px; font:500 10px/1 'JetBrains Mono',monospace; letter-spacing:.1em; text-transform:uppercase; color:rgba(20,22,15,.55); }
+</style>
+</head>
+<body>
+<div class="demo-body">
+  <div class="wrap">
+    <div class="ey">→ демо-контент над футером</div>
+    <h1>Единый футер <span class="m">6sotok.kz</span></h1>
+    <p class="lead">Отдельный компонент <code>&lt;site-footer&gt;</code>, парный к хедеру: те же токены, Shadow DOM и i18n RU · KZ · EN. Переключите язык в хедере на любой странице — футер меняется синхронно. Прокрутите вниз.</p>
+
+    <div class="meta">
+      <span class="chip"><span class="dot"></span>Компонент · <b>&lt;site-footer&gt;</b></span>
+      <span class="chip">Языки · <b>RU · KZ · EN</b></span>
+      <span class="chip">Shadow DOM · <b>изолирован</b></span>
+    </div>
+
+    <div class="snip"><span class="c">&lt;!-- перед &lt;/body&gt; --&gt;</span>
+&lt;<span class="g">script</span> src="site-footer.js" defer&gt;&lt;/<span class="g">script</span>&gt;
+
+<span class="c">&lt;!-- где нужен футер --&gt;</span>
+&lt;<span class="g">site-footer</span>&gt;&lt;/<span class="g">site-footer</span>&gt;</div>
+
+    <div class="ph"><span class="tag">↳ контент страницы · участки, аналитика, журнал</span></div>
+  </div>
+</div>
+
+<site-footer></site-footer>
+
+<script src="site-footer.js?v=7" defer></script>
+<script>
+  // ?lang=ru|kz|en — предпросмотр локали (пишет тот же ключ, что и хедер)
+  const q = new URLSearchParams(location.search);
+  if (q.get('lang')) localStorage.setItem('6sotok:lang', q.get('lang'));
+</script>
+</body>
+</html>

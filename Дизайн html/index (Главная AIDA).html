@@ -1,0 +1,1075 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>6sotok — участки Казахстана онлайн</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100" height="100" fill="#066F36"/>
+    <text x="50" y="62" font-family="Inter,sans-serif" font-size="34" font-weight="800" fill="#fff" text-anchor="middle">6с</text>
+  </svg>
+</template>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: { extend: {
+      fontFamily: { sans:['Inter','ui-sans-serif','system-ui'], mono:['JetBrains Mono','ui-monospace','monospace'] },
+      colors: {
+        brand: { DEFAULT:'#066F36', 700:'#055a2c', 600:'#066F36', 500:'#2CA64E', 300:'#7FD495', 100:'#D6EFE5', 50:'#f0fdf4', ink:'#021A0E' },
+        paper: { DEFAULT:'#fafaf7', 2:'#f4f3ef', 3:'#ecebe5' },
+        ink:   { 900:'#14160f', 700:'#2a2d23', 600:'#44473c', 500:'#5b5e54', 400:'#7d8074', 300:'#a3a59a' },
+        util:  { light:'#F4B400', gas:'#E97B27', water:'#2196F3' },
+        danger:'#b04438',
+      },
+      letterSpacing: { tightest:'-0.05em', 'tighter-2':'-0.035em' },
+    } }
+  }
+</script>
+<style>
+  html { scroll-behavior:smooth; overflow-x:clip; }
+  body { font-family:'Inter',sans-serif; font-feature-settings:"ss01","cv11"; background:#fafaf7; color:#14160f; -webkit-font-smoothing:antialiased; overflow-x:clip; }
+  :root {
+    --brand:#066F36; --brand-500:#2CA64E; --brand-300:#7FD495; --brand-ink:#021A0E;
+    --paper:#fafaf7; --paper-2:#f4f3ef; --paper-3:#ecebe5; --line:#e3e1d9;
+    --ink-900:#14160f; --ink-600:#44473c; --ink-500:#5b5e54; --ink-400:#7d8074; --ink-300:#a3a59a; --danger:#b04438;
+  }
+  .num { font-variant-numeric:tabular-nums; letter-spacing:-0.01em; }
+  .no-sb::-webkit-scrollbar { display:none; } .no-sb { -ms-overflow-style:none; scrollbar-width:none; }
+  .mono { font-family:'JetBrains Mono',ui-monospace,monospace; }
+
+  .map-bg {
+    background-color:#eef3ee;
+    background-image:
+      linear-gradient(90deg, transparent 49.6%, rgba(255,255,255,0.85) 49.6%, rgba(255,255,255,0.85) 50.4%, transparent 50.4%),
+      linear-gradient(0deg, transparent 31.6%, rgba(255,255,255,0.8) 31.6%, rgba(255,255,255,0.8) 32.4%, transparent 32.4%),
+      linear-gradient(rgba(6,111,54,0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(6,111,54,0.07) 1px, transparent 1px),
+      radial-gradient(ellipse 420px 320px at 26% 30%, rgba(44,166,78,0.16), transparent 70%),
+      radial-gradient(ellipse 300px 240px at 76% 64%, rgba(44,166,78,0.11), transparent 70%),
+      radial-gradient(ellipse 200px 160px at 62% 20%, rgba(212,192,132,0.26), transparent 70%);
+    background-size:100% 100%,100% 100%,46px 46px,46px 46px,100% 100%,100% 100%,100% 100%;
+  }
+  /* типизированные плейсхолдеры земли — раздел 16 дизайн-системы */
+  .ph-plot { background-color:#e7ecdf; background-image: repeating-linear-gradient(45deg, rgba(6,111,54,0.08) 0, rgba(6,111,54,0.08) 1px, transparent 1px, transparent 12px), radial-gradient(ellipse 100px 70px at 30% 70%, rgba(44,166,78,0.28), transparent 70%); }
+  .ph-soil { background-color:#e9e3d4; background-image: repeating-linear-gradient(-45deg, rgba(120,90,40,0.08) 0, rgba(120,90,40,0.08) 1px, transparent 1px, transparent 14px), radial-gradient(ellipse 120px 80px at 60% 50%, rgba(180,140,80,0.32), transparent 70%); }
+  .ph-water { background-color:#dfe7ec; background-image: repeating-linear-gradient(0deg, rgba(60,90,120,0.07) 0, rgba(60,90,120,0.07) 1px, transparent 1px, transparent 10px), radial-gradient(ellipse 140px 80px at 40% 60%, rgba(120,160,190,0.4), transparent 70%); }
+  .ph-grass { background-color:#e8eadd; background-image: repeating-linear-gradient(90deg, rgba(80,100,50,0.07) 0, rgba(80,100,50,0.07) 2px, transparent 2px, transparent 18px), radial-gradient(ellipse 120px 80px at 50% 40%, rgba(140,160,90,0.3), transparent 70%); }
+  .ph-rock { background-color:#efeae0; background-image: repeating-linear-gradient(45deg, rgba(60,60,60,0.06) 0, rgba(60,60,60,0.06) 1px, transparent 1px, transparent 10px), radial-gradient(ellipse 100px 70px at 30% 50%, rgba(180,180,180,0.35), transparent 70%); }
+  .ph-mountain { background-color:#e3ebde; background-image: repeating-linear-gradient(-30deg, rgba(6,111,54,0.10) 0, rgba(6,111,54,0.10) 2px, transparent 2px, transparent 16px), radial-gradient(ellipse 140px 90px at 55% 50%, rgba(44,166,78,0.22), transparent 70%); }
+
+  @keyframes pulse-pin { 0%,100% { transform:scale(1); opacity:.5; } 50% { transform:scale(1.8); opacity:0; } }
+  .pin-pulse { animation:pulse-pin 2.6s cubic-bezier(0.4,0,0.6,1) infinite; }
+
+  /* участок недели — плавная смена */
+  @keyframes fwIn { from { opacity:0; transform:translateY(7px); } to { opacity:1; transform:none; } }
+  .fw-anim { animation:fwIn .5s cubic-bezier(.22,1,.36,1); }
+  @media (prefers-reduced-motion: reduce){ .fw-anim { animation:none; } }
+
+  /* live лента — плавная смена события */
+  .feed-swap { animation:feedIn 0.55s cubic-bezier(0.22,1,0.36,1); }
+  @keyframes feedIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  @media (prefers-reduced-motion: reduce){ .feed-swap { animation:none; } }
+
+  /* инсайт — земляной мотив (участок на межевой карте) */
+  .land-motif { position:absolute; right:-6px; bottom:-10px; width:60%; max-width:320px; pointer-events:none; z-index:1; }
+  .land-rings { position:absolute; right:-40px; bottom:-56px; width:320px; height:320px; border-radius:50%;
+    background:repeating-radial-gradient(circle at 62% 62%, transparent 0 27px, rgba(168,128,26,0.11) 27px 29px);
+    -webkit-mask-image:radial-gradient(circle at 62% 62%, #000 52%, transparent 80%); mask-image:radial-gradient(circle at 62% 62%, #000 52%, transparent 80%);
+    animation:landBreathe 10s ease-in-out infinite; }
+  @keyframes landBreathe { 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.06); } }
+  .land-plot { position:relative; width:100%; height:auto; display:block; overflow:visible; }
+  .plot-shape { fill:rgba(6,111,54,0.055); stroke:rgba(168,128,26,0.30); stroke-width:1.4; }
+  .plot-ants { fill:none; stroke:#a8801a; stroke-width:1.6; stroke-dasharray:5 6; opacity:.6; animation:plotAnts 5.5s linear infinite; }
+  @keyframes plotAnts { to { stroke-dashoffset:-88; } }
+  .plot-corner { fill:#a8801a; opacity:.5; }
+  .plot-pin-ring { fill:#066F36; opacity:.5; transform-box:fill-box; transform-origin:center; animation:plotPing 2.8s cubic-bezier(0,0,.2,1) infinite; }
+  @keyframes plotPing { 0%{ transform:scale(1); opacity:.5; } 70%,100%{ transform:scale(3.2); opacity:0; } }
+  .plot-pin { animation:plotBob 3.6s ease-in-out infinite; }
+  @keyframes plotBob { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-4px); } }
+  @media (prefers-reduced-motion: reduce){ .land-rings,.plot-ants,.plot-pin-ring,.plot-pin{ animation:none; } .plot-pin-ring{ opacity:0; } }
+  @media (min-width:400px){ .xs\:inline { display:inline; } }
+  /* phone mockup */
+  /* узкие телефоны: ужимаем весь макет (zoom меняет и раскладку, не только вид), чтобы ничего не обрезалось по ширине */
+  @media (max-width:360px){ .phone{ zoom:.86; } }
+  @media (max-width:320px){ .phone{ zoom:.78; } }
+  .phone { position:relative; width:296px; height:600px; border-radius:42px; background:#14160f; padding:11px; box-shadow:0 40px 90px -40px rgba(20,22,15,.55), 0 0 0 2px rgba(20,22,15,.06); flex-shrink:0; }
+  .phone-screen { position:relative; width:100%; height:100%; border-radius:31px; overflow:hidden; background:#fff; }
+  .phone-notch { position:absolute; top:11px; left:50%; transform:translateX(-50%); width:112px; height:26px; background:#14160f; border-radius:0 0 16px 16px; z-index:20; }
+  .cursor-blink { animation:blink 1.1s steps(2) infinite; }
+  @keyframes blink { 0%,50%{opacity:1} 51%,100%{opacity:0} }
+  .tap-ring { position:absolute; width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,.5); left:50%; top:50%; transform:translate(-50%,-50%) scale(0); animation:tap 3s ease-out infinite; }
+  @keyframes tap { 0%,70%{transform:translate(-50%,-50%) scale(0);opacity:.7} 85%{transform:translate(-50%,-50%) scale(2.4);opacity:0} 100%{opacity:0} }
+  .wa-toast { animation:waIn 4s ease-in-out infinite; }
+  @keyframes waIn { 0%,12%{opacity:0;transform:translateX(14px)} 22%,88%{opacity:1;transform:translateX(0)} 100%{opacity:0;transform:translateX(14px)} }
+  @media (prefers-reduced-motion: reduce){ .cursor-blink,.tap-ring,.wa-toast { animation:none; } .wa-toast{opacity:1;transform:none;} }
+  @media (prefers-reduced-motion: reduce){ .pin-pulse{ animation:none; } }
+
+  /* мастер подбора — слайдер бюджета */
+  .qz-range { -webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:99px; background:#ecebe5; outline:none; }
+  .qz-range::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:22px; height:22px; border-radius:50%; background:#066F36; border:3px solid #fff; box-shadow:0 2px 7px rgba(6,111,54,.4); cursor:pointer; }
+  .qz-range::-moz-range-thumb { width:22px; height:22px; border-radius:50%; background:#066F36; border:3px solid #fff; box-shadow:0 2px 7px rgba(6,111,54,.4); cursor:pointer; }
+  .qz-opt { background:#fff; }
+
+  /* мастер подбора — 3-шаговый трекер */
+  .qz-step-num{ position:relative; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:#ecebe5; color:#7d8074; font:700 12.5px 'Inter',sans-serif; transition:background .3s,color .3s; }
+  .qz-step-num .qz-check{ display:none; }
+  .qz-step.active .qz-step-num{ background:#066F36; color:#fff; }
+  .qz-step.done .qz-step-num{ background:#D6EFE5; color:#066F36; }
+  .qz-step.done .qz-step-num .qz-num{ display:none; }
+  .qz-step.done .qz-step-num .qz-check{ display:block; }
+  .qz-step-name{ color:#a3a59a; transition:color .3s; }
+  .qz-step.active .qz-step-name, .qz-step.done .qz-step-name{ color:#14160f; }
+  .qz-step-bar{ background:#ecebe5; transition:background .4s; }
+  .qz-step.active .qz-step-bar{ background:#2CA64E; }
+  .qz-step.done .qz-step-bar{ background:#7FD495; }
+
+  .live-dot { position:relative; display:inline-flex; width:8px; height:8px; }
+  .live-dot .ping { position:absolute; inset:0; border-radius:99px; background:var(--brand-500); opacity:.55; animation:ping 2s cubic-bezier(0,0,.2,1) infinite; }
+  .live-dot .core { position:relative; width:8px; height:8px; border-radius:99px; background:var(--brand-500); }
+  @keyframes ping { 75%,100% { transform:scale(2.6); opacity:0; } }
+
+  /* pulsing №1 badge (original pattern) */
+  .ping-dot { position:relative; z-index:0; isolation:isolate; }
+  .ping-dot::after { content:""; position:absolute; inset:0; border-radius:999px; background:#2CA64E; animation:ping-ring 2s cubic-bezier(0,0,0.2,1) infinite; z-index:-1; }
+  @keyframes ping-ring { 0% { transform:scale(1); opacity:.55; } 70%,100% { transform:scale(2.6); opacity:0; } }
+
+  .tile { transition:transform .25s cubic-bezier(0.2,0.7,0.2,1), box-shadow .25s, border-color .2s; }
+  .tile:hover { transform:translateY(-3px); }
+
+  .card { background:#fff; border:1px solid var(--line); border-radius:20px; box-shadow:0 1px 2px rgba(20,22,15,.04), 0 14px 40px -24px rgba(20,22,15,.16); }
+
+  .sec-label { display:flex; align-items:center; gap:12px; }
+  .sec-num { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; letter-spacing:.1em; color:var(--brand); }
+  .sec-name { font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-500); }
+  .sec-rule { flex:1; height:1px; background:var(--line); }
+
+  .scroll-row { display:flex; gap:14px; overflow-x:auto; scroll-snap-type:x mandatory; padding:2px 20px 10px; margin:0 -20px; }
+  .scroll-row > * { scroll-snap-align:start; flex-shrink:0; }
+  @media (min-width:768px){ .scroll-row { display:grid; overflow:visible; padding:0; margin:0; } }
+
+  /* reveal on scroll */
+  .reveal { opacity:0; transform:translateY(18px); transition:opacity .6s cubic-bezier(.4,0,.2,1), transform .6s cubic-bezier(.4,0,.2,1); }
+  .reveal.in { opacity:1; transform:none; }
+  @media (prefers-reduced-motion: reduce){ .reveal { opacity:1; transform:none; transition:none; } }
+
+  /* dashboard card hover */
+  .dash-card { transition:opacity .6s cubic-bezier(.4,0,.2,1), transform .28s cubic-bezier(.2,.7,.2,1), box-shadow .25s, border-color .2s; }
+  .dash-card:hover { transform:translateY(-3px); border-color:var(--brand-300); box-shadow:0 1px 2px rgba(20,22,15,.04), 0 22px 50px -26px rgba(6,111,54,.34); }
+
+  .dash-bar { transition:width 1.1s cubic-bezier(.4,0,.2,1); }
+
+  @media (prefers-reduced-motion: reduce){ .live-dot .ping,.ping-dot::after { animation:none; } }
+
+  /* ---------- HERO · карта-витрина ---------- */
+  .hero-map{ position:absolute; inset:0; background-color:#eef3ee; background-image:
+     linear-gradient(rgba(6,111,54,.08) 1px,transparent 1px),
+     linear-gradient(90deg,rgba(6,111,54,.08) 1px,transparent 1px),
+     radial-gradient(ellipse 520px 380px at 64% 24%, rgba(44,166,78,.15), transparent 70%),
+     radial-gradient(ellipse 380px 300px at 48% 86%, rgba(212,192,132,.24), transparent 70%),
+     radial-gradient(ellipse 320px 260px at 90% 68%, rgba(44,166,78,.12), transparent 70%);
+     background-size:58px 58px,58px 58px,100% 100%,100% 100%,100% 100%; }
+  .hero-road{ position:absolute; background:rgba(255,255,255,.9); box-shadow:0 0 0 1px rgba(6,111,54,.05); pointer-events:none; }
+  .hero-scrim{ position:absolute; inset:0; pointer-events:none; background:linear-gradient(180deg, rgba(250,250,247,.84), rgba(250,250,247,.9)); }
+  .hero-stage{ position:relative; }
+  .hero-pins{ position:absolute; inset:0; z-index:8; pointer-events:none; display:none; }
+  .hero-conn{ position:absolute; inset:0; z-index:9; pointer-events:none; display:none; }
+  .hero-pin{ position:absolute; transform:translate(-50%,-50%); }
+  .hero-pin .dot{ display:block; width:12px; height:12px; border-radius:50%; background:var(--brand); border:2.5px solid #fff; box-shadow:0 3px 8px -2px rgba(6,111,54,.5); opacity:.5; transition:width .5s cubic-bezier(.4,0,.2,1),height .5s,opacity .5s; }
+  .hero-pin.active .dot{ width:20px; height:20px; opacity:1; }
+  .hero-pin .ring{ position:absolute; left:50%; top:50%; width:20px; height:20px; margin:-10px 0 0 -10px; border-radius:50%; background:var(--brand); opacity:0; }
+  .hero-pin.active .ring{ opacity:.16; animation:heroPing 2.4s cubic-bezier(0,0,.2,1) infinite; }
+  @keyframes heroPing{ 0%{transform:scale(1);opacity:.32} 70%,100%{transform:scale(3.6);opacity:0} }
+  .hero-chip{ position:absolute; transform:translateY(-50%); z-index:7; display:none; align-items:center; gap:6px; height:32px; padding:0 11px; border-radius:9px; background:#fff; border:1px solid var(--paper-3); box-shadow:0 10px 24px -14px rgba(20,22,15,.4); font-weight:800; font-size:12.5px; color:var(--ink-900); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .hero-chip i{ font-family:'JetBrains Mono',monospace; font-style:normal; font-weight:600; font-size:10.5px; color:var(--ink-400); }
+  @media (min-width:1024px){
+    .hero-scrim{ background:linear-gradient(90deg, #fafaf7 19%, rgba(250,250,247,.95) 31%, rgba(250,250,247,.42) 46%, transparent 58%); }
+    .hero-stage{ height:600px; }
+    .hero-text2{ position:absolute; left:0; top:0; height:100%; width:560px; display:flex; flex-direction:column; justify-content:center; z-index:12; }
+    .hero-cardwrap{ position:absolute; right:0; top:60px; width:418px; z-index:20; }
+    .hero-pins{ display:block; }
+    .hero-conn{ display:block; }
+    .hero-chip{ display:inline-flex; }
+  }
+  @media (max-width:1023px){
+    .hero-road{ display:none; }
+    .hero-cardwrap{ margin-top:32px; max-width:560px; }
+  }
+  @media (prefers-reduced-motion: reduce){ .hero-pin.active .ring{ animation:none; opacity:.16; } .hero-pin .dot{ transition:none; } }
+
+  /* мобильная мини-карта над карточкой рекламы */
+  .hero-mmap{ display:none; }
+  .hero-mmap .mroad{ position:absolute; background:rgba(255,255,255,.9); }
+  .hero-mmap .mdot{ position:absolute; width:9px; height:9px; border-radius:50%; background:var(--brand); border:2px solid #fff; opacity:.45; transform:translate(-50%,-50%); box-shadow:0 2px 5px -1px rgba(6,111,54,.4); }
+  .hero-mmap .mpin{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); transition:left .55s cubic-bezier(.4,0,.2,1), top .55s cubic-bezier(.4,0,.2,1); }
+  .hero-mmap .mpin .dot{ display:block; width:18px; height:18px; border-radius:50%; background:var(--brand); border:3px solid #fff; box-shadow:0 4px 10px -2px rgba(6,111,54,.6); }
+  .hero-mmap .mpin .ring{ position:absolute; left:50%; top:50%; width:18px; height:18px; margin:-9px 0 0 -9px; border-radius:50%; background:var(--brand); opacity:.18; animation:heroPing 2.4s cubic-bezier(0,0,.2,1) infinite; }
+  .hero-mmap .mlabel{ position:absolute; left:12px; top:12px; display:inline-flex; align-items:center; gap:7px; height:27px; padding:0 11px; border-radius:8px; background:rgba(255,255,255,.94); border:1px solid var(--paper-3); box-shadow:0 6px 16px -10px rgba(20,22,15,.35); font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-600); }
+  .hero-mmap .mlabel::before{ content:""; width:7px; height:7px; border-radius:50%; background:var(--brand); flex-shrink:0; }
+  @media (max-width:1023px){
+    .hero-cardwrap{ display:flex; flex-direction:column; }
+    .hero-mmap{ display:block; position:relative; height:152px; border-radius:18px 18px 0 0; overflow:hidden; border:1px solid var(--line); border-bottom:none;
+       background-color:#eef3ee; background-image:
+         linear-gradient(rgba(6,111,54,.09) 1px,transparent 1px),
+         linear-gradient(90deg,rgba(6,111,54,.09) 1px,transparent 1px),
+         radial-gradient(ellipse 240px 160px at 60% 38%, rgba(44,166,78,.16), transparent 70%),
+         radial-gradient(ellipse 180px 120px at 28% 82%, rgba(212,192,132,.24), transparent 70%);
+       background-size:34px 34px,34px 34px,100% 100%,100% 100%; }
+    .hero-cardwrap #fwWrap{ border-top-left-radius:0; border-top-right-radius:0; }
+  }
+  @media (prefers-reduced-motion: reduce){ .hero-mmap .mpin .ring{ animation:none; } .hero-mmap .mpin{ transition:none; } }
+</style>
+</head>
+<body class="antialiased">
+
+<site-header active="home"></site-header>
+
+<!-- ============================================================ 01 · HERO -->
+<section data-screen-label="hero" class="relative bg-white overflow-hidden border-b border-paper-3">
+  <div class="hero-map"></div>
+  <div class="hero-road" style="left:0;right:0;top:57%;height:12px;"></div>
+  <div class="hero-road" style="top:0;bottom:0;left:63%;width:11px;"></div>
+  <div class="hero-road" style="left:63%;right:0;top:28%;height:7px;background:rgba(255,255,255,.78);"></div>
+  <div class="hero-scrim"></div>
+
+  <div class="relative max-w-[1440px] mx-auto px-5 sm:px-6 py-12 lg:py-0">
+    <div class="hero-stage" id="heroStage">
+      <div class="hero-pins" id="heroPins">
+        <div class="hero-chip" style="left:47%;top:31%;">12 500 000 ₸ <i>10 сот</i></div>
+        <div class="hero-chip" style="left:44%;top:66%;">9 800 000 ₸ <i>6 сот</i></div>
+        <div class="hero-chip" style="left:55%;top:83%;">24 000 000 ₸ <i>15 сот</i></div>
+      </div>
+      <svg class="hero-conn" id="heroConn" width="100%" height="100%" fill="none" aria-hidden="true"><path id="heroConnPath" d="" stroke="#066F36" stroke-opacity=".42" stroke-width="1.6" stroke-dasharray="4 6" stroke-linecap="round"></path></svg>
+
+      <div class="hero-text2">
+        <div class="flex flex-wrap items-center gap-2.5 mb-6">
+          <div class="inline-flex items-center gap-2 sm:gap-2.5 pl-1.5 pr-3 sm:pr-4 py-1.5 rounded-2xl sm:rounded-full bg-white border border-paper-3 shadow-sm max-w-full">
+            <span class="ping-dot flex items-center justify-center w-7 h-7 shrink-0 rounded-full bg-brand-600 text-white font-black text-[11.5px] tracking-tighter">№1</span>
+            <span class="text-[12.5px] sm:text-[13px] font-semibold text-ink-900 tracking-tight leading-snug">
+              Маркетплейс земельных участков в Казахстане
+            </span>
+            <span class="hidden sm:block w-1 h-1 shrink-0 rounded-full bg-ink-300"></span>
+            <span class="hidden sm:inline mono text-[11px] uppercase tracking-[0.12em] text-ink-400 shrink-0">с 2021 года</span>
+          </div>
+        </div>
+        <h1 class="font-black tracking-tightest text-[38px] leading-[1.0] sm:text-[54px] sm:leading-[0.96] text-ink-900">
+          Найдите идеальный участок <span class="text-brand-600">для жизни и бизнеса.</span>
+        </h1>
+        <p class="mt-5 text-[16px] sm:text-[18px] text-ink-600 leading-relaxed max-w-xl">
+          Покупайте и продавайте земельные участки удобно — быстро находите на карте и легко размещайте объявления.
+        </p>
+        <div class="mt-8 flex flex-col sm:flex-row gap-3">
+          <a href="catalog.html" class="px-6 h-13 py-3.5 rounded-xl bg-brand-600 text-white font-semibold text-[15px] inline-flex items-center justify-center gap-2 hover:bg-brand-700 transition shadow-[0_12px_32px_-12px_rgba(6,111,54,.55)]">Найти участок <span>→</span></a>
+          <a href="submit-listing.html" class="px-6 h-13 py-3.5 rounded-xl bg-white border border-paper-3 text-ink-900 font-semibold text-[15px] inline-flex items-center justify-center gap-2 hover:border-ink-400 transition">Разместить объявление</a>
+        </div>
+      </div>
+
+      <div class="hero-cardwrap">
+        <div class="hero-mmap" id="heroMMap">
+          <div class="mroad" style="left:0;right:0;top:56%;height:8px;"></div>
+          <div class="mroad" style="top:0;bottom:0;left:66%;width:7px;"></div>
+          <span class="mdot" style="left:24%;top:34%"></span>
+          <span class="mdot" style="left:78%;top:30%"></span>
+          <span class="mdot" style="left:40%;top:74%"></span>
+          <span class="mdot" style="left:85%;top:66%"></span>
+          <span class="mdot" style="left:15%;top:62%"></span>
+          <div class="mpin" id="mPin"><span class="ring"></span><span class="dot"></span></div>
+          <div class="mlabel" id="mLabel">На карте</div>
+        </div>
+        <div id="fwWrap" class="card overflow-hidden relative">
+          <div class="relative aspect-[16/10]">
+            <div id="fwPhoto" class="absolute inset-0 ph-plot"></div>
+            <div class="absolute inset-0 pointer-events-none" style="background:linear-gradient(180deg,transparent 52%,rgba(20,22,15,.42))"></div>
+            <span class="absolute top-4 left-4 z-10 pointer-events-none" style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:6px;background:rgba(250,250,247,0.82);backdrop-filter:blur(6px);color:#5b5e54;font:500 10px/1 'JetBrains Mono',monospace;letter-spacing:0.08em;text-transform:uppercase;border:1px solid rgba(20,22,15,0.06)">Реклама</span>
+            <span id="fwCounter" class="absolute top-4 right-4 z-10 mono text-[11px] font-semibold text-white bg-black/35 backdrop-blur px-2.5 py-1 rounded-md num pointer-events-none">1 / 10</span>
+            <div id="fwMetaBar" class="absolute bottom-4 left-4 right-4 z-10 pointer-events-none">
+              <div id="fwMeta" class="mono text-[10.5px] uppercase tracking-[0.06em] text-white/80"></div>
+              <div id="fwTitle" class="font-extrabold tracking-tighter text-[20px] sm:text-[22px] text-white leading-tight mt-1"></div>
+            </div>
+          </div>
+          <div class="p-5 sm:p-6 flex items-center gap-4">
+            <div id="fwInfo" class="min-w-0 flex-1">
+              <div class="flex items-baseline gap-2.5 flex-wrap">
+                <span id="fwPrice" class="font-extrabold text-[24px] sm:text-[26px] tracking-tighter text-brand-600 num leading-none"></span>
+                <span id="fwPer" class="mono text-[12px] text-ink-500 num"></span>
+              </div>
+              <div id="fwDots" class="mt-3.5 flex items-center gap-1.5"></div>
+            </div>
+            <a href="catalog.html" class="shrink-0 inline-flex px-5 h-11 rounded-xl text-white text-[13.5px] font-semibold hover:bg-brand-600 transition items-center gap-2" style="background:#14160f">Смотреть <span>→</span></a>
+          </div>
+          <div id="fwProgWrap" class="absolute top-0 left-0 right-0 h-[3px] bg-black/5"><div id="fwProg" class="h-full bg-brand-500" style="width:0%"></div></div>
+        </div>
+        <div id="fwEmpty" class="hidden card ph-plot p-8 sm:p-12 text-center">
+          <span class="inline-flex items-center mb-4" style="height:22px;padding:0 9px;border-radius:6px;background:rgba(250,250,247,0.9);color:#5b5e54;font:500 10px/1 'JetBrains Mono',monospace;letter-spacing:0.08em;text-transform:uppercase;border:1px solid rgba(20,22,15,0.06)">Реклама</span>
+          <div class="font-extrabold tracking-tighter text-[22px] sm:text-[26px] text-ink-900">Место для рекламы</div>
+          <p class="mt-2.5 text-[14px] text-ink-600 max-w-sm mx-auto leading-snug">Самый заметный блок главной — его видит каждый, кто заходит на 6sotok. Продвиньте свой участок в топ.</p>
+          <a href="submit-listing.html" class="mt-6 inline-flex px-5 h-11 rounded-xl bg-brand-600 text-white font-semibold text-[14px] hover:bg-brand-700 transition items-center gap-2">Разместить рекламу <span>→</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LIVE ТИКЕР — сразу под hero -->
+<div id="dTickerBar" class="bg-white border-b border-paper-3">
+  <div class="max-w-[1440px] mx-auto px-5 sm:px-6 h-12 flex items-center gap-3">
+    <span class="inline-flex items-center gap-2 shrink-0 mono text-[10px] uppercase tracking-[0.14em] font-semibold text-brand-700">
+      <span class="live-dot"><span class="ping"></span><span class="core"></span></span>Live
+    </span>
+    <span class="w-px h-4 bg-paper-3 shrink-0"></span>
+    <div id="dTickerMsg" class="feed-swap flex-1 min-w-0 flex items-center gap-2.5 overflow-hidden"></div>
+    <span id="pulseAgo" class="hidden"></span>
+    <a href="catalog.html" class="shrink-0 mono text-[10px] uppercase tracking-[0.1em] text-ink-400 hover:text-brand-600 transition hidden sm:inline">Всё на карте →</a>
+  </div>
+</div>
+
+<!-- ============================================================ 02 · ПОДБОР УЧАСТКА (мастер) -->
+<section data-screen-label="finder" id="finder" class="bg-white border-b border-paper-3">
+  <div class="max-w-[1440px] mx-auto px-5 sm:px-6 py-16 sm:py-24">
+    <div class="sec-label mb-4"><span class="sec-num">02</span><span class="sec-name">Подбор участка</span><span class="sec-rule"></span></div>
+    <div class="max-w-[900px]">
+      <h2 class="font-extrabold tracking-tightest text-[28px] sm:text-[40px] leading-none text-ink-900">Подберём землю под вашу задачу</h2>
+      <p class="mt-3 text-[14.5px] sm:text-[16px] text-ink-500 max-w-xl leading-snug">Мини-квиз вместо сложных фильтров: ответьте на пару вопросов — и сразу увидите готовую подборку участков из каталога под вашу задачу.</p>
+    </div>
+    <div class="card overflow-hidden mt-8">
+      <!-- шапка: трекер из 3 шагов -->
+      <div id="qzSteps" class="flex items-start gap-3 sm:gap-6 px-6 sm:px-9 pt-7 pb-6 border-b border-paper-3">
+        <div class="qz-step flex-1 min-w-0" data-step="1">
+          <div class="flex items-center gap-2.5">
+            <span class="qz-step-num"><span class="qz-num">1</span><svg class="qz-check" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+            <div class="min-w-0"><div class="mono text-[9px] uppercase tracking-[0.12em] text-ink-400 leading-none">Шаг 1</div><div class="qz-step-name font-bold text-[13.5px] tracking-tight leading-tight mt-1">Цель</div></div>
+          </div>
+          <div class="qz-step-bar mt-3 h-1 rounded-full"></div>
+        </div>
+        <div class="qz-step flex-1 min-w-0" data-step="2">
+          <div class="flex items-center gap-2.5">
+            <span class="qz-step-num"><span class="qz-num">2</span><svg class="qz-check" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+            <div class="min-w-0"><div class="mono text-[9px] uppercase tracking-[0.12em] text-ink-400 leading-none">Шаг 2</div><div class="qz-step-name font-bold text-[13.5px] tracking-tight leading-tight mt-1">Бюджет</div></div>
+          </div>
+          <div class="qz-step-bar mt-3 h-1 rounded-full"></div>
+        </div>
+        <div class="qz-step flex-1 min-w-0" data-step="3">
+          <div class="flex items-center gap-2.5">
+            <span class="qz-step-num"><span class="qz-num">3</span><svg class="qz-check" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+            <div class="min-w-0"><div class="mono text-[9px] uppercase tracking-[0.12em] text-ink-400 leading-none">Шаг 3</div><div class="qz-step-name font-bold text-[13.5px] tracking-tight leading-tight mt-1">Регион</div></div>
+          </div>
+          <div class="qz-step-bar mt-3 h-1 rounded-full"></div>
+        </div>
+      </div>
+      <div id="qzBody" class="p-6 sm:p-9"></div>
+      <div class="px-6 sm:px-9 py-5 border-t border-paper-3 flex items-center justify-between gap-3">
+        <button id="qzBack" class="px-4 h-11 rounded-xl border border-paper-3 text-ink-600 font-semibold text-[14px] hover:border-ink-400 transition inline-flex items-center gap-2"><span>←</span> Назад</button>
+        <button id="qzNext" class="px-6 h-11 rounded-xl bg-brand-600 text-white font-semibold text-[14px] hover:bg-brand-700 transition inline-flex items-center gap-2">Далее <span>→</span></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 03 · ПРОДАВЦАМ -->
+<section id="sell" data-screen-label="sellers" class="bg-paper border-b border-paper-3 overflow-hidden">
+  <div class="max-w-[1440px] mx-auto px-5 sm:px-6 py-16 sm:py-24">
+    <div class="sec-label mb-9"><span class="sec-num">03</span><span class="sec-name">Продавцам</span><span class="sec-rule"></span></div>
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-10 lg:gap-16 items-center">
+      <div>
+        <h2 class="font-extrabold tracking-tightest text-[30px] sm:text-[44px] leading-[0.97] text-ink-900">Разместить участок — 3 минуты с телефона</h2>
+        <p class="mt-5 text-[16px] text-ink-600 leading-relaxed max-w-md">Заполняете короткую форму, публикуете — и заявки приходят напрямую вам в WhatsApp. Без посредников и без комиссии.</p>
+        <ul class="mt-7 space-y-4 max-w-md">
+          <li class="flex gap-3.5">
+            <span class="mono text-[12px] font-bold text-brand-600 pt-0.5 shrink-0">01</span>
+            <div><div class="font-bold text-[15px] text-ink-900 tracking-tight">Основные данные</div><p class="text-[13.5px] text-ink-500 leading-snug mt-0.5">Категория, площадь и цена — по пунктам, без лишних полей.</p></div>
+          </li>
+          <li class="flex gap-3.5">
+            <span class="mono text-[12px] font-bold text-brand-600 pt-0.5 shrink-0">02</span>
+            <div><div class="font-bold text-[15px] text-ink-900 tracking-tight">Точка на карте и фото</div><p class="text-[13.5px] text-ink-500 leading-snug mt-0.5">Ставите метку участка и добавляете снимки прямо с камеры.</p></div>
+          </li>
+          <li class="flex gap-3.5">
+            <span class="mono text-[12px] font-bold text-brand-600 pt-0.5 shrink-0">03</span>
+            <div><div class="font-bold text-[15px] text-ink-900 tracking-tight">Заявки в WhatsApp</div><p class="text-[13.5px] text-ink-500 leading-snug mt-0.5">Покупатель нажимает «Написать» — и пишет вам напрямую.</p></div>
+          </li>
+        </ul>
+        <a href="submit-listing.html" class="mt-8 inline-flex px-6 h-13 py-3.5 rounded-xl bg-brand-600 text-white font-semibold text-[15px] hover:bg-brand-700 transition items-center gap-2 shadow-[0_12px_32px_-12px_rgba(6,111,54,.55)]">Разместить бесплатно <span>→</span></a>
+      </div>
+
+      <!-- МОКАП: мобильный кабинет подачи -->
+      <div class="justify-self-center flex items-start gap-4 sm:gap-6">
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="px-4 pt-9 pb-3 bg-white border-b border-paper-3 flex items-center gap-3">
+              <span class="w-7 h-7 rounded-lg flex items-center justify-center text-ink-500 border border-paper-3"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span>
+              <div class="flex-1"><div class="text-[13.5px] font-bold text-ink-900 tracking-tight">Новое объявление</div><div class="mono text-[9px] uppercase tracking-wider text-ink-400 mt-0.5">шаг 1 из 3 · основное</div></div>
+              <span class="mono text-[10px] font-bold text-brand-600">33%</span>
+            </div>
+            <div class="h-1 bg-paper-2"><div class="h-full bg-brand-600" style="width:33%"></div></div>
+            <div class="p-4 space-y-3.5 bg-paper/40" style="height:428px; overflow:hidden;">
+              <div>
+                <div class="mono text-[9.5px] uppercase tracking-wide text-ink-400 mb-1.5">Категория земли</div>
+                <div class="flex gap-1.5 flex-wrap">
+                  <span class="px-3 h-8 rounded-lg bg-brand-600 text-white text-[12px] font-semibold flex items-center">ИЖС</span>
+                  <span class="px-3 h-8 rounded-lg bg-white border border-paper-3 text-ink-600 text-[12px] font-semibold flex items-center">ЛПХ</span>
+                  <span class="px-3 h-8 rounded-lg bg-white border border-paper-3 text-ink-600 text-[12px] font-semibold flex items-center">Коммерция</span>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2.5">
+                <div>
+                  <div class="mono text-[9.5px] uppercase tracking-wide text-ink-400 mb-1.5">Площадь</div>
+                  <div class="h-10 rounded-lg bg-white border border-paper-3 px-3 flex items-center justify-between"><span class="text-[13px] font-semibold text-ink-900 num">12</span><span class="text-[11px] text-ink-400">соток</span></div>
+                </div>
+                <div>
+                  <div class="mono text-[9.5px] uppercase tracking-wide text-ink-400 mb-1.5">Цена, ₸</div>
+                  <div class="h-10 rounded-lg bg-white border-2 border-brand-500 px-3 flex items-center shadow-[0_0_0_3px_rgba(6,111,54,.1)]"><span class="text-[13px] font-semibold text-ink-900 num">12 500 000</span><span class="w-px h-4 bg-brand-500 ml-0.5 cursor-blink"></span></div>
+                </div>
+              </div>
+              <div>
+                <div class="mono text-[9.5px] uppercase tracking-wide text-ink-400 mb-1.5">Точка на карте</div>
+                <div class="map-bg relative h-24 rounded-xl border border-paper-3 overflow-hidden">
+                  <span class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-full"><svg viewBox="0 0 24 24" width="24" height="24" fill="#066F36" stroke="#fff" stroke-width="1.5"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.4" fill="#fff"/></svg></span>
+                  <span class="absolute bottom-1.5 left-1.5 mono text-[8.5px] uppercase bg-white/80 px-1.5 py-0.5 rounded text-ink-500">Талгар</span>
+                </div>
+              </div>
+              <div>
+                <div class="mono text-[9.5px] uppercase tracking-wide text-ink-400 mb-1.5">Фото участка</div>
+                <div class="grid grid-cols-4 gap-1.5">
+                  <div class="ph-plot aspect-square rounded-lg"></div>
+                  <div class="ph-grass aspect-square rounded-lg"></div>
+                  <div class="aspect-square rounded-lg border border-dashed border-paper-3 bg-white flex items-center justify-center text-ink-300"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></div>
+                  <div class="aspect-square rounded-lg border border-dashed border-paper-3 bg-white"></div>
+                </div>
+              </div>
+            </div>
+            <div class="absolute left-0 right-0 bottom-0 p-3.5 bg-white border-t border-paper-3">
+              <div class="relative h-11 rounded-xl bg-brand-600 text-white font-semibold text-[14px] flex items-center justify-center gap-2">Далее · фото и карта <span>→</span><span class="tap-ring"></span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hidden sm:flex flex-col gap-3 pt-14 w-[172px]">
+          <div class="wa-toast card p-3.5 flex items-start gap-2.5">
+            <span class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white" style="background:#25D366"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.3A10 10 0 1 0 12 2zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 1 1 12 20zm4.4-6c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.5.1l-.7.9c-.1.2-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.2-.4.2-.4.6-1.2.1-.1 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.5-.4h-.5c-.2 0-.4.1-.6.3-.7.7-.9 1.7-.6 2.7a9 9 0 0 0 4.6 4.8c1.4.6 2 .5 2.7.4.5-.1 1.4-.6 1.5-1.1.2-.5.2-.9.1-1z"/></svg></span>
+            <div><div class="text-[11.5px] font-bold text-ink-900 leading-tight">Новая заявка</div><div class="text-[10.5px] text-ink-500 leading-snug mt-0.5">«Здравствуйте! Участок ещё актуален?»</div></div>
+          </div>
+          <div class="text-center mono text-[9px] uppercase tracking-wider text-ink-400">напрямую вам,<br>без комиссии</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 04 · АГЕНТСТВАМ -->
+<section id="agencies" data-screen-label="agencies" class="bg-white border-b border-paper-3">
+  <div class="max-w-[1440px] mx-auto px-5 sm:px-6 py-16 sm:py-24">
+    <div class="sec-label mb-9"><span class="sec-num">04</span><span class="sec-name">Агентствам</span><span class="sec-rule"></span></div>
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr_1.05fr] gap-10 lg:gap-16 items-center">
+      <div>
+        <h2 class="font-extrabold tracking-tightest text-[28px] sm:text-[42px] leading-[0.97] text-ink-900">Витрина агентства — без своего сайта</h2>
+        <p class="mt-4 text-[15.5px] sm:text-[16px] text-ink-600 leading-relaxed max-w-lg">Все ваши объявления на одной странице — с логотипом, названием и контактами. Клиенты видят бренд, а лиды идут напрямую вам.</p>
+        <ul class="mt-6 space-y-3.5">
+          <li class="flex items-start gap-3 text-[15px] text-ink-700"><span class="w-5 h-5 rounded-full bg-brand-600 text-white flex items-center justify-center shrink-0 mt-0.5"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span class="min-w-0">Персональная ссылка <span class="mono text-[13px] text-brand-600 break-all">6sotok.kz/agency/name</span></span></li>
+          <li class="flex items-center gap-3 text-[15px] text-ink-700"><span class="w-5 h-5 rounded-full bg-brand-600 text-white flex items-center justify-center shrink-0"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Логотип, описание и единый контакт агентства</li>
+          <li class="flex items-center gap-3 text-[15px] text-ink-700"><span class="w-5 h-5 rounded-full bg-brand-600 text-white flex items-center justify-center shrink-0"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Массовая загрузка и статистика по показам</li>
+        </ul>
+        <a href="#" class="mt-8 inline-flex px-6 h-13 py-3.5 rounded-xl text-white font-semibold text-[15px] items-center gap-2 hover:bg-brand-600 transition" style="background:#14160f">Получить витрину <span>→</span></a>
+      </div>
+      <div class="tile card overflow-hidden min-w-0">
+        <div class="h-10 border-b border-paper-3 flex items-center gap-1.5 px-4">
+          <span class="w-2.5 h-2.5 rounded-full bg-paper-3"></span><span class="w-2.5 h-2.5 rounded-full bg-paper-3"></span><span class="w-2.5 h-2.5 rounded-full bg-paper-3"></span>
+          <span class="ml-3 min-w-0 truncate mono text-[11.5px] text-ink-500">6sotok.kz/agency/jer-invest</span>
+          <span class="ml-auto hidden sm:inline-flex items-center gap-1 mono text-[10px] uppercase tracking-wide text-brand-600"><span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span>verified</span>
+        </div>
+        <div class="ph-mountain relative h-24 border-b border-paper-3">
+          <div class="absolute inset-0" style="background:linear-gradient(180deg,rgba(6,111,54,0.05),rgba(20,22,15,0.28))"></div>
+        </div>
+        <div class="px-5 sm:px-6 pb-5 sm:pb-6 -mt-8 relative">
+          <div class="flex items-end gap-4">
+            <div class="w-16 h-16 rounded-2xl bg-brand-600 text-white flex items-center justify-center font-black text-[24px] tracking-tighter shrink-0 border-4 border-white shadow-sm">Ji</div>
+            <div class="min-w-0 pb-1">
+              <div class="flex items-center gap-2"><span class="font-extrabold tracking-tighter text-[20px] text-ink-900">Jer Invest</span><span class="w-4 h-4 rounded-full bg-brand-600 text-white flex items-center justify-center shrink-0"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></div>
+              <div class="text-[12.5px] text-ink-500 mt-0.5">Земельное агентство · Алматы</div>
+            </div>
+          </div>
+          <div class="mt-5 grid grid-cols-3 rounded-xl border border-paper-3 overflow-hidden divide-x divide-paper-3">
+            <div class="px-3 py-2.5 text-center"><div class="font-extrabold text-[17px] tracking-tighter text-ink-900 num leading-none">128</div><div class="mono text-[8.5px] uppercase tracking-wide text-ink-400 mt-1">участков</div></div>
+            <div class="px-3 py-2.5 text-center"><div class="font-extrabold text-[17px] tracking-tighter text-ink-900 num leading-none">4,9</div><div class="mono text-[8.5px] uppercase tracking-wide text-ink-400 mt-1">★ рейтинг</div></div>
+            <div class="px-3 py-2.5 text-center"><div class="font-extrabold text-[17px] tracking-tighter text-brand-600 num leading-none">312</div><div class="mono text-[8.5px] uppercase tracking-wide text-ink-400 mt-1">сделок</div></div>
+          </div>
+          <div class="mt-4 flex gap-1.5 flex-wrap">
+            <span class="px-2.5 h-7 rounded-full bg-brand-600 text-white text-[11px] font-semibold flex items-center">Все 128</span>
+            <span class="px-2.5 h-7 rounded-full bg-white border border-paper-3 text-ink-600 text-[11px] font-semibold flex items-center">ИЖС</span>
+            <span class="px-2.5 h-7 rounded-full bg-white border border-paper-3 text-ink-600 text-[11px] font-semibold flex items-center">Коммерция</span>
+            <span class="px-2.5 h-7 rounded-full bg-white border border-paper-3 text-ink-600 text-[11px] font-semibold flex items-center">У воды</span>
+          </div>
+          <div class="mt-4 grid grid-cols-3 gap-3">
+            <div class="rounded-xl border border-paper-3 bg-white overflow-hidden">
+              <div class="ph-plot aspect-[4/3] relative"><span class="absolute top-1.5 left-1.5 mono text-[8.5px] text-ink-600 uppercase bg-white/75 px-1.5 py-0.5 rounded">10 сот.</span></div>
+              <div class="p-2.5"><div class="font-extrabold tracking-tighter text-[13px] text-brand-600 num">12,5 млн</div><div class="text-[10.5px] text-ink-500 mt-0.5 truncate">Каскелен, ИЖС</div></div>
+            </div>
+            <div class="rounded-xl border border-paper-3 bg-white overflow-hidden">
+              <div class="ph-grass aspect-[4/3] relative"><span class="absolute top-1.5 left-1.5 mono text-[8.5px] text-ink-600 uppercase bg-white/75 px-1.5 py-0.5 rounded">8 сот.</span></div>
+              <div class="p-2.5"><div class="font-extrabold tracking-tighter text-[13px] text-brand-600 num">9,8 млн</div><div class="text-[10.5px] text-ink-500 mt-0.5 truncate">Иссык, дача</div></div>
+            </div>
+            <div class="rounded-xl border border-paper-3 bg-white overflow-hidden">
+              <div class="ph-water aspect-[4/3] relative"><span class="absolute top-1.5 left-1.5 mono text-[8.5px] text-ink-600 uppercase bg-white/75 px-1.5 py-0.5 rounded">15 сот.</span></div>
+              <div class="p-2.5"><div class="font-extrabold tracking-tighter text-[13px] text-brand-600 num">24 млн</div><div class="text-[10.5px] text-ink-500 mt-0.5 truncate">Капчагай</div></div>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center gap-3 rounded-xl bg-paper/60 border border-paper-3 p-3">
+            <span class="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-white" style="background:#25D366"><svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.3A10 10 0 1 0 12 2zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 1 1 12 20z"/></svg></span>
+            <div class="flex-1 min-w-0"><div class="text-[12.5px] font-bold text-ink-900 leading-tight">Единый контакт агентства</div><div class="text-[11px] text-ink-500">Лиды идут напрямую вам</div></div>
+            <span class="px-3 h-8 rounded-lg bg-brand-600 text-white text-[12px] font-semibold flex items-center shrink-0">Написать</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 05 · ГОТОВЫЙ БИЗНЕС (категория) -->
+<section data-screen-label="business" class="border-b border-[#ece2c6]" style="background:linear-gradient(180deg,#fbf8ee,#f8f2e2);">
+  <div class="max-w-[1440px] mx-auto px-5 sm:px-6 py-16 sm:py-24">
+    <div class="sec-label mb-9"><span class="sec-num" style="color:#a8801a">05</span><span class="sec-name">Готовый бизнес</span><span class="sec-rule" style="background:#ece2c6"></span></div>
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr_1.05fr] gap-10 lg:gap-16 items-center">
+      <div>
+        <h2 class="font-extrabold tracking-tightest text-[30px] sm:text-[44px] leading-[0.97] text-ink-900">Готовый бизнес под ключ</h2>
+        <p class="mt-5 text-[16px] text-ink-600 leading-relaxed max-w-md">Действующие бизнесы с оборудованием, клиентами и выручкой — автомойки, кафе, магазины и другое. С помещением или без него — на ваш выбор.</p>
+        <ul class="mt-7 space-y-4 max-w-md">
+          <li class="flex items-center gap-3 text-[15px] text-ink-700"><span class="w-5 h-5 rounded-full text-white flex items-center justify-center shrink-0" style="background:#a8801a"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>С оборудованием, персоналом и клиентами</li>
+          <li class="flex items-center gap-3 text-[15px] text-ink-700"><span class="w-5 h-5 rounded-full text-white flex items-center justify-center shrink-0" style="background:#a8801a"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Продаётся с недвижимостью или без неё</li>
+          <li class="flex items-center gap-3 text-[15px] text-ink-700"><span class="w-5 h-5 rounded-full text-white flex items-center justify-center shrink-0" style="background:#a8801a"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Фильтры по типу бизнеса и обороту</li>
+        </ul>
+        <a href="catalog.html?type=business" class="mt-8 inline-flex px-6 h-13 py-3.5 rounded-xl text-white font-semibold text-[15px] items-center gap-2 hover:opacity-90 transition" style="background:#3a2f16">Смотреть готовый бизнес <span>→</span></a>
+      </div>
+
+      <!-- КАРТОЧКА КАТЕГОРИИ «ГОТОВЫЙ БИЗНЕС» -->
+      <div class="tile card overflow-hidden min-w-0" style="border-color:#ece2c6">
+        <div class="px-6 sm:px-7 py-5 flex items-center gap-4" style="background:linear-gradient(180deg,#fbf8ee,#f8f2e2);border-bottom:1px solid #ece2c6">
+          <span class="w-12 h-12 rounded-2xl flex items-center justify-center text-white shrink-0" style="background:#3a2f16"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16v12H4zM9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M4 13h16"/></svg></span>
+          <div class="flex-1 min-w-0">
+            <div class="mono text-[10px] uppercase tracking-[0.16em] font-semibold" style="color:#a8801a">Раздел каталога</div>
+            <div class="font-extrabold tracking-tighter text-[24px] text-ink-900 leading-none mt-1">Готовый бизнес</div>
+          </div>
+          <div class="text-right shrink-0">
+            <div class="font-extrabold text-[22px] tracking-tighter num leading-none text-ink-900">236</div>
+            <div class="mono text-[9px] uppercase tracking-wide text-ink-400 mt-1">объектов</div>
+          </div>
+        </div>
+        <div class="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="ph-rock relative aspect-[16/10] rounded-xl overflow-hidden" style="border:1px solid #ece2c6">
+            <span class="absolute top-2.5 left-2.5 w-8 h-8 rounded-lg bg-white/85 backdrop-blur flex items-center justify-center" style="color:#3a2f16"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 17l1-6h10l1 6M4 17h16v3H4zM8 20v1M16 20v1"/></svg></span>
+            <span class="absolute bottom-2.5 left-2.5 right-2.5 flex items-end justify-between"><span class="text-[12.5px] font-bold text-ink-900 bg-white/85 backdrop-blur px-2 py-0.5 rounded">Автомойки и СТО</span><span class="mono text-[10px] font-semibold text-ink-600 bg-white/85 backdrop-blur px-1.5 py-0.5 rounded num">64</span></span>
+          </div>
+          <div class="ph-rock relative aspect-[16/10] rounded-xl overflow-hidden" style="border:1px solid #ece2c6">
+            <span class="absolute top-2.5 left-2.5 w-8 h-8 rounded-lg bg-white/85 backdrop-blur flex items-center justify-center" style="color:#3a2f16"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13v4a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM17 9h2a2 2 0 0 1 0 4h-2M4 21h13"/></svg></span>
+            <span class="absolute bottom-2.5 left-2.5 right-2.5 flex items-end justify-between"><span class="text-[12.5px] font-bold text-ink-900 bg-white/85 backdrop-blur px-2 py-0.5 rounded">Кафе и рестораны</span><span class="mono text-[10px] font-semibold text-ink-600 bg-white/85 backdrop-blur px-1.5 py-0.5 rounded num">52</span></span>
+          </div>
+          <div class="ph-soil relative aspect-[16/10] rounded-xl overflow-hidden" style="border:1px solid #ece2c6">
+            <span class="absolute top-2.5 left-2.5 w-8 h-8 rounded-lg bg-white/85 backdrop-blur flex items-center justify-center" style="color:#3a2f16"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14M4 20h10M14 9h3l3 3v8M8 8h2"/></svg></span>
+            <span class="absolute bottom-2.5 left-2.5 right-2.5 flex items-end justify-between"><span class="text-[12.5px] font-bold text-ink-900 bg-white/85 backdrop-blur px-2 py-0.5 rounded">Магазины и аптеки</span><span class="mono text-[10px] font-semibold text-ink-600 bg-white/85 backdrop-blur px-1.5 py-0.5 rounded num">38</span></span>
+          </div>
+          <div class="ph-grass relative aspect-[16/10] rounded-xl overflow-hidden" style="border:1px solid #ece2c6">
+            <span class="absolute top-2.5 left-2.5 w-8 h-8 rounded-lg bg-white/85 backdrop-blur flex items-center justify-center" style="color:#3a2f16"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-5 9 5v12M3 21h18M9 21v-6h6v6"/></svg></span>
+            <span class="absolute bottom-2.5 left-2.5 right-2.5 flex items-end justify-between"><span class="text-[12.5px] font-bold text-ink-900 bg-white/85 backdrop-blur px-2 py-0.5 rounded">Гостиницы и базы</span><span class="mono text-[10px] font-semibold text-ink-600 bg-white/85 backdrop-blur px-1.5 py-0.5 rounded num">60</span></span>
+          </div>
+        </div>
+        <div class="px-5 sm:px-6 pb-5 -mt-1">
+          <div class="flex items-center justify-between rounded-xl px-4 h-11" style="background:#fbf8ee;border:1px solid #ece2c6">
+            <span class="text-[12.5px] text-ink-600">Салоны, пекарни и другое — тоже в разделе</span>
+            <span class="mono text-[11px] font-semibold" style="color:#a8801a">+22</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 07 · ЖУРНАЛ -->
+<section data-screen-label="journal" class="bg-white border-b border-paper-3">
+  <div class="max-w-[1440px] mx-auto px-5 sm:px-6 py-16 sm:py-24">
+    <div class="sec-label mb-4"><span class="sec-num">06</span><span class="sec-name">Журнал</span><span class="sec-rule"></span></div>
+    <div class="flex items-end justify-between gap-6 flex-wrap mb-9">
+      <h2 class="font-extrabold tracking-tightest text-[28px] sm:text-[40px] leading-none text-ink-900">Разбираемся в земле</h2>
+      <a href="#" class="text-[14px] font-semibold text-brand-600 hover:text-brand-700 transition flex items-center gap-1.5 mb-1">Все статьи <span>→</span></a>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-8 lg:gap-14">
+      <a href="#" class="tile group flex flex-col rounded-2xl overflow-hidden card">
+        <div class="ph-plot aspect-[16/8] relative"><span class="absolute bottom-3 left-3 mono text-[10.5px] uppercase tracking-[0.08em] text-ink-600 bg-white/80 px-2.5 py-1 rounded">разбор</span></div>
+        <div class="p-7">
+          <div class="mono text-[11px] uppercase tracking-[0.08em] text-brand-600">Право · 6 минут</div>
+          <div class="mt-3 font-extrabold tracking-tighter text-[23px] sm:text-[28px] text-ink-900 leading-tight">ИЖС или ЛПХ: чем отличаются и что можно строить</div>
+          <p class="mt-3 text-[14.5px] text-ink-600 leading-snug max-w-lg">Категория земли решает всё — от этажности дома до подключения газа. Объясняем на примерах, без юридического языка.</p>
+        </div>
+      </a>
+      <div class="flex flex-col divide-y divide-paper-3 border-y border-paper-3">
+        <a href="#" class="tile group py-5 flex items-start gap-4 hover:pl-1 transition-all">
+          <span class="mono text-[12px] text-ink-400 pt-1">01</span>
+          <div><div class="mono text-[10.5px] uppercase tracking-[0.08em] text-ink-500 mb-1.5">Проверка</div><div class="font-bold text-[16.5px] text-ink-900 tracking-tight leading-snug group-hover:text-brand-600 transition">5 документов, которые стоит проверить перед покупкой</div></div>
+        </a>
+        <a href="#" class="tile group py-5 flex items-start gap-4 hover:pl-1 transition-all">
+          <span class="mono text-[12px] text-ink-400 pt-1">02</span>
+          <div><div class="mono text-[10.5px] uppercase tracking-[0.08em] text-ink-500 mb-1.5">Стройка</div><div class="font-bold text-[16.5px] text-ink-900 tracking-tight leading-snug group-hover:text-brand-600 transition">Что такое красная линия и как она ограничивает стройку</div></div>
+        </a>
+        <a href="#" class="tile group py-5 flex items-start gap-4 hover:pl-1 transition-all">
+          <span class="mono text-[12px] text-ink-400 pt-1">03</span>
+          <div><div class="mono text-[10.5px] uppercase tracking-[0.08em] text-ink-500 mb-1.5">Документы</div><div class="font-bold text-[16.5px] text-ink-900 tracking-tight leading-snug group-hover:text-brand-600 transition">Перевод земли под коммерцию: сколько стоит и сколько ждать</div></div>
+        </a>
+        <a href="#" class="tile group py-5 flex items-start gap-4 hover:pl-1 transition-all">
+          <span class="mono text-[12px] text-ink-400 pt-1">04</span>
+          <div><div class="mono text-[10.5px] uppercase tracking-[0.08em] text-ink-500 mb-1.5">Кадастр</div><div class="font-bold text-[16.5px] text-ink-900 tracking-tight leading-snug group-hover:text-brand-600 transition">Как проверить кадастровый номер за 2 минуты</div></div>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ FOOTER -->
+<site-footer></site-footer>
+
+<!-- Tweaks panel -->
+<div id="tweaks" style="display:none; position:fixed; right:16px; bottom:16px; z-index:2000; width:284px; background:#fff; border:1px solid #e3e1d9; border-radius:16px; box-shadow:0 18px 50px -16px rgba(20,22,15,.35); font-family:'Inter',sans-serif; overflow:hidden;">
+  <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid #ecebe5;">
+    <span style="font-weight:800; font-size:13px; letter-spacing:-.02em; color:#14160f;">Tweaks</span>
+    <button id="tweaksClose" style="border:0; background:none; cursor:pointer; color:#7d8074; font-size:16px; line-height:1;">×</button>
+  </div>
+  <div style="padding:14px;">
+    <div style="font:600 10px/1 'JetBrains Mono',monospace; letter-spacing:.13em; text-transform:uppercase; color:#7d8074; margin-bottom:9px;">Демо: объявлений на платформе</div>
+    <div id="stateSeg" style="display:grid; grid-template-columns:repeat(4,1fr); gap:5px; background:#f4f3ef; border:1px solid #e3e1d9; border-radius:11px; padding:4px;">
+      <button data-state="empty" style="height:34px; border:0; border-radius:8px; background:none; cursor:pointer; font:600 12px 'Inter'; color:#5b5e54;">0</button>
+      <button data-state="one" style="height:34px; border:0; border-radius:8px; background:none; cursor:pointer; font:600 12px 'Inter'; color:#5b5e54;">1</button>
+      <button data-state="many" style="height:34px; border:0; border-radius:8px; background:none; cursor:pointer; font:600 12px 'Inter'; color:#5b5e54;">Много</button>
+      <button data-state="millions" style="height:34px; border:0; border-radius:8px; background:none; cursor:pointer; font:600 11px 'Inter'; color:#5b5e54;">1М+</button>
+    </div>
+    <p style="margin:10px 2px 0; font-size:11.5px; line-height:1.45; color:#7d8074;">Проверяет, что дашборд и рекламный блок одинаково хорошо держатся и при 1 объявлении, и при миллионах.</p>
+  </div>
+</div>
+
+<script>
+function fmtNum(n){ return n.toLocaleString('ru-RU').replace(/\u00a0/g,' '); }
+
+/* Collections удалены — заменены мастером подбора (секция «Подбор участка») */
+
+/* ---------- animation base ---------- */
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function countUp(el, target){
+  target = Math.round(target);
+  if(REDUCED || target<=0){ el.textContent = fmtNum(target); return; }
+  const dur=650, t0=performance.now(), token=(+(el.dataset.tk||0))+1; el.dataset.tk=token;
+  (function step(now){ if(+el.dataset.tk!==token) return; const p=Math.min(1,(now-t0)/dur), e=1-Math.pow(1-p,3); el.textContent=fmtNum(Math.round(target*e)); if(p<1) requestAnimationFrame(step); })(performance.now());
+}
+function activateCard(card){
+  card.querySelectorAll('.dash-bar').forEach(b=>{ b.style.width=(b.dataset.w||0)+'%'; });
+  if(REDUCED) return;
+  card.querySelectorAll('[data-cu]').forEach(el=>{ const t=+el.dataset.cu; if(!isNaN(t)) countUp(el,t); });
+}
+
+/* ---------- Live feed — разные цвета и иконки на каждый тип ---------- */
+// каждое событие — свой цвет и «земляная»/activity-иконка
+const FEED = [
+  { t:'new',   title:'Новый участок · ИЖС 12 соток', meta:'Талгар, Алматинская обл.', v:'12,5 млн ₸', lbl:'Новое объявление', ago:'только что' },
+  { t:'drop',  title:'Цена снижена на 8%', meta:'Каскелен · участок 10 соток', v:'−1,1 млн', lbl:'Снижение цены', ago:'2 мин назад' },
+  { t:'spike', title:'+312 просмотров за час', meta:'Алматинская обл.', v:'', lbl:'Всплеск спроса', ago:'5 мин назад' },
+  { t:'fav',   title:'Добавлен в избранное', meta:'Коммерция · Шымкент, объездная', v:'', lbl:'Интерес к объекту', ago:'8 мин назад' },
+  { t:'water', title:'Новый участок · у воды', meta:'Капчагай, побережье', v:'24 млн ₸', lbl:'Участок у воды', ago:'12 мин назад' },
+  { t:'deal',  title:'Сделка закрыта', meta:'Иссык · дача 8 соток', v:'', lbl:'Закрытая сделка', ago:'18 мин назад' },
+  { t:'query', title:'+128 в поиске «ИЖС до 10 млн»', meta:'за последний час', v:'', lbl:'Популярный запрос', ago:'24 мин назад' },
+];
+const FEED_ICON = {
+  // новое объявление — росток, зелёный
+  new:   { bg:'#D6EFE5', fg:'#066F36', d:'M12 21V9M12 9c0-3.3-2.4-5.5-5.5-5.5C6.5 6.8 8.9 9 12 9zM12 11c0-3.3 2.4-5.5 5.5-5.5C17.5 8.8 15.1 11 12 11z' },
+  // снижение цены — стрелка вниз, оранжевый
+  drop:  { bg:'#fbe6d5', fg:'#E97B27', d:'M12 4v14M6 12l6 6 6-6' },
+  // всплеск просмотров — глаз, синий
+  spike: { bg:'#dceaf6', fg:'#2196F3', d:'M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z M12 9a3 3 0 100 6 3 3 0 000-6z' },
+  // интерес / избранное — звезда, золотой
+  fav:   { bg:'#fbf1d3', fg:'#C6902F', d:'M12 3l2.7 5.8 6.3.6-4.7 4.3 1.3 6.2L12 17l-5.9 3.2 1.3-6.2L2.7 9.4l6.3-.6z' },
+  // участок у воды — капля, бирюзовый
+  water: { bg:'#d6eef0', fg:'#159AA0', d:'M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z' },
+  // сделка закрыта — щит с галочкой, сливовый
+  deal:  { bg:'#ece4f7', fg:'#7c52c4', d:'M12 3l7 4v5c0 4-3 7-7 8-4-1-7-4-7-8V7z M9 12l2 2 4-4' },
+  // популярный запрос — лупа, розовый
+  query: { bg:'#f7dde3', fg:'#bc4a63', d:'M11 4a7 7 0 100 14 7 7 0 000-14z M21 21l-4.35-4.35' },
+};
+function feedRowInner(e){
+  const ic = FEED_ICON[e.t];
+  return `<span class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background:${ic.bg};color:${ic.fg}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="${ic.d}"/></svg></span>
+    <div class="min-w-0 flex-1">
+      <div class="flex items-center gap-2">
+        <span class="mono text-[9.5px] uppercase tracking-[0.1em] font-semibold" style="color:${ic.fg}">${e.lbl}</span>
+        <span class="w-0.5 h-0.5 rounded-full bg-ink-300"></span>
+        <span class="mono text-[9.5px] uppercase tracking-[0.06em] text-ink-400">${e.ago}</span>
+      </div>
+      <div class="text-[13.5px] sm:text-[14px] font-semibold text-ink-900 truncate leading-tight mt-0.5">${e.title}<span class="font-normal text-ink-500"> · ${e.meta}</span>${e.v?` <span class="text-brand-700">${e.v}</span>`:''}</div>
+    </div>`;
+}
+function makeFeedRow(e){
+  const div=document.createElement('div');
+  div.className='feed-swap flex items-center gap-3 w-[248px] shrink-0 p-3 rounded-xl border border-paper-3 bg-white';
+  div.innerHTML=feedRowInner(e);
+  return div;
+}
+let feedTimer=null, feedPtr=0;
+function initLiveFeed(count){
+  clearInterval(feedTimer); feedTimer=null;
+  const host=document.getElementById('dTickerMsg'), bar=document.getElementById('dTickerBar');
+  if(!host) return;
+  if(!count || count<=0){ if(bar) bar.style.display='none'; return; }
+  if(bar) bar.style.display='';
+  const show=i=>{ const e=FEED[i];
+    host.innerHTML='<span class="font-semibold text-[13.5px] text-ink-900 truncate">'+e.title+'</span>'
+      +'<span class="text-ink-400 text-[12.5px] truncate hidden sm:inline">· '+e.meta+'</span>'
+      +(e.v?'<span class="ml-auto shrink-0 num font-bold text-[12.5px] text-brand-700 bg-brand-50 px-2 py-0.5 rounded">'+e.v+'</span>':'');
+    host.classList.remove('feed-swap'); void host.offsetWidth; host.classList.add('feed-swap'); };
+  feedPtr=0; show(0);
+  if(!REDUCED){ feedTimer=setInterval(()=>{ feedPtr=(feedPtr+1)%FEED.length; show(feedPtr); }, 3600); }
+}
+
+/* ---------- РЕКЛАМА — пул продвигаемых объявлений, ротация каждые 5 сек ---------- */
+const FEATURED = [
+  { photo:'ph-plot',     meta:'ИЖС · 18 соток · Талгар',            title:'Бесагаш, вид на горы',        price:'38 600 000 ₸', per:'2 144 444 ₸ / сотка', mx:56, my:26 },
+  { photo:'ph-plot',     meta:'ИЖС · 10 соток · Каскелен',          title:'Тихий переулок, асфальт',     price:'12 500 000 ₸', per:'1 250 000 ₸ / сотка', mx:62, my:46 },
+  { photo:'ph-water',    meta:'У воды · 15 соток · Капчагай',       title:'Первая линия побережья',      price:'24 000 000 ₸', per:'1 600 000 ₸ / сотка', mx:52, my:58 },
+  { photo:'ph-rock',     meta:'Коммерция · 12 соток · Кордай',      title:'Вдоль трассы Алматы—Кордай',  price:'45 000 000 ₸', per:'3 750 000 ₸ / сотка', mx:47, my:42 },
+  { photo:'ph-grass',    meta:'Дача · 8 соток · Иссык',             title:'Садовое товарищество',        price:'9 800 000 ₸',  per:'1 225 000 ₸ / сотка', mx:60, my:74 },
+  { photo:'ph-plot',     meta:'ИЖС · 14 соток · Талгар',            title:'Коммуникации по границе',     price:'21 000 000 ₸', per:'1 500 000 ₸ / сотка', mx:70, my:86 },
+  { photo:'ph-soil',     meta:'Фермерское · 2 га · Енбекшиказахский',title:'Поливная земля',              price:'18 000 000 ₸', per:'90 000 ₸ / сотка', mx:82, my:78 },
+  { photo:'ph-water',    meta:'У воды · 20 соток · Или',            title:'Берег реки Или',              price:'32 000 000 ₸', per:'1 600 000 ₸ / сотка', mx:88, my:76 },
+  { photo:'ph-mountain', meta:'ИЖС · 9 соток · Алматы, БАКАД',      title:'Предгорье, у новой развязки', price:'28 000 000 ₸', per:'3 111 111 ₸ / сотка', mx:66, my:90 },
+  { photo:'ph-rock',     meta:'Коммерция · 25 соток · Шымкент',     title:'Объездная, под сервис',       price:'60 000 000 ₸', per:'2 400 000 ₸ / сотка', mx:78, my:72 },
+];
+/* --- карта hero: точки объявлений + connector к карточке --- */
+let heroPinEls=[];
+function heroBuildPins(){
+  const box=document.getElementById('heroPins'); if(!box||heroPinEls.length) return;
+  FEATURED.forEach(it=>{
+    const el=document.createElement('div');
+    el.className='hero-pin'; el.style.left=it.mx+'%'; el.style.top=it.my+'%';
+    el.innerHTML='<span class="ring"></span><span class="dot"></span>';
+    box.appendChild(el); heroPinEls.push(el);
+  });
+}
+function heroDrawConn(){
+  const stage=document.getElementById('heroStage'), conn=document.getElementById('heroConn'), path=document.getElementById('heroConnPath'),
+        active=document.querySelector('.hero-pin.active'), card=document.getElementById('fwWrap');
+  if(!stage||!path||!conn) return;
+  if(!active||!card||getComputedStyle(conn).display==='none'||conn.style.visibility==='hidden'){ path.setAttribute('d',''); return; }
+  const s=stage.getBoundingClientRect(), p=active.getBoundingClientRect(), c=card.getBoundingClientRect();
+  if(!c.width||!p.width){ path.setAttribute('d',''); return; }
+  const x1=p.left+p.width/2-s.left, y1=p.top+p.height/2-s.top;
+  const x2=c.left-s.left+26, y2=c.bottom-s.top-16;
+  path.setAttribute('d','M '+x1.toFixed(1)+' '+y1.toFixed(1)+' C '+((x1+x2)/2).toFixed(1)+' '+y1.toFixed(1)+', '+x2.toFixed(1)+' '+((y1+y2)/2).toFixed(1)+', '+x2.toFixed(1)+' '+y2.toFixed(1));
+}
+function heroSetActive(i){
+  if(!heroPinEls.length) heroBuildPins();
+  heroPinEls.forEach((el,k)=>el.classList.toggle('active',k===i));
+  const it=FEATURED[i]||{};
+  const mp=document.getElementById('mPin');
+  if(mp && it.mx!=null){ mp.style.left=(14+it.mx*0.7).toFixed(1)+'%'; mp.style.top=(22+(it.my/100)*54).toFixed(1)+'%'; }
+  const ml=document.getElementById('mLabel');
+  if(ml && it.meta){ const parts=it.meta.split('·'); ml.textContent=(parts[parts.length-1]||'').trim(); }
+  requestAnimationFrame(()=>requestAnimationFrame(heroDrawConn));
+}
+window.addEventListener('resize',()=>requestAnimationFrame(heroDrawConn));
+window.addEventListener('load',()=>requestAnimationFrame(heroDrawConn));
+
+let fwTimer=null, fwIdx=0, fwN=0;
+function fwRender(){
+  const it=FEATURED[fwIdx];
+  document.getElementById('fwPhoto').className='absolute inset-0 '+it.photo;
+  document.getElementById('fwMeta').textContent=it.meta;
+  document.getElementById('fwTitle').textContent=it.title;
+  document.getElementById('fwPrice').textContent=it.price;
+  document.getElementById('fwPer').textContent=it.per;
+  document.getElementById('fwCounter').textContent=(fwIdx+1)+' / '+fwN;
+  const dots=document.getElementById('fwDots');
+  dots.innerHTML=Array.from({length:fwN},(_,i)=>`<span class="rounded-full transition-all duration-300" style="height:5px;width:${i===fwIdx?'18px':'5px'};background:${i===fwIdx?'#066F36':'#d9d7cf'}"></span>`).join('');
+  heroSetActive(fwIdx);
+  restartProg();
+}
+function restartProg(){
+  const p=document.getElementById('fwProg'); if(!p) return;
+  p.style.transition='none'; p.style.width='0%';
+  if(REDUCED) return;
+  void p.offsetWidth;
+  p.style.transition='width 5s linear'; p.style.width='100%';
+}
+function fwFade(){
+  fwRender();
+  if(REDUCED) return;
+  ['fwPhoto','fwMetaBar','fwInfo'].forEach(id=>{ const el=document.getElementById(id); if(!el) return; el.classList.remove('fw-anim'); void el.offsetWidth; el.classList.add('fw-anim'); });
+}
+function initFeaturedWeek(count){
+  clearInterval(fwTimer); fwTimer=null;
+  const wrap=document.getElementById('fwWrap'), empty=document.getElementById('fwEmpty');
+  const hp=document.getElementById('heroPins'), hc=document.getElementById('heroConn'), mm=document.getElementById('heroMMap');
+  if(!count || count<=0){ wrap.classList.add('hidden'); empty.classList.remove('hidden'); if(hp)hp.style.visibility='hidden'; if(hc)hc.style.visibility='hidden'; if(mm)mm.style.display='none'; heroDrawConn(); return; }
+  empty.classList.add('hidden'); wrap.classList.remove('hidden'); if(hp)hp.style.visibility=''; if(hc)hc.style.visibility=''; if(mm)mm.style.display='';
+  fwN=Math.min(count, FEATURED.length); fwIdx=0;
+  const single = fwN<=1;
+  document.getElementById('fwCounter').style.display = single?'none':'';
+  document.getElementById('fwDots').style.display = single?'none':'';
+  document.getElementById('fwProgWrap').style.display = single?'none':'';
+  fwFade();
+  if(!single){ fwTimer=setInterval(()=>{ fwIdx=(fwIdx+1)%fwN; fwFade(); }, 5000); }
+}
+
+/* ---------- State data ---------- */
+const DATA_STATES = {
+  empty: { total:0, coll:[0,0,0,0,0], fwCount:0, feedCount:0,
+    dash:{ metrics:{ total:0 } } },
+  one: { total:1, coll:[1,0,0,0,0], fwCount:1, feedCount:1,
+    dash:{ metrics:{ total:1 } } },
+  many: { total:1284, coll:[612,208,236,142,86], fwCount:10, feedCount:6,
+    dash:{ metrics:{ total:1284, newToday:37, topRegion:'Алматинская область', topCat:'ИЖС', viewsSpike:312, priceDropRegion:'Каскелен', priceDrop:8, demandCat:'коммерческие участки', demandUp:18, topQuery:'ИЖС до 10 млн', cheapRegion:'Енбекшиказахский район', cheapPrice:90000, regionCount:12 } } },
+  millions: { total:1284502, coll:[612000,208000,240000,148000,76502], fwCount:10, feedCount:6,
+    dash:{ metrics:{ total:1284502, newToday:4120, topRegion:'Алматинская область', topCat:'коммерческие участки', viewsSpike:5400, priceDropRegion:'Капшагай', priceDrop:6, demandCat:'участки у воды', demandUp:23, topQuery:'коммерция вдоль трассы', cheapRegion:'Жамбылская область', cheapPrice:70000, regionCount:17 } } },
+};
+
+/* ---------- Инсайт дня: движок правил + автоподбор ----------
+   Каждое правило описывает, какой инсайт «ловить». Из подходящих
+   по данным правил выбирается один — с ежедневной ротацией, чтобы
+   каждый день на главной показывалось что-то новое. */
+const INSIGHT_RULES = [
+  { id:'viewsSpike', ok:m=>m.viewsSpike>=100,
+    build:m=>({ v:'+'+fmtNum(m.viewsSpike), s:'просмотров/час',
+      text:`Больше всего просмотров сегодня — у участков ${m.topCat} в регионе «${m.topRegion}».` }) },
+  { id:'demand', ok:m=>m.demandUp>=5,
+    build:m=>({ v:'+'+m.demandUp+'%', s:'спрос / нед',
+      text:`Спрос на ${m.demandCat} за неделю вырос сильнее всего — самая быстрорастущая категория.` }) },
+  { id:'newToday', ok:m=>m.newToday>=5,
+    build:m=>({ v:'+'+fmtNum(m.newToday), s:'за сутки',
+      text:`За последние сутки добавлено ${fmtNum(m.newToday)} новых участков — рынок активный.` }) },
+  { id:'priceDrop', ok:m=>m.priceDrop>=3,
+    build:m=>({ v:'−'+m.priceDrop+'%', s:'цена / нед',
+      text:`Участки в «${m.priceDropRegion}» за неделю подешевели — удачный момент для покупки.` }) },
+  { id:'cheap', ok:m=>!!m.cheapRegion,
+    build:m=>({ v:fmtNum(m.cheapPrice)+' ₸', s:'за сотку',
+      text:`Самая доступная земля сейчас — в районе «${m.cheapRegion}».` }) },
+  { id:'query', ok:m=>!!m.topQuery,
+    build:m=>({ v:'#1', s:'запрос дня',
+      text:`Чаще всего сегодня ищут «${m.topQuery}».` }) },
+];
+function pickInsight(m, state){
+  if(state==='empty' || !m || !m.total)
+    return { v:null, s:null, text:'Разместите первый участок — и здесь появится живая аналитика по вашим объявлениям.' };
+  if(state==='one')
+    return { v:'1', s:'участок', text:'Первый участок опубликован — теперь ищем ему покупателя.' };
+  const eligible = INSIGHT_RULES.filter(r=>r.ok(m));
+  if(!eligible.length)
+    return { v:fmtNum(m.total), s:'участков', text:`Сейчас на платформе ${fmtNum(m.total)} участков по всему Казахстану — выбор растёт каждый день.` };
+  const day = Math.floor(Date.now()/86400000);      // номер дня — ежедневная ротация
+  return eligible[day % eligible.length].build(m);
+}
+
+function renderDash(d, state){
+  const wrap=document.getElementById('dInsightStatWrap');
+  if(!wrap) return;
+  const ins=pickInsight(d.dash.metrics, state);
+  document.getElementById('dInsightText').textContent=ins.text;
+  const tr=document.getElementById('dInsightTrend');
+  if(tr){ if(ins.trend){ tr.style.display=''; tr.textContent=ins.trend; } else { tr.style.display='none'; } }
+  if(ins.v){ wrap.style.display=''; document.getElementById('dInsightStatV').textContent=ins.v; document.getElementById('dInsightStatS').textContent=ins.s||''; }
+  else wrap.style.display='none';
+}
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "listingsState": "many"
+}/*EDITMODE-END*/;
+let TW = { ...TWEAK_DEFAULTS };
+
+function applyState(){
+  const state = TW.listingsState, d = DATA_STATES[state];
+  renderDash(d, state);
+  initFeaturedWeek(d.fwCount);
+  initLiveFeed(d.feedCount);
+
+  document.querySelectorAll('#stateSeg button').forEach(b=>{
+    const on=b.dataset.state===state;
+    b.style.background=on?'#fff':'none'; b.style.color=on?'#14160f':'#5b5e54'; b.style.boxShadow=on?'0 1px 2px rgba(20,22,15,.14)':'none';
+  });
+
+  requestAnimationFrame(()=> document.querySelectorAll('[data-dash].in').forEach(activateCard));
+}
+function setTweak(key,val){ TW[key]=val; window.parent.postMessage({ type:'__edit_mode_set_keys', edits:{ [key]:val } }, '*'); applyState(); }
+
+document.getElementById('stateSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b) setTweak('listingsState', b.dataset.state); });
+document.getElementById('tweaksClose').addEventListener('click', ()=>{ document.getElementById('tweaks').style.display='none'; window.parent.postMessage({ type:'__edit_mode_dismissed' }, '*'); });
+window.addEventListener('message', e=>{ const t=e?.data?.type; if(t==='__activate_edit_mode') document.getElementById('tweaks').style.display='block'; else if(t==='__deactivate_edit_mode') document.getElementById('tweaks').style.display='none'; });
+window.parent.postMessage({ type:'__edit_mode_available' }, '*');
+
+let sAgo=0; setInterval(()=>{ sAgo++; const el=document.getElementById('pulseAgo'); if(el) el.textContent = sAgo<60?`${sAgo} сек назад`:'только что'; if(sAgo>=60) sAgo=0; },1000);
+
+applyState();
+
+/* ---------- reveal on scroll ---------- */
+(function setupReveal(){
+  const io = new IntersectionObserver((ents)=>{
+    ents.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); activateCard(e.target); io.unobserve(e.target); } });
+  }, { threshold:0.12, rootMargin:'0px 0px -30px 0px' });
+  document.querySelectorAll('[data-dash]').forEach((c,i)=>{ c.classList.add('reveal'); c.style.transitionDelay=((i%5)*40)+'ms'; io.observe(c); });
+})();
+</script>
+
+<script>
+/* ============ Мастер подбора участка (секция «Подбор участка») ============ */
+(function initFinder(){
+  const body=document.getElementById('qzBody'); if(!body) return;
+  const GOALS=[
+    { id:'dom', label:'Построить дом', sub:'ИЖС для постоянного проживания', tone:'ph-plot', base:612,
+      samples:[['Каскелен · ИЖС','10 соток','12,5 млн ₸','ph-plot'],['Талгар · ИЖС','12 соток','18 млн ₸','ph-plot'],['Бесагаш · вид на горы','9 соток','24 млн ₸','ph-mountain']] },
+    { id:'dacha', label:'Дача и отдых', sub:'Садовые участки для сезона', tone:'ph-grass', base:208,
+      samples:[['Иссык · дача','8 соток','9,8 млн ₸','ph-grass'],['Тургень · сад','6 соток','6,5 млн ₸','ph-grass'],['Капшагай · у воды','15 соток','24 млн ₸','ph-water']] },
+    { id:'business', label:'Под бизнес', sub:'Коммерческая земля под доход', tone:'ph-rock', base:236,
+      samples:[['Кордай · трасса','12 соток','45 млн ₸','ph-rock'],['Шымкент · объездная','25 соток','60 млн ₸','ph-rock'],['Алматы · БАКАД','9 соток','28 млн ₸','ph-soil']] },
+    { id:'invest', label:'Инвестиции', sub:'Купить сейчас — продать дороже', tone:'ph-mountain', base:142,
+      samples:[['Или · массив','20 соток','32 млн ₸','ph-water'],['БАКАД · под застройку','30 соток','54 млн ₸','ph-mountain'],['Талгар · участок','14 соток','21 млн ₸','ph-plot']] },
+    { id:'farm', label:'Фермерство', sub:'Сельхоз и КХ, большие массивы', tone:'ph-soil', base:86,
+      samples:[['Енбекшиказахский · КХ','2 га','18 млн ₸','ph-soil'],['Жамбылская обл · поле','5 га','30 млн ₸','ph-soil'],['Или · поливная','3 га','22 млн ₸','ph-grass']] },
+    { id:'any', label:'Пока не определился', sub:'Показать все участки по бюджету', tone:'ph-plot', base:1284,
+      samples:[['Каскелен · ИЖС','10 соток','12,5 млн ₸','ph-plot'],['Иссык · дача','8 соток','9,8 млн ₸','ph-grass'],['Капшагай · у воды','15 соток','24 млн ₸','ph-water']] },
+  ];
+  const REGIONS=[
+    { id:'almaty_city', label:'Алматы', f:0.9 },
+    { id:'astana_city', label:'Астана', f:0.6 },
+    { id:'shymkent_city', label:'Шымкент', f:0.4 },
+    { id:'almaty_obl', label:'Алматинская область', f:1.0 },
+    { id:'jetisu', label:'Жетысуская область', f:0.3 },
+    { id:'akmola', label:'Акмолинская область', f:0.34 },
+    { id:'aktobe', label:'Актюбинская область', f:0.3 },
+    { id:'atyrau', label:'Атырауская область', f:0.24 },
+    { id:'west_kz', label:'Западно-Казахстанская область', f:0.24 },
+    { id:'jambyl', label:'Жамбылская область', f:0.3 },
+    { id:'karaganda', label:'Карагандинская область', f:0.34 },
+    { id:'ulytau', label:'Улытауская область', f:0.14 },
+    { id:'kostanay', label:'Костанайская область', f:0.28 },
+    { id:'kyzylorda', label:'Кызылординская область', f:0.2 },
+    { id:'mangystau', label:'Мангистауская область', f:0.24 },
+    { id:'pavlodar', label:'Павлодарская область', f:0.26 },
+    { id:'north_kz', label:'Северо-Казахстанская область', f:0.22 },
+    { id:'turkistan', label:'Туркестанская область', f:0.3 },
+    { id:'east_kz', label:'Восточно-Казахстанская область', f:0.28 },
+    { id:'abai', label:'Область Абай', f:0.18 },
+    { id:'all', label:'Вся страна', f:1.6 },
+  ];
+  const PIN='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="2.4"/></svg>';
+  const NAMES={1:'Цель',2:'Бюджет',3:'Регион'};
+  const st={ step:1, goal:null, budget:15, region:null };
+  const BUD_MAX=200;
+  const budLabel=v=> v>=BUD_MAX ? 'от '+BUD_MAX+' млн ₸' : 'до '+v+' млн ₸';
+  const back=document.getElementById('qzBack'), next=document.getElementById('qzNext');
+  const fmt=(typeof fmtNum==='function')?fmtNum:(n=>(''+n));
+  function updateSteps(cur){
+    document.querySelectorAll('#qzSteps .qz-step').forEach(el=>{
+      const n=+el.dataset.step; el.classList.remove('active','done');
+      if(cur==='done' || n<cur) el.classList.add('done');
+      else if(n===cur) el.classList.add('active');
+    });
+  }
+
+  const budgetFactor=v=>Math.min(1,Math.max(0.15, 0.15+(v-2)/(BUD_MAX-2)*0.85));
+  function matchCount(){ const g=GOALS.find(x=>x.id===st.goal)||GOALS[0]; const r=REGIONS.find(x=>x.id===st.region)||{f:0.9}; return Math.max(3, Math.round(g.base*r.f*budgetFactor(st.budget))); }
+
+  function swap(html){ body.innerHTML='<div class="fw-anim">'+html+'</div>'; }
+  function updateNext(){ const ok = st.step===1?!!st.goal : st.step===3?!!st.region : true; next.disabled=!ok; next.style.opacity=ok?'1':'.45'; next.style.pointerEvents=ok?'':'none'; }
+
+  function render(){
+    if(st.step==='result'){ renderResult(); return; }
+    updateSteps(st.step);
+    back.style.visibility = st.step===1?'hidden':'visible'; next.style.display='';
+    if(st.step===1){
+      next.innerHTML='Далее <span>→</span>';
+      swap('<div class="grid sm:grid-cols-2 gap-2.5">'+GOALS.map(g=>`
+        <button data-goal="${g.id}" class="qz-opt text-left rounded-xl border p-4 flex items-center gap-3.5 transition ${st.goal===g.id?'border-brand-500 ring-2 ring-brand-100':'border-paper-3 hover:border-brand-300'}">
+          <span class="${g.tone} w-11 h-11 rounded-lg shrink-0 border border-black/5"></span>
+          <span class="min-w-0"><span class="block font-bold text-[14.5px] text-ink-900 tracking-tight">${g.label}</span><span class="block text-[12px] text-ink-500 leading-snug mt-0.5">${g.sub}</span></span>
+        </button>`).join('')+'</div>');
+    } else if(st.step===2){
+      next.innerHTML='Далее <span>→</span>';
+      swap(`<div class="rounded-2xl border border-paper-3 p-6">
+        <div class="flex items-baseline justify-between gap-3">
+          <span class="mono text-[10.5px] uppercase tracking-[0.1em] text-ink-400">Бюджет</span>
+          <span id="qzBudgetV" class="font-extrabold text-[24px] tracking-tighter text-brand-600 num">${budLabel(st.budget)}</span>
+        </div>
+        <input id="qzBudget" type="range" min="2" max="${BUD_MAX}" step="1" value="${st.budget}" class="qz-range mt-4">
+        <div class="flex justify-between mono text-[10px] text-ink-400 mt-2"><span>2 млн</span><span>${BUD_MAX} млн+ ₸</span></div>
+        <div class="mt-5 flex items-center gap-2 text-[13px] text-ink-500"><span class="live-dot"><span class="ping"></span><span class="core"></span></span><span id="qzBudgetHint"></span></div>
+      </div>`);
+      updateHint();
+    } else if(st.step===3){
+      next.innerHTML='Показать участки <span>→</span>';
+      const sel=REGIONS.find(x=>x.id===st.region);
+      swap(`<div class="qz-dd relative" data-open="0">
+        <div class="mono text-[10.5px] uppercase tracking-[0.1em] text-ink-400 mb-2">Регион поиска</div>
+        <button type="button" id="qzDdBtn" class="w-full rounded-xl border ${sel?'border-brand-500':'border-paper-3'} bg-white px-4 h-14 flex items-center gap-3 text-left hover:border-brand-300 transition">
+          <span class="w-8 h-8 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center shrink-0">${PIN}</span>
+          <span class="flex-1 min-w-0 truncate font-semibold text-[14.5px] ${sel?'text-ink-900':'text-ink-400'}">${sel?sel.label:'Выберите регион'}</span>
+          <svg id="qzDdChev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-400 transition-transform"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div id="qzDdMenu" class="mt-2 rounded-xl border border-paper-3 bg-white overflow-hidden hidden">
+          <div class="p-2 border-b border-paper-3"><input id="qzDdSearch" type="text" placeholder="Поиск региона…" class="w-full h-10 px-3 rounded-lg bg-paper-2 text-[14px] text-ink-900 placeholder:text-ink-400 outline-none focus:ring-2 focus:ring-brand-100"></div>
+          <div id="qzDdList" class="max-h-[264px] overflow-y-auto py-1">${REGIONS.map(r=>`
+            <button type="button" data-region="${r.id}" class="qz-dd-opt w-full text-left px-3 h-12 flex items-center gap-3 transition ${st.region===r.id?'bg-brand-50':''} hover:bg-paper-2">
+              <span class="w-7 h-7 rounded-lg ${st.region===r.id?'bg-brand-100 text-brand-700':'bg-paper-2 text-ink-500'} flex items-center justify-center shrink-0">${PIN}</span>
+              <span class="flex-1 min-w-0 truncate font-medium text-[14px] text-ink-900">${r.label}</span>
+              ${st.region===r.id?'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" class="text-brand-600"><path d="M20 6 9 17l-5-5"/></svg>':''}
+            </button>`).join('')}</div>
+          <div id="qzDdEmpty" class="hidden px-4 py-6 text-center text-[13px] text-ink-400">Ничего не найдено</div>
+        </div>
+      </div>`);
+      wireDropdown();
+    }
+    updateNext();
+  }
+  function updateHint(){ const el=document.getElementById('qzBudgetHint'); if(el) el.textContent='Примерно '+fmt(matchCount())+' участков в этом бюджете'; }
+
+  function wireDropdown(){
+    const dd=body.querySelector('.qz-dd'); if(!dd) return;
+    const btn=dd.querySelector('#qzDdBtn'), menu=dd.querySelector('#qzDdMenu'), chev=dd.querySelector('#qzDdChev');
+    const search=dd.querySelector('#qzDdSearch'), list=dd.querySelector('#qzDdList'), empty=dd.querySelector('#qzDdEmpty');
+    const close=()=>{ menu.classList.add('hidden'); chev.style.transform=''; dd.dataset.open='0'; };
+    const open=()=>{ menu.classList.remove('hidden'); chev.style.transform='rotate(180deg)'; dd.dataset.open='1'; if(search){ search.value=''; filter(''); setTimeout(()=>search.focus(),20); } };
+    btn.addEventListener('click', e=>{ e.stopPropagation(); dd.dataset.open==='1'?close():open(); });
+    function filter(q){ q=q.trim().toLowerCase(); let n=0; list.querySelectorAll('.qz-dd-opt').forEach(o=>{ const m=o.textContent.toLowerCase().includes(q); o.style.display=m?'':'none'; if(m)n++; }); empty.classList.toggle('hidden', n>0); }
+    if(search) search.addEventListener('input', ()=>filter(search.value));
+    document.addEventListener('click', function onDoc(e){ if(!dd.isConnected){ document.removeEventListener('click', onDoc); return; } if(!dd.contains(e.target)) close(); });
+  }
+
+  function renderResult(){
+    updateSteps('done');
+    back.style.visibility='visible'; next.style.display='none';
+    const g=GOALS.find(x=>x.id===st.goal)||GOALS[0], r=REGIONS.find(x=>x.id===st.region)||REGIONS[0], n=matchCount();
+    swap(`
+      <div class="flex items-end justify-between gap-4 flex-wrap">
+        <div><div class="mono text-[10.5px] uppercase tracking-[0.1em] text-ink-400">Нашлось для вас</div>
+          <div class="flex items-baseline gap-2 mt-1"><span class="font-black text-[40px] tracking-tighter text-brand-600 num">${fmt(n)}</span><span class="text-[14px] text-ink-500">участков</span></div></div>
+        <div class="text-right text-[12.5px] text-ink-500 max-w-[48%] leading-snug">${g.label} · ${budLabel(st.budget)}<br>${r.label}</div>
+      </div>
+      <div class="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        ${g.samples.map(s=>`<a href="catalog.html" class="tile rounded-xl border border-paper-3 overflow-hidden bg-white hover:border-brand-300 transition">
+          <div class="${s[3]} aspect-[16/10] relative"><span class="absolute top-2 left-2 mono text-[9px] uppercase bg-white/80 px-1.5 py-0.5 rounded text-ink-600">${s[1]}</span></div>
+          <div class="p-3"><div class="font-extrabold tracking-tighter text-[15px] text-brand-600 num">${s[2]}</div><div class="text-[12px] text-ink-500 mt-0.5 truncate">${s[0]}</div></div>
+        </a>`).join('')}
+      </div>
+      <div class="mt-6 flex items-center gap-3 flex-wrap">
+        <a href="catalog.html" class="px-6 h-12 rounded-xl bg-brand-600 text-white font-semibold text-[14.5px] inline-flex items-center gap-2 hover:bg-brand-700 transition shadow-[0_12px_32px_-12px_rgba(6,111,54,.55)]">Смотреть все ${fmt(n)} <span>→</span></a>
+        <button id="qzReset" class="px-4 h-12 rounded-xl border border-paper-3 text-ink-600 font-semibold text-[14px] hover:border-ink-400 transition">Начать заново</button>
+      </div>`);
+    const rs=document.getElementById('qzReset'); if(rs) rs.addEventListener('click', ()=>{ st.step=1; st.goal=null; st.region=null; st.budget=15; render(); });
+  }
+
+  body.addEventListener('click', e=>{
+    const go=e.target.closest('[data-goal]'); if(go){ st.goal=go.dataset.goal; render(); return; }
+    const rg=e.target.closest('[data-region]'); if(rg){ st.region=rg.dataset.region; render(); return; }
+  });
+  body.addEventListener('input', e=>{ if(e.target.id==='qzBudget'){ st.budget=+e.target.value; const v=document.getElementById('qzBudgetV'); if(v) v.textContent=budLabel(st.budget); updateHint(); } });
+  back.addEventListener('click', ()=>{ if(st.step==='result') st.step=3; else if(st.step>1) st.step--; render(); });
+  next.addEventListener('click', ()=>{ if(next.disabled) return; if(st.step<3) st.step++; else if(st.step===3) st.step='result'; render(); });
+  render();
+})();
+</script>
+
+<script src="image-slot.js"></script>
+<script src="site-header.js" defer></script>
+<script src="site-footer.js?v=7" defer></script>
+</body>
+</html>

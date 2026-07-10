@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { MapPin } from 'lucide-react';
 import type { Listing } from '@/types/listing';
 import { CardMediaSlider } from '@/components/listings/card-media-slider';
+import { Price } from '@/components/ui/price';
 
 const BUSINESS_TYPE_LABEL: Record<string, string> = {
   cafe:       'Кафе / Ресторан',
@@ -25,10 +26,7 @@ const CONDITION_LABEL: Record<string, string> = {
 };
 
 export function BusinessCard({ listing }: { listing: Listing }) {
-  const price = new Intl.NumberFormat('ru-RU').format(listing.price);
-  const perM2 = listing.buildingArea
-    ? new Intl.NumberFormat('ru-RU').format(Math.round(listing.price / listing.buildingArea))
-    : null;
+  const perM2Value = listing.buildingArea ? Math.round(listing.price / listing.buildingArea) : null;
   const allMedia = listing.images?.length ? listing.images : listing.image ? [listing.image] : [];
   const typeLabel = listing.businessType ? BUSINESS_TYPE_LABEL[listing.businessType] : null;
   const address = listing.address || listing.location;
@@ -80,10 +78,8 @@ export function BusinessCard({ listing }: { listing: Listing }) {
 
         {/* Цена */}
         <div className="-mt-0.5">
-          <p className="text-lg sm:text-2xl font-bold text-[var(--ink-900)] leading-none tabular-nums tracking-tight">
-            {price} ₸
-          </p>
-          {perM2 && <p className="text-[11px] sm:text-xs text-[var(--ink-400)] mt-1 tabular-nums">{perM2} ₸/м²</p>}
+          <Price value={listing.price} className="text-lg sm:text-2xl font-bold text-[var(--ink-900)] leading-none tabular-nums tracking-tight" />
+          {perM2Value && <p className="text-[11px] sm:text-xs text-[var(--ink-400)] mt-1 tabular-nums"><Price value={perM2Value} />/м²</p>}
         </div>
 
         {/* Адрес */}
