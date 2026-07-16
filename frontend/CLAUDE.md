@@ -12,6 +12,8 @@ Responses must be short and concise. No summaries at end of response.
 
 ## Последние изменения (2026-07-16)
 
+- **Каталог + safe-area**: offset под хедером теперь `top-[calc(61px+env(safe-area-inset-top,0px))]` (мобайл) / `calc(69px+…)` (десктоп) — повторяет формулу высоты хедера (у него `padding-top:env(safe-area-inset-top)`). Сейчас no-op (нет `viewport-fit=cover` → env=0), но не сломается при переходе на PWA/cover.
+- **site-chrome.tsx**: футер скрыт на `/catalog` (`FULLSCREEN_ROUTES`) — fixed-контейнер каталога не показывает футер, но его высота в потоке создавала фантомный скролл страницы на мобиле (docH 1256 при вьюпорте 844). `/catalog/compare` не затронут (точное совпадение pathname). Хедер/футер по маршрутам проверены headless-скриптом (desktop 1440 + mobile 390): все страницы ок, /login /register без хроума, /profile /add-listing редиректят на /login.
 - **Каталог полностью переписан** по high-fidelity макету `Дизайн html/Каталог /catalog.html` (README там же). Старые `catalog-client.tsx`, `components/catalog/filters.tsx`, `sort.tsx` удалены.
 - Новые файлы: `app/(site)/catalog/catalog-client.tsx` (десктоп >1024px + общее состояние), `mobile-view.tsx` (мобайл ≤1024px: bottom sheet 3 снапа, sheet фильтров, детальный sheet с WhatsApp/звонком), `filter-ui.tsx` (единые фильтр-контролы), `catalog-utils.ts` (модель фильтров, форматтеры, cardMeta), `catalog.css`, `components/catalog/catalog-map.tsx` (новая Leaflet-карта: пины-пилюли с ценой, кластеры по макету).
 - `components/catalog/map-view.tsx` НЕ трогать при работе с каталогом — он остался только для `business-catalog-client.tsx` и `home/search-bar.tsx`.

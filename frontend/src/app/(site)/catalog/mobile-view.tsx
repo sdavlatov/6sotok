@@ -28,6 +28,41 @@ const FOCUS_TITLE: Record<FocusKey, string> = {
   city: 'Город / район', utils: 'Коммуникации', docs: 'Документы',
 };
 
+/**
+ * Свайп-вниз для закрытия оверлей-шита. Вешается на блок «ручка + шапка»
+ * (не только на тонкую полоску). Пока тянем — transition выключен, шит следует
+ * за пальцем; отпустили ниже порога — закрытие, выше — плавный снап назад.
+ */
+function useSheetDrag(onClose: () => void) {
+  const [dragY, setDragY] = useState(0);
+  const from = useRef<number | null>(null);
+  const zone = {
+    onPointerDown: (e: React.PointerEvent) => {
+      if ((e.target as HTMLElement).closest('button, input, a')) return; // не мешаем кнопкам в шапке
+      from.current = e.clientY;
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    },
+    onPointerMove: (e: React.PointerEvent) => {
+      if (from.current != null) setDragY(Math.max(0, e.clientY - from.current));
+    },
+    onPointerUp: () => {
+      const off = dragY;
+      from.current = null;
+      setDragY(0);
+      if (off > 80) onClose();
+    },
+    onPointerCancel: () => { from.current = null; setDragY(0); },
+    // не даём <img> внутри зоны начать нативное перетаскивание (оно отменяет pointer-события)
+    onDragStart: (e: React.DragEvent) => e.preventDefault(),
+  };
+  // transform для шита: видимый — следует за пальцем, скрытый — уехал вниз
+  const sheetStyle = (visible: boolean): React.CSSProperties => ({
+    transform: visible ? `translateY(${dragY}px)` : 'translateY(100%)',
+    transitionTimingFunction: 'cubic-bezier(0.32,0.72,0,1)',
+  });
+  return { dragY, zone, sheetStyle, transitionCls: dragY > 0 ? '' : 'transition-transform duration-[360ms]' };
+}
+
 type Snap = 'peek' | 'half' | 'full';
 
 export interface MobileCatalogProps {
@@ -142,6 +177,9 @@ export function MobileCatalog(p: MobileCatalogProps) {
     setFiltersVisible(false); setDetailVisible(false); setFocusVisible(false);
     setTimeout(() => { setFiltersOpen(false); setDetailId(null); setFocus(null); }, 360);
   }, []);
+  // свайп-вниз для оверлей-шитов (зона — ручка + шапка)
+  const filtersDrag = useSheetDrag(closeOver);
+  const focusDrag = useSheetDrag(closeOver);
   const openDetail = useCallback((id: string) => {
     setFiltersVisible(false); setFiltersOpen(false);
     setFocusVisible(false); setFocus(null);
@@ -183,8 +221,17 @@ export function MobileCatalog(p: MobileCatalogProps) {
   const chromeCls = `transition-all duration-300 ${chromeHidden ? 'opacity-0 pointer-events-none' : 'opacity-100'}`;
 
   return (
-    <div className="catalog-root fixed inset-0 top-[61px] z-40 bg-[#0c0d0c]">
-      <div ref={appRef} className="relative w-full h-full bg-[#e6ede7] overflow-hidden isolate">
+    <div
+      className="catalog-root fixed inset-0 top-[calc(61px+env(safe-area-inset-top,0px))] z-40 bg-[#0c0d0c]"
+      onScroll={e => { const el = e.currentTarget; if (el.scrollTop) el.scrollTop = 0; if (el.scrollLeft) el.scrollLeft = 0; }}
+    >
+      <div
+        ref={appRef}
+        className="relative w-full h-full bg-[#e6ede7] overflow-hidden isolate"
+        // overflow-hidden контейнер всё равно можно проскроллить программно (scrollIntoView/фокус) —
+        // тогда весь UI (карта, шиты) уезжает вверх и «под низом листается» остальная страница. Снэпим назад.
+        onScroll={e => { const el = e.currentTarget; if (el.scrollTop) el.scrollTop = 0; if (el.scrollLeft) el.scrollLeft = 0; }}
+      >
         {/* Карта */}
         <div className="absolute inset-0">
           <CatalogMap
@@ -345,15 +392,18 @@ export function MobileCatalog(p: MobileCatalogProps) {
         {/* Sheet фильтров */}
         {filtersOpen && draft && (
           <div
-            className="absolute left-0 right-0 bottom-0 top-[70px] bg-white rounded-t-[20px] z-[61] flex flex-col shadow-[0_-8px_28px_rgba(0,0,0,0.16)] transition-transform duration-[360ms]"
-            style={{ transform: filtersVisible ? 'translateY(0)' : 'translateY(100%)', transitionTimingFunction: 'cubic-bezier(0.32,0.72,0,1)' }}
+            className={`absolute left-0 right-0 bottom-0 top-[70px] bg-white rounded-t-[20px] z-[61] flex flex-col shadow-[0_-8px_28px_rgba(0,0,0,0.16)] ${filtersDrag.transitionCls}`}
+            style={filtersDrag.sheetStyle(filtersVisible)}
           >
-            <div className="pt-[9px] pb-[5px] flex justify-center shrink-0">
-              <div className="w-10 h-1 rounded-full bg-zinc-300" />
-            </div>
-            <div className="px-4 pt-1.5 pb-3.5 border-b border-zinc-100 flex items-center justify-between shrink-0">
-              <div className="font-black text-[22px]" style={{ letterSpacing: '-.05em' }}>Фильтры</div>
-              <button type="button" onClick={() => setDraft(defaultFilters())} className="text-[13px] text-zinc-500 font-medium">Сбросить</button>
+            {/* зона свайпа: ручка + шапка целиком */}
+            <div className="shrink-0 touch-none cursor-grab" {...filtersDrag.zone}>
+              <div className="pt-[9px] pb-[5px] flex justify-center">
+                <div className="w-10 h-1 rounded-full bg-zinc-300" />
+              </div>
+              <div className="px-4 pt-1.5 pb-3.5 border-b border-zinc-100 flex items-center justify-between">
+                <div className="font-black text-[22px]" style={{ letterSpacing: '-.05em' }}>Фильтры</div>
+                <button type="button" onClick={() => setDraft(defaultFilters())} className="text-[13px] text-zinc-500 font-medium">Сбросить</button>
+              </div>
             </div>
             <div className="flex-1 overflow-y-auto px-4 pt-4 pb-[120px]">
               <AllFiltersBody filters={draft} onChange={setDraft} listings={p.listings} />
@@ -374,15 +424,17 @@ export function MobileCatalog(p: MobileCatalogProps) {
         {/* Фокус-шит одного фильтра (тап по чипу) */}
         {focus && draft && (
           <div
-            className="absolute left-0 right-0 bottom-0 bg-white rounded-t-[20px] z-[61] flex flex-col shadow-[0_-8px_28px_rgba(0,0,0,0.16)] max-h-[calc(100%-90px)] transition-transform duration-[360ms]"
-            style={{ transform: focusVisible ? 'translateY(0)' : 'translateY(100%)', transitionTimingFunction: 'cubic-bezier(0.32,0.72,0,1)' }}
+            className={`absolute left-0 right-0 bottom-0 bg-white rounded-t-[20px] z-[61] flex flex-col shadow-[0_-8px_28px_rgba(0,0,0,0.16)] max-h-[calc(100%-90px)] ${focusDrag.transitionCls}`}
+            style={focusDrag.sheetStyle(focusVisible)}
           >
-            <div className="pt-[9px] pb-[5px] flex justify-center shrink-0">
-              <div className="w-10 h-1 rounded-full bg-zinc-300" />
-            </div>
-            <div className="px-4 pt-1.5 pb-3.5 border-b border-zinc-100 flex items-center justify-between shrink-0">
-              <div className="font-black text-[20px]" style={{ letterSpacing: '-.04em' }}>{FOCUS_TITLE[focus]}</div>
-              <button
+            {/* зона свайпа: ручка + шапка целиком */}
+            <div className="shrink-0 touch-none cursor-grab" {...focusDrag.zone}>
+              <div className="pt-[9px] pb-[5px] flex justify-center">
+                <div className="w-10 h-1 rounded-full bg-zinc-300" />
+              </div>
+              <div className="px-4 pt-1.5 pb-3.5 border-b border-zinc-100 flex items-center justify-between">
+                <div className="font-black text-[20px]" style={{ letterSpacing: '-.04em' }}>{FOCUS_TITLE[focus]}</div>
+                <button
                 type="button"
                 onClick={() => {
                   const f = cloneFilters(draft);
@@ -398,6 +450,7 @@ export function MobileCatalog(p: MobileCatalogProps) {
               >
                 Сбросить
               </button>
+              </div>
             </div>
             <div className="flex-1 overflow-y-auto px-4 pt-4 pb-[96px]">
               {focus === 'type' && <TypeGrid filters={draft} onChange={setDraft} listings={p.listings} />}
@@ -428,6 +481,7 @@ export function MobileCatalog(p: MobileCatalogProps) {
             fav={p.fav.has(String(detail.id))}
             onFav={p.toggleFav}
             onOpen={() => openListing(detail)}
+            onClose={closeOver}
           />
         )}
       </div>
@@ -564,24 +618,34 @@ function MobileRowCard({ listing: l, viewed, fav, cmp, onFav, onCmp, onOpen }: {
   );
 }
 
-function MobileDetailSheet({ listing: l, visible, fav, onFav, onOpen }: {
-  listing: Listing; visible: boolean; fav: boolean; onFav(id: string): void; onOpen(): void;
+function MobileDetailSheet({ listing: l, visible, fav, onFav, onOpen, onClose }: {
+  listing: Listing; visible: boolean; fav: boolean; onFav(id: string): void; onOpen(): void; onClose(): void;
 }) {
   const meta = cardMeta(l);
   const wa = waLink(l.seller?.phone);
   const tel = telLink(l.seller?.phone);
+  // свайп вниз закрывает sheet; зона — ручка и фото-блок (широкая, не только полоска)
+  const drag = useSheetDrag(onClose);
   return (
     <div
-      className="absolute left-0 right-0 bottom-0 bg-white rounded-t-[20px] z-[61] flex flex-col shadow-[0_-8px_28px_rgba(0,0,0,0.16)] max-h-[calc(100%-70px)] transition-transform duration-[360ms]"
-      style={{ transform: visible ? 'translateY(0)' : 'translateY(100%)', transitionTimingFunction: 'cubic-bezier(0.32,0.72,0,1)' }}
+      className={`absolute left-0 right-0 bottom-0 bg-white rounded-t-[20px] z-[61] flex flex-col shadow-[0_-8px_28px_rgba(0,0,0,0.16)] max-h-[calc(100%-70px)] ${drag.transitionCls}`}
+      style={drag.sheetStyle(visible)}
     >
-      <div className="pt-[9px] pb-[5px] flex justify-center shrink-0">
+      <div className="pt-[9px] pb-[7px] flex justify-center shrink-0 touch-none cursor-grab" {...drag.zone}>
         <div className="w-10 h-1 rounded-full bg-zinc-300" />
       </div>
-      <div className="flex-1 overflow-y-auto cfadein pb-[calc(20px+var(--safe-b))]">
-        {/* фото-карусель */}
-        <div className={`h-[190px] relative mx-3 rounded-[14px] overflow-hidden pimg pimg-${meta.imgIdx}`}>
-          {l.image && <img src={l.image} alt={l.title} className="absolute inset-0 w-full h-full object-cover" />}
+      <button
+        type="button"
+        aria-label="Закрыть"
+        onClick={onClose}
+        className="absolute top-2.5 right-3 w-8 h-8 rounded-full bg-zinc-100 text-zinc-600 flex items-center justify-center text-[16px] z-[2] active:bg-zinc-200"
+      >
+        ×
+      </button>
+      <div className="flex-1 overflow-y-auto overscroll-contain cfadein pb-[calc(20px+var(--safe-b))]">
+        {/* фото-блок — тоже зона свайпа вниз */}
+        <div className={`h-[190px] relative mx-3 rounded-[14px] overflow-hidden pimg pimg-${meta.imgIdx} touch-none`} {...drag.zone}>
+          {l.image && <img src={l.image} alt={l.title} draggable={false} className="absolute inset-0 w-full h-full object-cover select-none" />}
           {meta.urgent && <span className="absolute top-2.5 left-2.5 px-2 py-1 rounded bg-zinc-950/90 text-white text-[10px] font-bold uppercase tracking-[0.06em] z-[1]">Срочно</span>}
           <button
             type="button"

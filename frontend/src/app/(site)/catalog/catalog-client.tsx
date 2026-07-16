@@ -58,6 +58,14 @@ export function CatalogClient({ allListings, initialFilters }: CatalogClientProp
     return f;
   });
 
+  // каталог — fixed-оверлей на весь экран; блокируем скролл страницы под ним,
+  // иначе на мобиле «листается футер» под карточками/шитами
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
   // ── избранное / просмотренные / сравнение ──
   const [fav, setFav] = useState<Set<string>>(new Set());
   const [viewed, setViewed] = useState<Set<string>>(new Set());
@@ -292,7 +300,10 @@ export function CatalogClient({ allListings, initialFilters }: CatalogClientProp
 
   // ═══════════════════════ ДЕСКТОП ═══════════════════════
   return (
-    <div className="catalog-root fixed inset-0 top-[69px] z-40 flex flex-col bg-white">
+    <div
+      className="catalog-root fixed inset-0 top-[calc(69px+env(safe-area-inset-top,0px))] z-40 flex flex-col bg-white"
+      onScroll={e => { const el = e.currentTarget; if (el.scrollTop) el.scrollTop = 0; if (el.scrollLeft) el.scrollLeft = 0; }}
+    >
       {/* Хлебные крошки */}
       <nav aria-label="Хлебные крошки" className="h-9 bg-white border-b border-zinc-100 flex items-center px-5 gap-2 text-[12px] text-zinc-500 shrink-0">
         <Link href="/" className="hover:text-zinc-900 transition-colors">Главная</Link>
