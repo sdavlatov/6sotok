@@ -19,8 +19,14 @@ import {
   cardMeta, cityOf, fmtPrice, fmtPerSotka, median, nf, PMAX, AMAX, landTypeCounts, isListingViewed,
   waLink, telLink,
 } from './catalog-utils';
-import { AllFiltersBody, applyLabel } from './filter-ui';
+import { AllFiltersBody, applyLabel, TypeGrid, PriceSection, AreaSection, CityChecklist, ChipGroup } from './filter-ui';
 import { generateTitle } from '@/lib/listing-title';
+
+type FocusKey = 'type' | 'price' | 'area' | 'city' | 'utils' | 'docs';
+const FOCUS_TITLE: Record<FocusKey, string> = {
+  type: 'Тип участка', price: 'Цена, млн ₸', area: 'Площадь',
+  city: 'Город / район', utils: 'Коммуникации', docs: 'Документы',
+};
 
 type Snap = 'peek' | 'half' | 'full';
 
@@ -115,19 +121,30 @@ export function MobileCatalog(p: MobileCatalogProps) {
   const [draft, setDraft] = useState<FilterState | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
+  // фокус-шит одного фильтра (тап по чипу открывает только его, а не всё окно)
+  const [focus, setFocus] = useState<FocusKey | null>(null);
+  const [focusVisible, setFocusVisible] = useState(false);
 
   const openFilters = useCallback(() => {
     setDraft(cloneFilters(p.applied));
     setDetailVisible(false); setDetailId(null);
+    setFocusVisible(false); setFocus(null);
     setFiltersOpen(true);
     requestAnimationFrame(() => requestAnimationFrame(() => setFiltersVisible(true)));
   }, [p.applied]);
+  const openFocus = useCallback((key: FocusKey) => {
+    setDraft(cloneFilters(p.applied));
+    setDetailVisible(false); setDetailId(null);
+    setFocus(key);
+    requestAnimationFrame(() => requestAnimationFrame(() => setFocusVisible(true)));
+  }, [p.applied]);
   const closeOver = useCallback(() => {
-    setFiltersVisible(false); setDetailVisible(false);
-    setTimeout(() => { setFiltersOpen(false); setDetailId(null); }, 360);
+    setFiltersVisible(false); setDetailVisible(false); setFocusVisible(false);
+    setTimeout(() => { setFiltersOpen(false); setDetailId(null); setFocus(null); }, 360);
   }, []);
   const openDetail = useCallback((id: string) => {
     setFiltersVisible(false); setFiltersOpen(false);
+    setFocusVisible(false); setFocus(null);
     setDetailId(id);
     requestAnimationFrame(() => requestAnimationFrame(() => setDetailVisible(true)));
   }, []);
@@ -142,20 +159,20 @@ export function MobileCatalog(p: MobileCatalogProps) {
     perSotkaM: median(p.results.filter(l => l.area).map(l => l.price / l.area)) / 1e6,
   }), [p.results]);
   const activeCount = activeFilterCount(p.applied);
-  const scrimShown = filtersVisible || detailVisible;
+  const scrimShown = filtersVisible || detailVisible || focusVisible;
 
   const chips = useMemo(() => {
     const f = p.applied;
     const priceOn = f.pLo > 0 || f.pHi < PMAX;
     const areaOn = f.aLo > 0 || f.aHi < AMAX;
     return [
-      f.types.size ? { label: f.types.size === 1 ? [...f.types][0] : 'Типы', b: f.types.size > 1 ? `· ${f.types.size}` : '', on: true } : { label: 'Тип', on: false },
-      priceOn ? { label: 'Цена', b: `${f.pLo}–${f.pHi} млн`, on: true } : { label: 'Цена', on: false },
-      areaOn ? { label: 'Площадь', b: `${f.aLo}–${f.aHi}`, on: true } : { label: 'Площадь', on: false },
-      f.utils.size ? { label: 'Коммуникации', b: `· ${f.utils.size}`, on: true } : { label: 'Коммуникации', on: false },
-      f.docs.size ? { label: 'Документы', b: `· ${f.docs.size}`, on: true } : { label: 'Документы', on: false },
-      f.cities.size ? { label: 'Город', b: `· ${f.cities.size}`, on: true } : { label: 'Город', on: false },
-    ] as { label: string; b?: string; on: boolean }[];
+      f.types.size ? { key: 'type', label: f.types.size === 1 ? [...f.types][0] : 'Типы', b: f.types.size > 1 ? `· ${f.types.size}` : '', on: true } : { key: 'type', label: 'Тип', on: false },
+      priceOn ? { key: 'price', label: 'Цена', b: `${f.pLo}–${f.pHi} млн`, on: true } : { key: 'price', label: 'Цена', on: false },
+      areaOn ? { key: 'area', label: 'Площадь', b: `${f.aLo}–${f.aHi}`, on: true } : { key: 'area', label: 'Площадь', on: false },
+      f.utils.size ? { key: 'utils', label: 'Коммуникации', b: `· ${f.utils.size}`, on: true } : { key: 'utils', label: 'Коммуникации', on: false },
+      f.docs.size ? { key: 'docs', label: 'Документы', b: `· ${f.docs.size}`, on: true } : { key: 'docs', label: 'Документы', on: false },
+      f.cities.size ? { key: 'city', label: 'Город', b: `· ${f.cities.size}`, on: true } : { key: 'city', label: 'Город', on: false },
+    ] as { key: FocusKey; label: string; b?: string; on: boolean }[];
   }, [p.applied]);
 
   const openListing = useCallback((l: Listing) => {
@@ -205,7 +222,7 @@ export function MobileCatalog(p: MobileCatalogProps) {
             <button
               key={c.label}
               type="button"
-              onClick={openFilters}
+              onClick={() => openFocus(c.key)}
               className={`shrink-0 h-8 px-3 rounded-full border text-[12px] font-medium inline-flex items-center gap-1.5 whitespace-nowrap shadow-[0_1px_3px_rgba(0,0,0,0.05)] ${
                 c.on ? 'border-primary bg-[var(--brand-50)] text-[var(--brand-ink)]' : 'border-dashed border-zinc-300 bg-white/85 text-zinc-500'
               }`}
@@ -267,29 +284,8 @@ export function MobileCatalog(p: MobileCatalogProps) {
             </button>
           </div>
 
-          {/* peek: карусель */}
-          {!isList && (
-            <div className="flex gap-2.5 px-3 pb-2 overflow-x-auto no-scrollbar shrink-0 min-h-0">
-              {p.loading
-                ? Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="w-[250px] shrink-0 bg-white rounded-2xl overflow-hidden border border-zinc-200">
-                    <div className="skel h-[120px] rounded-none" />
-                    <div className="p-3">
-                      <div className="skel h-[9px] w-3/5" />
-                      <div className="skel h-[13px] w-[90%] mt-2" />
-                      <div className="skel h-[15px] w-[45%] mt-2.5" />
-                    </div>
-                  </div>
-                ))
-                : p.results.slice(0, 8).map(l => (
-                  <MobileCarouselCard key={l.id} listing={l} viewed={isListingViewed(l, p.viewed)} fav={p.fav.has(String(l.id))} onFav={p.toggleFav} onOpen={() => openDetail(String(l.id))} />
-                ))}
-              {!p.loading && !p.results.length && <MobileEmpty onReset={p.resetAll} />}
-            </div>
-          )}
-
-          {/* список */}
-          {isList && (
+          {/* список — всегда вертикальный (без горизонтальной карусели) */}
+          {(
             <div className="flex-1 overflow-y-auto min-h-0 overscroll-contain touch-pan-y">
               <div className="flex gap-1.5 overflow-x-auto no-scrollbar px-4 pt-0.5 pb-3 border-b border-zinc-100">
                 <MobileTypeRow listings={p.listings} filters={p.applied} onApply={p.applyFilters} />
@@ -375,6 +371,55 @@ export function MobileCatalog(p: MobileCatalogProps) {
           </div>
         )}
 
+        {/* Фокус-шит одного фильтра (тап по чипу) */}
+        {focus && draft && (
+          <div
+            className="absolute left-0 right-0 bottom-0 bg-white rounded-t-[20px] z-[61] flex flex-col shadow-[0_-8px_28px_rgba(0,0,0,0.16)] max-h-[calc(100%-90px)] transition-transform duration-[360ms]"
+            style={{ transform: focusVisible ? 'translateY(0)' : 'translateY(100%)', transitionTimingFunction: 'cubic-bezier(0.32,0.72,0,1)' }}
+          >
+            <div className="pt-[9px] pb-[5px] flex justify-center shrink-0">
+              <div className="w-10 h-1 rounded-full bg-zinc-300" />
+            </div>
+            <div className="px-4 pt-1.5 pb-3.5 border-b border-zinc-100 flex items-center justify-between shrink-0">
+              <div className="font-black text-[20px]" style={{ letterSpacing: '-.04em' }}>{FOCUS_TITLE[focus]}</div>
+              <button
+                type="button"
+                onClick={() => {
+                  const f = cloneFilters(draft);
+                  if (focus === 'type') f.types = new Set();
+                  else if (focus === 'price') { f.pLo = 0; f.pHi = PMAX; }
+                  else if (focus === 'area') { f.aLo = 0; f.aHi = AMAX; }
+                  else if (focus === 'city') f.cities = new Set();
+                  else if (focus === 'utils') f.utils = new Set();
+                  else if (focus === 'docs') f.docs = new Set();
+                  setDraft(f);
+                }}
+                className="text-[13px] text-zinc-500 font-medium"
+              >
+                Сбросить
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 pt-4 pb-[96px]">
+              {focus === 'type' && <TypeGrid filters={draft} onChange={setDraft} listings={p.listings} />}
+              {focus === 'price' && <PriceSection filters={draft} onChange={setDraft} listings={p.listings} />}
+              {focus === 'area' && <AreaSection filters={draft} onChange={setDraft} />}
+              {focus === 'city' && <CityChecklist filters={draft} onChange={setDraft} listings={p.listings} />}
+              {focus === 'utils' && <ChipGroup filters={draft} onChange={setDraft} listings={p.listings} group="utils" />}
+              {focus === 'docs' && <ChipGroup filters={draft} onChange={setDraft} listings={p.listings} group="docs" />}
+            </div>
+            <div className="absolute left-0 right-0 bottom-0 px-4 pt-3 pb-[calc(16px+var(--safe-b))] bg-gradient-to-b from-white/0 via-white/95 to-white flex gap-2">
+              <button
+                type="button"
+                onClick={() => { p.applyFilters(draft); closeOver(); if (snap === 'peek') goSnap('half'); }}
+                className="flex-1 h-[50px] rounded-[14px] bg-zinc-900 text-white font-bold text-[14px] flex items-center justify-center gap-2"
+                style={{ letterSpacing: '-.02em' }}
+              >
+                {applyLabel(draftCount)}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Детальный sheet */}
         {detail && (
           <MobileDetailSheet
@@ -442,35 +487,6 @@ function MobileTypeRow({ listings, filters, onApply }: {
   );
 }
 
-function MobileCarouselCard({ listing: l, viewed, fav, onFav, onOpen }: {
-  listing: Listing; viewed: boolean; fav: boolean; onFav(id: string): void; onOpen(): void;
-}) {
-  const meta = cardMeta(l);
-  return (
-    <div className="w-[250px] shrink-0 bg-white rounded-2xl overflow-hidden border border-zinc-200" onClick={onOpen}>
-      <div className={`h-[120px] relative pimg pimg-${meta.imgIdx} ${viewed ? 'opacity-70' : ''}`}>
-        {l.image && <img src={l.image} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />}
-        <button
-          type="button"
-          onClick={e => { e.stopPropagation(); onFav(String(l.id)); }}
-          className={`absolute top-2 right-2 w-7 h-7 rounded-full bg-white/[0.92] shadow-[0_1px_4px_rgba(9,9,11,0.15)] flex items-center justify-center z-[1] ${fav ? 'text-primary' : 'text-zinc-400'}`}
-          aria-label="В избранное"
-        >
-          <Bookmark className="size-[15px]" strokeWidth={1.7} fill={fav ? 'currentColor' : 'none'} />
-        </button>
-      </div>
-      <div className="px-3 pt-2.5 pb-3">
-        <div className="font-mono text-[10px] font-semibold text-zinc-500 uppercase tracking-[0.05em] truncate">{l.landType} · {cityOf(l)}</div>
-        <div className="mt-[3px] font-semibold text-[13.5px] leading-[1.25] line-clamp-2 min-h-[34px]" style={{ letterSpacing: '-.02em' }}>{generateTitle(l)}</div>
-        <div className="mt-2 flex items-baseline justify-between gap-1.5">
-          <div className="font-extrabold text-[16px]" style={{ letterSpacing: '-.03em' }}>{fmtPrice(l.price)}</div>
-          <div className="font-mono text-[9.5px] text-zinc-500 whitespace-nowrap">{fmtPerSotka(l)}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function MobileRowCard({ listing: l, viewed, fav, cmp, onFav, onCmp, onOpen }: {
   listing: Listing; viewed: boolean; fav: boolean; cmp: boolean;
   onFav(id: string): void; onCmp(id: string): void; onOpen(): void;
@@ -485,7 +501,6 @@ function MobileRowCard({ listing: l, viewed, fav, cmp, onFav, onCmp, onOpen }: {
     >
       <div className={`w-24 h-24 rounded-xl relative shrink-0 overflow-hidden pimg pimg-${meta.imgIdx} ${viewed ? 'opacity-70' : ''}`}>
         {l.image && <img src={l.image} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />}
-        {meta.drop && <span className="absolute top-1.5 right-1.5 px-[5px] py-0.5 rounded bg-white text-zinc-900 text-[8.5px] font-extrabold shadow-[0_1px_3px_rgba(0,0,0,0.15)] z-[1]">−{meta.drop}%</span>}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-center gap-2">
@@ -512,7 +527,15 @@ function MobileRowCard({ listing: l, viewed, fav, cmp, onFav, onCmp, onOpen }: {
         <div className="mt-px font-semibold text-[13.5px] leading-[1.25] line-clamp-2" style={{ letterSpacing: '-.02em' }}>{generateTitle(l)}</div>
         <div className="mt-1.5 flex items-end justify-between">
           <div>
-            <div className="font-extrabold text-[16px] leading-none" style={{ letterSpacing: '-.03em' }}>{fmtPrice(l.price)}</div>
+            {meta.drop && meta.oldPrice && (
+              <div className="font-mono text-zinc-400 line-through leading-none text-[9.5px] mb-0.5">{meta.oldPrice}</div>
+            )}
+            <div className="font-extrabold text-[16px] leading-none" style={{ letterSpacing: '-.03em' }}>
+              {fmtPrice(l.price)}
+              {meta.drop && (
+                <span className="inline-flex items-center h-[15px] px-[5px] rounded-[4px] bg-zinc-100 text-zinc-950 text-[9px] font-bold ml-1.5 align-middle">−{meta.drop}%</span>
+              )}
+            </div>
             <div className="font-mono mt-0.5 text-[10px] text-zinc-500">{fmtPerSotka(l)}</div>
           </div>
           <div className="flex items-center gap-1.5">
@@ -560,7 +583,6 @@ function MobileDetailSheet({ listing: l, visible, fav, onFav, onOpen }: {
         <div className={`h-[190px] relative mx-3 rounded-[14px] overflow-hidden pimg pimg-${meta.imgIdx}`}>
           {l.image && <img src={l.image} alt={l.title} className="absolute inset-0 w-full h-full object-cover" />}
           {meta.urgent && <span className="absolute top-2.5 left-2.5 px-2 py-1 rounded bg-zinc-950/90 text-white text-[10px] font-bold uppercase tracking-[0.06em] z-[1]">Срочно</span>}
-          {meta.drop && <span className="absolute top-2.5 right-2.5 px-2 py-1 rounded bg-white text-zinc-900 text-[10px] font-extrabold shadow-[0_1px_3px_rgba(0,0,0,0.15)] z-[1]">−{meta.drop}%</span>}
           <button
             type="button"
             aria-label="В избранное"
@@ -582,9 +604,17 @@ function MobileDetailSheet({ listing: l, visible, fav, onFav, onOpen }: {
           <h3 className="mt-1 font-black text-[19px] leading-[1.2]" style={{ letterSpacing: '-.04em' }}>{generateTitle(l)}</h3>
           <div className="mt-2.5 flex items-end justify-between gap-2">
             <div>
-              <div className="font-black text-[24px] leading-none" style={{ letterSpacing: '-.04em' }}>{fmtPrice(l.price)}</div>
+              {meta.drop && meta.oldPrice && (
+                <div className="font-mono text-zinc-400 line-through leading-none text-[11px] mb-1">{meta.oldPrice}</div>
+              )}
+              <div className="font-black text-[24px] leading-none flex items-center gap-2" style={{ letterSpacing: '-.04em' }}>
+                {fmtPrice(l.price)}
+                {meta.drop && (
+                  <span className="inline-flex items-center h-5 px-1.5 rounded-md bg-zinc-100 text-zinc-950 text-[11px] font-bold">−{meta.drop}%</span>
+                )}
+              </div>
               <div className="font-mono mt-1 text-[11px] text-zinc-500">
-                {fmtPerSotka(l)}{meta.drop ? ` · −${meta.drop}% за месяц` : ''}
+                {fmtPerSotka(l)}{meta.drop ? ' · снижение за месяц' : ''}
               </div>
             </div>
             <div className="font-mono text-[10px] text-primary font-bold">{meta.ago} назад</div>

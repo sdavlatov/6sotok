@@ -145,6 +145,7 @@ export function CatalogClient({ allListings, initialFilters }: CatalogClientProp
   const mapApi = useRef<CatalogMapApi | null>(null);
   const [visibleIds, setVisibleIds] = useState<Set<string> | null>(null);
   const [searchOnMove, setSearchOnMove] = useState(true);
+  const [mapInteracted, setMapInteracted] = useState(false); // фильтр по окну — только после первого движения карты
 
   const pins = useMemo<MapPinItem[]>(() => results.map(l => {
     const id = String(l.id);
@@ -159,14 +160,18 @@ export function CatalogClient({ allListings, initialFilters }: CatalogClientProp
     return { id, lat, lng, price: l.price, boundary, viewed: isListingViewed(l, viewed) };
   }), [results, viewed]);
 
-  // всегда запоминаем, что в окне карты; применяем только когда включён режим «искать при движении»
-  const onViewportChange = useCallback((ids: string[]) => {
+  // всегда запоминаем, что в окне карты; фильтруем список только после того, как юзер
+  // подвигал карту (иначе на старте — весь список), и только при включённом «искать при движении»
+  const onViewportChange = useCallback((ids: string[], moved: boolean) => {
     setVisibleIds(new Set(ids));
+    if (moved) setMapInteracted(true);
   }, []);
 
   const windowResults = useMemo(
-    () => (searchOnMove && visibleIds) ? orderedResults.filter(l => visibleIds.has(String(l.id))) : orderedResults,
-    [orderedResults, visibleIds, searchOnMove],
+    () => (searchOnMove && mapInteracted && visibleIds)
+      ? orderedResults.filter(l => visibleIds.has(String(l.id)))
+      : orderedResults,
+    [orderedResults, visibleIds, searchOnMove, mapInteracted],
   );
 
   // аналитика по окну карты
@@ -417,7 +422,7 @@ export function CatalogClient({ allListings, initialFilters }: CatalogClientProp
             hoverId={hoverId}
             onPinHover={setHoverId}
             onPinClick={onPinClick}
-            onMapClick={() => setActiveId(null)}
+            onMapClick={() => { setActiveId(null); setHoverId(null); }}
             onViewportChange={onViewportChange}
             apiRef={mapApi}
           />

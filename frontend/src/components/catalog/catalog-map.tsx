@@ -23,7 +23,8 @@ export const TILES: Record<'scheme' | 'sat', { url: string; attribution: string;
   sat: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attribution: '© Esri' },
 };
 
-const KZ_CENTER: [number, number] = [45.5, 71.0];
+// стартовый вид — вся страна (пользователь сам приближается к нужному месту)
+const KZ_CENTER: [number, number] = [48.0, 67.5];
 const KZ_ZOOM = 5;
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -166,21 +167,13 @@ export function CatalogMap({ items, activeId, hoverId, onPinHover, onPinClick, o
     cluster.clearLayers();
     markersRef.current.clear();
 
-    const pts: [number, number][] = [];
     for (const it of items) {
-      pts.push([it.lat, it.lng]);
       const marker = Lf.marker([it.lat, it.lng], { icon: pinIcon(Lf, it, false) });
+      // только клик по пину открывает карточку; hover по пину не трогаем — при смене
+      // иконки Leaflet заменяет DOM-элемент и mouseout теряется (карточка «залипала»)
       marker.on('click', (e: any) => { e.originalEvent?.stopPropagation?.(); cbRef.current.onPinClick?.(it.id); });
-      marker.on('mouseover', () => cbRef.current.onPinHover?.(it.id));
-      marker.on('mouseout', () => cbRef.current.onPinHover?.(null));
       markersRef.current.set(it.id, marker);
       cluster.addLayer(marker);
-    }
-    if (!fitted.current && pts.length) {
-      const bounds = Lf.latLngBounds(pts);
-      if (bounds.isValid()) map.fitBounds(bounds, { padding: [56, 56], maxZoom: 13 });
-      fitted.current = true;
-      movedByUser.current = false;
     }
     // сразу отчитаться о видимых
     const b = map.getBounds();
