@@ -38,7 +38,7 @@ function useSheetDrag(onClose: () => void) {
   const from = useRef<number | null>(null);
   const zone = {
     onPointerDown: (e: React.PointerEvent) => {
-      if ((e.target as HTMLElement).closest('button, input, a')) return; // не мешаем кнопкам в шапке
+      if ((e.target as HTMLElement).closest('button, input, a, video')) return; // не мешаем кнопкам/видео
       from.current = e.clientY;
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
@@ -476,6 +476,7 @@ export function MobileCatalog(p: MobileCatalogProps) {
         {/* Детальный sheet */}
         {detail && (
           <MobileDetailSheet
+            key={String(detail.id)}
             listing={detail}
             visible={detailVisible}
             fav={p.fav.has(String(detail.id))}
@@ -618,6 +619,8 @@ function MobileRowCard({ listing: l, viewed, fav, cmp, onFav, onCmp, onOpen }: {
   );
 }
 
+const isVideoUrl = (u: string) => /\.(mp4|mov|webm|ogv|m4v)(\?|$)/i.test(u);
+
 function MobileDetailSheet({ listing: l, visible, fav, onFav, onOpen, onClose }: {
   listing: Listing; visible: boolean; fav: boolean; onFav(id: string): void; onOpen(): void; onClose(): void;
 }) {
@@ -626,6 +629,15 @@ function MobileDetailSheet({ listing: l, visible, fav, onFav, onOpen, onClose }:
   const tel = telLink(l.seller?.phone);
   // свайп вниз закрывает sheet; зона — ручка и фото-блок (широкая, не только полоска)
   const drag = useSheetDrag(onClose);
+  // галерея: главное фото + доп. фото + видео, листается горизонтальным свайпом
+  const media = useMemo(() => {
+    const arr: string[] = [];
+    if (l.image) arr.push(l.image);
+    for (const src of l.images ?? []) if (!arr.includes(src)) arr.push(src);
+    for (const src of l.videos ?? []) if (!arr.includes(src)) arr.push(src);
+    return arr;
+  }, [l]);
+  const [slide, setSlide] = useState(0);
   return (
     <div
       className={`absolute left-0 right-0 bottom-0 bg-white rounded-t-[20px] z-[61] flex flex-col shadow-[0_-8px_28px_rgba(0,0,0,0.16)] max-h-[calc(100%-70px)] ${drag.transitionCls}`}
@@ -643,9 +655,28 @@ function MobileDetailSheet({ listing: l, visible, fav, onFav, onOpen, onClose }:
         ×
       </button>
       <div className="flex-1 overflow-y-auto overscroll-contain cfadein pb-[calc(20px+var(--safe-b))]">
-        {/* фото-блок — тоже зона свайпа вниз */}
-        <div className={`h-[190px] relative mx-3 rounded-[14px] overflow-hidden pimg pimg-${meta.imgIdx} touch-none`} {...drag.zone}>
-          {l.image && <img src={l.image} alt={l.title} draggable={false} className="absolute inset-0 w-full h-full object-cover select-none" />}
+        {/* медиа-галерея: горизонтальный свайп (pan-x), вертикальный тянет sheet вниз */}
+        <div
+          className={`h-[190px] relative mx-3 rounded-[14px] overflow-hidden pimg pimg-${meta.imgIdx}`}
+          style={{ touchAction: 'pan-x' }}
+          {...drag.zone}
+        >
+          {media.length > 0 && (
+            <div
+              className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar"
+              onScroll={e => { const el = e.currentTarget; setSlide(Math.round(el.scrollLeft / Math.max(1, el.clientWidth))); }}
+            >
+              {media.map((src, i) => (
+                <div key={src} className="w-full h-full shrink-0 snap-center relative">
+                  {isVideoUrl(src) ? (
+                    <video src={src} controls playsInline preload="metadata" className="w-full h-full object-cover bg-zinc-900" />
+                  ) : (
+                    <img src={src} alt={i === 0 ? l.title : ''} draggable={false} loading={i === 0 ? undefined : 'lazy'} className="w-full h-full object-cover select-none" />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
           {meta.urgent && <span className="absolute top-2.5 left-2.5 px-2 py-1 rounded bg-zinc-950/90 text-white text-[10px] font-bold uppercase tracking-[0.06em] z-[1]">Срочно</span>}
           <button
             type="button"
@@ -655,26 +686,30 @@ function MobileDetailSheet({ listing: l, visible, fav, onFav, onOpen, onClose }:
           >
             <Bookmark className="size-4" strokeWidth={1.7} fill={fav ? 'currentColor' : 'none'} />
           </button>
-          {meta.photos > 1 && (
-            <div className="absolute bottom-3 left-3 flex gap-[3px] z-[1]">
-              <span className="w-[18px] h-[3px] rounded-full bg-white" />
-              <span className="w-3 h-[3px] rounded-full bg-white/50" />
-              <span className="w-3 h-[3px] rounded-full bg-white/50" />
-            </div>
+          {media.length > 1 && (
+            <>
+              <div className="absolute bottom-3 left-3 flex gap-[3px] z-[1]">
+                {media.map((src, i) => (
+                  <span key={src} className={`h-[3px] rounded-full transition-all ${i === slide ? 'w-[18px] bg-white' : 'w-3 bg-white/50'}`} />
+                ))}
+              </div>
+              <span className="absolute top-2.5 right-2.5 px-1.5 py-0.5 rounded bg-zinc-900/70 text-white font-mono text-[10px] z-[1]">{slide + 1}/{media.length}</span>
+            </>
           )}
         </div>
         <div className="px-4 pt-3">
           <div className="font-mono text-[10px] text-zinc-500 uppercase tracking-[0.05em] font-semibold">{l.landType} · {l.location}</div>
-          <h3 className="mt-1 font-black text-[19px] leading-[1.2]" style={{ letterSpacing: '-.04em' }}>{generateTitle(l)}</h3>
+          {/* типографика как в HTML-макете: заголовок 15px/600, цена 18px/800 */}
+          <h3 className="mt-1 font-semibold text-[15px] leading-[1.25]" style={{ letterSpacing: '-.03em' }}>{generateTitle(l)}</h3>
           <div className="mt-2.5 flex items-end justify-between gap-2">
             <div>
               {meta.drop && meta.oldPrice && (
-                <div className="font-mono text-zinc-400 line-through leading-none text-[11px] mb-1">{meta.oldPrice}</div>
+                <div className="font-mono text-zinc-400 line-through leading-none text-[10.5px] mb-1">{meta.oldPrice}</div>
               )}
-              <div className="font-black text-[24px] leading-none flex items-center gap-2" style={{ letterSpacing: '-.04em' }}>
+              <div className="font-extrabold text-[18px] leading-none flex items-center gap-1.5" style={{ letterSpacing: '-.04em' }}>
                 {fmtPrice(l.price)}
                 {meta.drop && (
-                  <span className="inline-flex items-center h-5 px-1.5 rounded-md bg-zinc-100 text-zinc-950 text-[11px] font-bold">−{meta.drop}%</span>
+                  <span className="inline-flex items-center h-[17px] px-[5px] rounded-[5px] bg-zinc-100 text-zinc-950 text-[10px] font-bold">−{meta.drop}%</span>
                 )}
               </div>
               <div className="font-mono mt-1 text-[11px] text-zinc-500">
