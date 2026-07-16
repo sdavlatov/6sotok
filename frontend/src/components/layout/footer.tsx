@@ -36,7 +36,7 @@ const I18N: Record<Lang, {
       ] },
       { title: 'Платформа', links: [
         ['Аналитика рынка', '/analytics'],
-        ['Журнал', '#'],
+        ['Центр знаний', '/journal'],
         ['О проекте', '/contacts'],
       ] },
     ],
@@ -63,7 +63,7 @@ const I18N: Record<Lang, {
       ] },
       { title: 'Платформа', links: [
         ['Нарық аналитикасы', '/analytics'],
-        ['Журнал', '#'],
+        ['Білім орталығы', '/journal'],
         ['Жоба туралы', '/contacts'],
       ] },
     ],
@@ -90,7 +90,7 @@ const I18N: Record<Lang, {
       ] },
       { title: 'Platform', links: [
         ['Market analytics', '/analytics'],
-        ['Journal', '#'],
+        ['Knowledge hub', '/journal'],
         ['About', '/contacts'],
       ] },
     ],

@@ -18,28 +18,28 @@ const LS_COMPARE = '6sotok_compare';
 
 const I18N: Record<Lang, {
   label: string; full: string;
-  nav: { buy: string; sell: string; business: string; analytics: string; agencies: string };
+  nav: { buy: string; sell: string; business: string; analytics: string; journal: string; agencies: string };
   saved: string; login: string; cta: string; compare: string;
   menu: string; close: string; langTitle: string; curTitle: string;
   auto: string; source: string; navTitle: string;
 }> = {
   ru: {
     label: 'Рус', full: 'Русский',
-    nav: { buy: 'Купить', sell: 'Продать', business: 'Бизнес', analytics: 'Аналитика', agencies: 'Агентствам' },
+    nav: { buy: 'Купить', sell: 'Продать', business: 'Бизнес', analytics: 'Аналитика', journal: 'Центр знаний', agencies: 'Агентствам' },
     saved: 'Избранное', login: 'Войти', cta: 'Разместить участок', compare: 'Сравнение',
     menu: 'Меню', close: 'Закрыть', langTitle: 'Язык', curTitle: 'Валюта',
     auto: 'обновляется автоматически', source: 'НБ РК', navTitle: 'Разделы',
   },
   kz: {
     label: 'Қаз', full: 'Қазақша',
-    nav: { buy: 'Сатып алу', sell: 'Сату', business: 'Бизнес', analytics: 'Аналитика', agencies: 'Агенттіктерге' },
+    nav: { buy: 'Сатып алу', sell: 'Сату', business: 'Бизнес', analytics: 'Аналитика', journal: 'Білім орталығы', agencies: 'Агенттіктерге' },
     saved: 'Таңдаулылар', login: 'Кіру', cta: 'Хабарландыру беру', compare: 'Салыстыру',
     menu: 'Мәзір', close: 'Жабу', langTitle: 'Тіл', curTitle: 'Валюта',
     auto: 'автоматты түрде жаңарады', source: 'ҚР ҰБ', navTitle: 'Бөлімдер',
   },
   en: {
     label: 'Eng', full: 'English',
-    nav: { buy: 'Buy', sell: 'Sell', business: 'Business', analytics: 'Analytics', agencies: 'For agencies' },
+    nav: { buy: 'Buy', sell: 'Sell', business: 'Business', analytics: 'Analytics', journal: 'Knowledge hub', agencies: 'For agencies' },
     saved: 'Saved', login: 'Sign in', cta: 'List your plot', compare: 'Compare',
     menu: 'Menu', close: 'Close', langTitle: 'Language', curTitle: 'Currency',
     auto: 'updates automatically', source: 'NBK', navTitle: 'Sections',
@@ -56,6 +56,7 @@ const NAV: { key: keyof typeof I18N.ru.nav; href: string; match: string }[] = [
   { key: 'sell', href: '/add-listing', match: '/add-listing' },
   { key: 'business', href: '/business', match: '/business' },
   { key: 'analytics', href: '/analytics', match: '/analytics' },
+  { key: 'journal', href: '/journal', match: '/journal' },
   { key: 'agencies', href: '/b2b', match: '/b2b' },
 ];
 
