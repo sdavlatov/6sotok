@@ -1,7 +1,8 @@
 import { getListingById } from '@/lib/api';
 import type { Listing } from '@/types/listing';
 import Link from 'next/link';
-import { ChevronRight, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import { Breadcrumbs } from '@/components/layout/breadcrumbs';
 import { CompareClient } from './compare-client';
 
 export const dynamic = 'force-dynamic';
@@ -34,14 +35,10 @@ export default async function ComparePage({ searchParams }: Props) {
     <div className="bg-zinc-50 min-h-screen">
       <div className="max-w-[1440px] mx-auto px-5 pt-6 pb-24">
 
-        {/* Breadcrumbs */}
-        <nav className="flex items-center gap-1.5 text-[13px] mb-8">
-          <Link href="/" className="text-zinc-400 hover:text-zinc-700 transition-colors">Главная</Link>
-          <ChevronRight className="size-3.5 text-zinc-300" />
-          <Link href="/catalog" className="text-zinc-400 hover:text-zinc-700 transition-colors">Каталог</Link>
-          <ChevronRight className="size-3.5 text-zinc-300" />
-          <span className="text-zinc-900 font-medium">Сравнение</span>
-        </nav>
+        <Breadcrumbs
+          trail={[{ label: 'Каталог', href: '/catalog' }, { label: 'Сравнение' }]}
+          className="mb-8"
+        />
 
         <CompareClient initialListings={listings} />
 

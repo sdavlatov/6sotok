@@ -14,32 +14,33 @@ import { useAuth } from '@/context/auth-context';
 import { useCurrency, type Lang, type Cur } from '@/context/currency-context';
 
 const LS_BOOKMARKS = '6sotok_bookmarks';
+const LS_COMPARE = '6sotok_compare';
 
 const I18N: Record<Lang, {
   label: string; full: string;
   nav: { buy: string; sell: string; business: string; analytics: string; agencies: string };
-  saved: string; login: string; cta: string;
+  saved: string; login: string; cta: string; compare: string;
   menu: string; close: string; langTitle: string; curTitle: string;
   auto: string; source: string; navTitle: string;
 }> = {
   ru: {
     label: 'Рус', full: 'Русский',
     nav: { buy: 'Купить', sell: 'Продать', business: 'Бизнес', analytics: 'Аналитика', agencies: 'Агентствам' },
-    saved: 'Избранное', login: 'Войти', cta: 'Разместить участок',
+    saved: 'Избранное', login: 'Войти', cta: 'Разместить участок', compare: 'Сравнение',
     menu: 'Меню', close: 'Закрыть', langTitle: 'Язык', curTitle: 'Валюта',
     auto: 'обновляется автоматически', source: 'НБ РК', navTitle: 'Разделы',
   },
   kz: {
     label: 'Қаз', full: 'Қазақша',
     nav: { buy: 'Сатып алу', sell: 'Сату', business: 'Бизнес', analytics: 'Аналитика', agencies: 'Агенттіктерге' },
-    saved: 'Таңдаулылар', login: 'Кіру', cta: 'Хабарландыру беру',
+    saved: 'Таңдаулылар', login: 'Кіру', cta: 'Хабарландыру беру', compare: 'Салыстыру',
     menu: 'Мәзір', close: 'Жабу', langTitle: 'Тіл', curTitle: 'Валюта',
     auto: 'автоматты түрде жаңарады', source: 'ҚР ҰБ', navTitle: 'Бөлімдер',
   },
   en: {
     label: 'Eng', full: 'English',
     nav: { buy: 'Buy', sell: 'Sell', business: 'Business', analytics: 'Analytics', agencies: 'For agencies' },
-    saved: 'Saved', login: 'Sign in', cta: 'List your plot',
+    saved: 'Saved', login: 'Sign in', cta: 'List your plot', compare: 'Compare',
     menu: 'Menu', close: 'Close', langTitle: 'Language', curTitle: 'Currency',
     auto: 'updates automatically', source: 'NBK', navTitle: 'Sections',
   },
@@ -64,6 +65,7 @@ const ic = {
   chev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
   plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>',
   globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>',
+  compare: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 4l3 3-3 3"/><path d="M20 7H4"/><path d="M7 20l-3-3 3-3"/><path d="M4 17h16"/></svg>',
 };
 
 const Svg = ({ html, className }: { html: string; className?: string }) => (
@@ -108,6 +110,13 @@ const HEADER_CSS = `
 .sixsotok-header .ghost{ height:38px; padding:0 12px; border-radius:10px; display:inline-flex; align-items:center; gap:7px; font-size:13.5px; font-weight:500; color:var(--ink-600); transition:background .14s,color .14s; }
 .sixsotok-header .ghost:hover{ background:var(--paper-2); color:var(--ink-900); }
 .sixsotok-header .ghost svg{ width:17px; height:17px; }
+
+.sixsotok-header .tools{ display:inline-flex; align-items:center; gap:2px; }
+.sixsotok-header .tool{ position:relative; height:38px; width:38px; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; color:var(--ink-600); transition:background .14s,color .14s; }
+.sixsotok-header .tool:hover{ background:var(--paper-2); color:var(--ink-900); }
+.sixsotok-header .tool svg{ width:18px; height:18px; }
+.sixsotok-header .tool .badge{ position:absolute; top:2px; right:2px; min-width:15px; height:15px; padding:0 4px; font-size:9.5px; border:1.5px solid var(--paper); }
+.sixsotok-header .tool-div{ width:1px; height:16px; background:var(--line); margin:0 4px; }
 
 .sixsotok-header .lc{ position:relative; }
 .sixsotok-header .lc-btn{ height:38px; padding:0 10px; border-radius:10px; display:inline-flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:var(--ink-900); border:1px solid var(--line); background:var(--paper); transition:border-color .14s; }
@@ -209,17 +218,21 @@ const HEADER_CSS = `
   .sixsotok-header .m-sub.mt{ margin-top:14px; }
 
   .sixsotok-header .m-actions{ margin-top:12px; display:flex; flex-direction:column; gap:8px; }
-  .sixsotok-header .m-tiles{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .sixsotok-header .m-tiles{ display:grid; grid-template-columns:1fr 1fr; gap:6px; }
   .sixsotok-header .m-tile{
-    display:flex; flex-direction:column; justify-content:space-between; gap:16px; min-height:96px;
-    padding:14px 15px; background:var(--paper); border:1px solid var(--line); border-radius:16px;
+    display:flex; flex-direction:row; align-items:center; gap:13px; min-height:0;
+    padding:13px 15px; background:var(--paper); border:1px solid var(--line); border-radius:14px;
     box-shadow:0 4px 14px -8px rgba(13,20,16,.18);
     font-size:15.5px; font-weight:700; color:var(--ink-900); transition:transform .12s, box-shadow .14s;
   }
   .sixsotok-header .m-tile:active{ transform:translateY(1px); box-shadow:0 1px 5px -3px rgba(13,20,16,.18); }
-  .sixsotok-header .m-tile .ic{ width:40px; height:40px; border-radius:12px; background:#eef3ee; color:var(--green); display:grid; place-items:center; }
-  .sixsotok-header .m-tile .ic svg{ width:21px; height:21px; }
-  .sixsotok-header .m-tile .lbl{ display:flex; align-items:center; gap:8px; }
+  .sixsotok-header .m-tile .ic{ width:38px; height:38px; border-radius:11px; background:#eef3ee; color:var(--green); display:grid; place-items:center; flex:none; }
+  .sixsotok-header .m-tile .ic svg{ width:20px; height:20px; }
+  .sixsotok-header .m-tile .lbl{ flex:1; display:flex; align-items:center; gap:8px; }
+  .sixsotok-header .m-tile .badge{ margin-left:auto; }
+  .sixsotok-header .m-tiles .m-tile{ flex-direction:column; align-items:flex-start; gap:12px; min-height:92px; justify-content:space-between; }
+  .sixsotok-header .m-tiles .m-tile .lbl{ width:100%; }
+  .sixsotok-header .m-login{ margin-top:6px; }
   .sixsotok-header .m-cta-full{ display:flex; align-items:center; justify-content:center; gap:9px; margin-top:8px; height:56px; border-radius:16px; background:var(--green); color:#fff; font-size:16.5px; font-weight:700; box-shadow:0 10px 24px -10px rgba(6,111,54,.7); }
   .sixsotok-header .m-cta-full svg{ width:20px; height:20px; }
 
@@ -238,6 +251,7 @@ export function Header() {
   const [lcOpen, setLcOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [saved, setSaved] = useState(0);
+  const [compareIds, setCompareIds] = useState<string[]>([]);
   const lcRef = useRef<HTMLDivElement>(null);
 
   // счётчик избранного
@@ -247,6 +261,20 @@ export function Header() {
     window.addEventListener('storage', read);
     window.addEventListener('bookmarks-updated', read);
     return () => { window.removeEventListener('storage', read); window.removeEventListener('bookmarks-updated', read); };
+  }, []);
+
+  // счётчик сравнения
+  useEffect(() => {
+    const read = () => {
+      try {
+        const list: { id: string | number }[] = JSON.parse(localStorage.getItem(LS_COMPARE) ?? '[]');
+        setCompareIds(list.map(c => String(c.id)));
+      } catch {}
+    };
+    read();
+    window.addEventListener('storage', read);
+    window.addEventListener('compare-updated', read);
+    return () => { window.removeEventListener('storage', read); window.removeEventListener('compare-updated', read); };
   }, []);
 
   // блокировка прокрутки при открытом меню
@@ -276,6 +304,7 @@ export function Header() {
   const activeKey = NAV.find(n => pathname?.startsWith(n.match))?.key ?? '';
   const loginHref = user ? '/profile' : '/login';
   const loginLabel = user ? user.name.split(' ')[0] : t.login;
+  const compareHref = compareIds.length ? `/catalog/compare?ids=${compareIds.join(',')}` : '/catalog/compare';
 
   const rateVal = fx
     ? <>1 $ = <b>{fx.usdKzt.toLocaleString('ru-RU', { maximumFractionDigits: 2 })}</b> ₸</>
@@ -329,9 +358,15 @@ export function Header() {
               </div>
             </div>
 
-            <Link className="ghost saved-txt" href="/favorites">
-              <Svg html={ic.save} /><span>{t.saved}</span>{saved > 0 && <span className="badge">{saved}</span>}
-            </Link>
+            <div className="tools">
+              <Link className="tool" href="/favorites" aria-label={t.saved}>
+                <Svg html={ic.save} />{saved > 0 && <span className="badge">{saved}</span>}
+              </Link>
+              <span className="tool-div" />
+              <Link className="tool" href={compareHref} aria-label={t.compare}>
+                <Svg html={ic.compare} />{compareIds.length > 0 && <span className="badge">{compareIds.length}</span>}
+              </Link>
+            </div>
             <Link className="ghost login" href={loginHref}>
               <Svg html={ic.user} /><span>{loginLabel}</span>
             </Link>
@@ -383,11 +418,15 @@ export function Header() {
                   <span className="ic"><Svg html={ic.save} /></span>
                   <span className="lbl">{t.saved}{saved > 0 && <span className="badge">{saved}</span>}</span>
                 </Link>
-                <Link className="m-tile" href={loginHref} onClick={() => setMenuOpen(false)}>
-                  <span className="ic"><Svg html={ic.user} /></span>
-                  <span className="lbl">{loginLabel}</span>
+                <Link className="m-tile" href={compareHref} onClick={() => setMenuOpen(false)}>
+                  <span className="ic"><Svg html={ic.compare} /></span>
+                  <span className="lbl">{t.compare}{compareIds.length > 0 && <span className="badge">{compareIds.length}</span>}</span>
                 </Link>
               </div>
+              <Link className="m-tile m-login" href={loginHref} onClick={() => setMenuOpen(false)}>
+                <span className="ic"><Svg html={ic.user} /></span>
+                <span className="lbl">{loginLabel}</span>
+              </Link>
               <Link className="m-cta-full" href="/add-listing" onClick={() => setMenuOpen(false)}>
                 <Svg html={ic.plus} /><span>{t.cta}</span>
               </Link>

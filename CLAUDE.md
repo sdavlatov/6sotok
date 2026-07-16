@@ -10,7 +10,7 @@
 ```
 Primary:     #066F36  (dark green — brand)
 Primary light: #2CA64E
-Accent:      #A3D2F0  (sky blue — highlights)
+Accent:      #A3D2F0  (sky blue — RETIRED, do not use; see Catalog Color Rule)
 Background:  #fafafa
 Border:      #e4e4e7
 Muted:       #a1a1aa
@@ -36,9 +36,17 @@ Card:        #ffffff
 ### Color Usage
 - Primary green only for: primary CTAs, active states, key stats
 - Never fill large areas with primary green — use `primary-soft` (#f0fdf4) as background tint
-- Accent blue (#A3D2F0) for secondary highlights, tags, badges
 - Use `zinc-*` scale for neutrals — never gray-* for consistency
 - Hover states: always slightly darker or with subtle background (`zinc-50`, `zinc-100`)
+- **Accent blue (#A3D2F0) is retired from active use** — do not use it for tags, badges, or highlights (see Catalog Color Rule below)
+
+### Catalog Color Rule (strict — applies everywhere, not just catalog)
+- Backgrounds: neutral only — white / off-white / gray, or black / brand-ink. No other background colors.
+- Highlight/active state on white: black fill + white text, OR green accent. On black backgrounds: white text.
+- **Green is the only color accent in the entire product.** Use it for: stars/ratings, featured pins, active/selected elements, "за сотку" badge, Акт/Межевание checkmarks, verified checkmarks.
+- **No blue, amber, or red — anywhere.** This supersedes the old sky-blue accent token.
+- Discount badges (e.g. "−12%") and urgency labels (e.g. "Срочно") → black or gray, never colored.
+- Unverified/missing cadastre data → gray, never red or amber (don't use color to signal a warning/error state).
 
 ### Spacing & Layout
 - Base unit: `4px`. Use Tailwind scale: `p-3`(12px), `p-4`(16px), `p-6`(24px), `p-8`(32px)

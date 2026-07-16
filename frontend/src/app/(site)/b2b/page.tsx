@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Breadcrumbs } from '@/components/layout/breadcrumbs';
 
 export const metadata: Metadata = {
   title: 'Для агентств и риелторов — 6sotok.kz',
@@ -82,7 +83,8 @@ export default function B2BPage() {
 
       {/* Hero */}
       <div style={{ background: 'linear-gradient(160deg, #f0fdf4 0%, #fff 60%)', borderBottom: '1px solid #f0f0f0' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16 md:pb-24">
+          <Breadcrumbs trail={[{ label: 'Для агентств' }]} className="mb-8" />
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 bg-primary-soft border border-primary/15 rounded-full px-4 py-1.5 mb-6">
               <span className="w-1.5 h-1.5 rounded-full bg-primary" />

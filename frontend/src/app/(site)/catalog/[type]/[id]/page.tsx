@@ -10,6 +10,7 @@ import { DocViewer } from '@/components/listings/doc-viewer';
 import { SLUG_LANDTYPE } from '@/lib/listing-url';
 import { CopyLinkButton } from '@/components/listings/copy-link-button';
 import { ViewTracker } from '@/components/listings/view-tracker';
+import { Breadcrumbs } from '@/components/layout/breadcrumbs';
 import Link from 'next/link';
 export const dynamic = 'force-dynamic';
 import type { Metadata } from 'next';
@@ -180,16 +181,14 @@ export default async function ListingPage({ params }: Props) {
     <div className="antialiased bg-[#fafafa] min-h-screen pb-[120px]">
       <main className="lp-main max-w-[1320px] mx-auto px-5 pt-6">
 
-        {/* JSON-LD */}
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
-          '@context': 'https://schema.org', '@type': 'BreadcrumbList',
-          itemListElement: [
-            { '@type': 'ListItem', position: 1, name: 'Главная',     item: 'https://6sotok.kz' },
-            { '@type': 'ListItem', position: 2, name: 'Каталог',     item: 'https://6sotok.kz/catalog' },
-            { '@type': 'ListItem', position: 3, name: landTypeLabel, item: `https://6sotok.kz/catalog/${type}` },
-            { '@type': 'ListItem', position: 4, name: `№ ${listing.id}`, item: `https://6sotok.kz/catalog/${type}/${listing.id}` },
-          ],
-        })}} />
+        <Breadcrumbs
+          trail={[
+            { label: 'Каталог', href: '/catalog' },
+            { label: landTypeLabel, href: `/catalog?type=${type}` },
+            { label: listing.title },
+          ]}
+          className="mb-5"
+        />
 
         {/* ══ ШАПКА ══ */}
         <div className="mb-5">

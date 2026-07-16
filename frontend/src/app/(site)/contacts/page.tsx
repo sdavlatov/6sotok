@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Breadcrumbs } from '@/components/layout/breadcrumbs';
 
 export const metadata: Metadata = {
   title: 'Контакты — 6sotok.kz',
@@ -8,7 +9,8 @@ export const metadata: Metadata = {
 export default function ContactsPage() {
   return (
     <div style={{ background: '#fafafa', minHeight: '100vh' }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16">
+        <Breadcrumbs trail={[{ label: 'Контакты' }]} className="mb-10" />
 
         <div className="max-w-xl mb-12">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-3">Контакты</p>

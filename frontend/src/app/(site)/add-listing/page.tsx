@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { pushDataLayer } from '@/lib/analytics';
 import { LAND_CATEGORIES, UTILITIES, LEGAL_FILTERS } from '@/lib/listing-constants';
+import { generateTitle } from '@/lib/listing-title';
 import { useAuth } from '@/context/auth-context';
 import { ChevronLeft } from 'lucide-react';
 
@@ -262,6 +263,11 @@ const PLOT_SHAPES = ['Прямоугольный', 'Квадратный', 'Г-�
 export default function AddListingPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) router.replace('/login?next=/add-listing');
+  }, [loading, user, router]);
+
   const [errors, setErrors]             = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted]   = useState(false);
@@ -315,11 +321,19 @@ export default function AddListingPage() {
         : [...prev.locationType, val],
     }));
 
-  const autoTitle = [
-    fd.landType || 'Участок',
-    fd.area ? `${fd.area} сот.` : '',
-    fd.location,
-  ].filter(Boolean).join(' · ');
+  // Заголовок генерируем МЫ по правилу продукта (клиент его не заполняет) — см. lib/listing-title
+  const autoTitle = generateTitle({
+    landType: fd.landType,
+    purpose: fd.purpose,
+    area: fd.area ? Number(fd.area) : undefined,
+    reliefType: fd.reliefType,
+    plotShape: fd.plotShape,
+    hasStateAct: fd.hasStateAct,
+    hasElectricity: fd.hasElectricity,
+    hasWater: fd.hasWater,
+    hasGas: fd.hasGas,
+    locationType: fd.locationType,
+  });
 
   // Обратное геокодирование при постановке точки
   useEffect(() => {
@@ -506,7 +520,6 @@ export default function AddListingPage() {
   }
 
   if (!user) {
-    if (typeof window !== 'undefined') router.replace('/login?next=/add-listing')
     return (
       <div className="min-h-[calc(100vh-80px)] bg-zinc-50 flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />

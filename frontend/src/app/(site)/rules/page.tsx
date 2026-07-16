@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Breadcrumbs } from '@/components/layout/breadcrumbs';
 
 export const metadata: Metadata = {
   title: 'Правила размещения — 6sotok.kz',
@@ -70,7 +71,8 @@ const rules = [
 export default function RulesPage() {
   return (
     <div style={{ background: '#fafafa', minHeight: '100vh' }}>
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-16">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-6 pb-16">
+        <Breadcrumbs trail={[{ label: 'Правила размещения' }]} className="mb-10" />
 
         <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-3">Документы</p>
         <h1 className="text-4xl font-bold tracking-tight text-zinc-900 mb-3">Правила размещения</h1>

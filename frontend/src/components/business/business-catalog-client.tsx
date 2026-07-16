@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { List, Map, SlidersHorizontal, X, Building2, Coffee, ShoppingBag, Briefcase, Warehouse, Factory, Fuel, Hotel, LayoutGrid } from 'lucide-react';
 import { Container } from '@/components/layout/container';
+import { Breadcrumbs } from '@/components/layout/breadcrumbs';
 import { BusinessCard } from './business-card';
 import { MapView, type MapItem } from '@/components/catalog/map-view';
 import type { Listing } from '@/types/listing';
@@ -294,6 +295,9 @@ export function BusinessCatalogClient({ allListings }: Props) {
       {/* Hero */}
       <div className="bg-gradient-to-br from-white via-white to-primary-soft/20 border-b border-zinc-100">
         <Container>
+          <div className="pt-5">
+            <Breadcrumbs trail={[{ label: 'Готовый бизнес' }]} />
+          </div>
           <div className="py-10 md:py-14">
             <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-3">Готовый бизнес</p>
             <h1 className="text-3xl md:text-5xl font-black tracking-tight text-zinc-900 mb-3">
@@ -309,7 +313,7 @@ export function BusinessCatalogClient({ allListings }: Props) {
       </div>
 
       {/* Categories */}
-      <div className="bg-white border-b border-zinc-100 sticky top-[64px] z-30">
+      <div className="bg-white border-b border-zinc-100 sticky top-[61px] lg:top-[69px] z-30">
         <Container>
           <div className="flex items-center gap-2 py-3 overflow-x-auto scrollbar-none">
             {BUSINESS_CATEGORIES.map(({ value, label, Icon }) => {

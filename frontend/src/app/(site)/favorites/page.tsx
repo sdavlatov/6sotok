@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronRight, Bookmark } from 'lucide-react';
+import { Bookmark } from 'lucide-react';
 import type { Listing } from '@/types/listing';
 import { ListingCard } from '@/components/listings/listing-card';
+import { Breadcrumbs } from '@/components/layout/breadcrumbs';
 
 const LS_BOOKMARKS = '6sotok_bookmarks';
 
@@ -50,14 +51,10 @@ export default function FavoritesPage() {
     <div className="bg-[var(--paper)] min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-24">
 
-        {/* Breadcrumbs */}
-        <nav className="flex items-center gap-1.5 text-[13px] mb-8">
-          <Link href="/" className="text-zinc-400 hover:text-zinc-700 transition-colors">Главная</Link>
-          <ChevronRight className="size-3.5 text-zinc-300" />
-          <Link href="/catalog" className="text-zinc-400 hover:text-zinc-700 transition-colors">Каталог</Link>
-          <ChevronRight className="size-3.5 text-zinc-300" />
-          <span className="text-zinc-900 font-medium">Избранное</span>
-        </nav>
+        <Breadcrumbs
+          trail={[{ label: 'Каталог', href: '/catalog' }, { label: 'Избранное' }]}
+          className="mb-8"
+        />
 
         {/* Header */}
         <div className="flex items-end justify-between gap-4 mb-8 flex-wrap">

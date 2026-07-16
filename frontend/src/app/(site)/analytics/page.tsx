@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { LineChart, ArrowRight } from 'lucide-react'
 import { Container } from '@/components/layout/container'
+import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 
 export const metadata = {
   title: 'Аналитика рынка — 6sotok.kz',
@@ -9,7 +10,11 @@ export const metadata = {
 
 export default function AnalyticsPage() {
   return (
-    <div className="min-h-[calc(100vh-80px)] flex items-center bg-[var(--paper)]">
+    <div className="min-h-[calc(100vh-80px)] flex flex-col bg-[var(--paper)]">
+      <Container>
+        <Breadcrumbs trail={[{ label: 'Аналитика рынка' }]} className="pt-6" />
+      </Container>
+      <div className="flex flex-1 items-center">
       <Container>
         <div className="mx-auto max-w-xl py-20 text-center">
           <div className="mx-auto mb-6 inline-flex items-center justify-center rounded-2xl bg-primary-soft p-4">
@@ -34,6 +39,7 @@ export default function AnalyticsPage() {
           </Link>
         </div>
       </Container>
+      </div>
     </div>
   )
 }

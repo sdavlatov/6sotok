@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Breadcrumbs } from '@/components/layout/breadcrumbs';
 
 export const metadata: Metadata = {
   title: 'Безопасная сделка — 6sotok.kz',
@@ -43,12 +44,7 @@ export default function SafeDealPage() {
     <div className="bg-white min-h-screen">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
 
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-[12.5px] text-zinc-400 mb-10">
-          <Link href="/" className="hover:text-zinc-600 transition-colors">Главная</Link>
-          <span>/</span>
-          <span className="text-zinc-700 font-medium">Безопасная сделка</span>
-        </nav>
+        <Breadcrumbs trail={[{ label: 'Безопасная сделка' }]} className="mb-10" />
 
         {/* Hero */}
         <div className="mb-12">

@@ -4,6 +4,7 @@ import { ContactCard } from '@/components/listings/contact-card';
 import { MobileContactBar } from '@/components/listings/mobile-contact-bar';
 import { PhotoGrid } from '@/components/listings/photo-grid';
 import { ViewTracker } from '@/components/listings/view-tracker';
+import { Breadcrumbs } from '@/components/layout/breadcrumbs';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 
@@ -36,15 +37,13 @@ export default async function BusinessListingPage({ params }: Props) {
     <div className="min-h-screen bg-zinc-50">
       <ViewTracker id={String(listing.id)} slug={listing.slug} />
 
-      {/* Breadcrumb */}
       <div className="max-w-[1440px] mx-auto px-6 pt-6 pb-2">
-        <div className="flex items-center gap-2 text-[13px] text-zinc-500">
-          <Link href="/" className="hover:text-zinc-900 transition">Главная</Link>
-          <span>·</span>
-          <Link href="/business" className="hover:text-zinc-900 transition">Готовый бизнес</Link>
-          <span>·</span>
-          <span className="text-zinc-900 line-clamp-1">{listing.title}</span>
-        </div>
+        <Breadcrumbs
+          trail={[
+            { label: 'Готовый бизнес', href: '/business' },
+            { label: listing.title },
+          ]}
+        />
       </div>
 
       <div className="max-w-[1440px] mx-auto px-6 pb-24">
