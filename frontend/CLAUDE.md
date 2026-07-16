@@ -10,6 +10,18 @@ Responses must be short and concise. No summaries at end of response.
 
 ---
 
+## Последние изменения (2026-07-17)
+
+- **Карта каталога — векторная «Схема»** (`components/catalog/catalog-map.tsx`): MapLibre GL + OpenFreeMap liberty (бесплатно, без ключа/лимитов) через `@maplibre/maplibre-gl-leaflet` поверх того же Leaflet (пины/кластеры не тронуты). Трансформация стиля в `getOfmStyle()`: все подписи → `coalesce(name:ru, name)` (name:ru в тайлах есть — проверено декодом pbf); улицы раньше (`STREET_NAME_MINZOOM`: major z10, minor z12); палитра под 2GIS через `OFM_COLOR_SWAP` (swap по значению цвета); выпилен растровый рельеф `ne2_shaded` (бледнил карту страны). «Спутник» — гибрид: labels-only GL-слой (`getOfmLabelsStyle()`) поверх Esri; нужен `z-index:2` у `.leaflet-gl-layer` (catalog.css), иначе подписи под растром.
+- **Грабли maplibre-gl-leaflet**: (1) без WebGL конструктор GL кидает ВНУТРИ addTo, а Leaflet уже привязал события слоя → зомби-обработчики (`jumpTo`/`_actualCanvas` undefined) ломают все зумы и карта пустеет — поэтому `webglAvailable()` до создания + `tryAddGl()` с зачисткой `map.off(gl.getEvents(), gl)`; (2) GL-слой нельзя добавлять во время зум-анимации (`whenMapIdle`); (3) StrictMode: async-добавление слоя проверяет `stale()` — иначе слой уезжает на размонтированную карту. Fallback всегда — растровый OSM (`rasterSchemeLayer`). Атрибуция скрыта по требованию заказчика (перед продом желательно вернуть). Проверено headless (puppeteer + `--enable-unsafe-swiftshader`): страна/город/спутник/кластер-зумы без ошибок.
+- **Центр знаний (журнал)** — 3 уровня по макетам `Дизайн html/Журнал знаний/` (README там же, fidelity pixel-perfect): `/journal` (хаб: hero+живой поиск, 7 секций, серии, вопросы, «Калькуляторы»/«Документы» — заглушки «Скоро»), `/journal/docs` (тема «Документы», сортировка популярность/дата), `/journal/docs/[slug]` (статья: прогресс-бар, TOC scrollspy десктоп-сайдбар + моб. аккордеон, врезки «Из каталога», чек-лист, связанные статьи/объявления, плавающая моб. CTA «Каталог»).
+- Файлы: `app/(site)/journal/` — `page.tsx`, `journal.css` (классы `j-card`/`j-tile`/`map-mini`/`plot-amber`/`map-water`, scroll-row и т.д. — префиксованы `.journal`), `journal-data.ts` (ДЕМО-данные, заменить на CMS), `journal-ui.tsx` (JLink, JournalBreadcrumbBar, SecLabel, JournalCta, ArticleCard), `journal-search.tsx` (client), `docs/page.tsx` + `docs/topic-grid.tsx` (client, сортировка), `docs/[slug]/page.tsx` + `article-toc.tsx` (client: ReadProgress, TocDesktop/TocMobile). Одна демо-статья: slug `5-dokumentov-pered-pokupkoy`, остальные карточки `href='#'`.
+- **Хедер**: пункт «Центр знаний» (kz «Білім орталығы», en «Knowledge hub») → `/journal`, между Аналитикой и Агентствам. **Футер**: «Журнал» в колонке Платформа → `/journal` (все 3 языка).
+- `<image-slot>` из макета заменён CSS-плейсхолдером `.img-slot`; шапка/футер/крошки макета не портированы — используются боевые Header/Footer/Breadcrumbs.
+- Известное (НЕ из этой сессии): dev-warning гидрации в `Breadcrumbs` (`ol` className) — есть на всех страницах с крошками (/analytics, /safe-deal и т.д.), в проде не проявляется как ошибка.
+
+---
+
 ## Последние изменения (2026-07-16)
 
 - **Каталог + safe-area**: offset под хедером теперь `top-[calc(61px+env(safe-area-inset-top,0px))]` (мобайл) / `calc(69px+…)` (десктоп) — повторяет формулу высоты хедера (у него `padding-top:env(safe-area-inset-top)`). Сейчас no-op (нет `viewport-fit=cover` → env=0), но не сломается при переходе на PWA/cover.

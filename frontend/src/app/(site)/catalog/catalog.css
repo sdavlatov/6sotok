@@ -96,3 +96,10 @@
 /* Leaflet: убрать стандартный контейнер-фокус и атрибуцию поверх наших контролов */
 .catalog-map .leaflet-control-attribution { font-size: 9px; opacity: .55; }
 .catalog-map .leaflet-container { font-family: inherit; background: #e6ede7; }
+
+/* Тюнинг цвета растровых тайлов OSM (fallback-схема без WebGL): приглушаем кислотные
+   дороги, поднимаем контраст. Только img-тайлы — векторный GL-канвас и спутник не трогаем. */
+.catalog-map:not(.is-sat) .leaflet-tile-pane img.leaflet-tile { filter: saturate(0.72) contrast(1.06) brightness(1.01); }
+/* GL-канвас не должен перехватывать клики/драг — ими управляет Leaflet.
+   z-index 2 — выше растровых тайлов (z 1), иначе подписи-гибрид прячутся под спутником */
+.catalog-map .leaflet-gl-layer { pointer-events: none; z-index: 2; }

@@ -12,16 +12,155 @@ import { fmtPrice, hashId } from '@/app/(site)/catalog/catalog-utils';
 
 const LEAFLET_VERSION = '1.9.4';
 const CLUSTER_VERSION = '1.5.3';
+const MAPLIBRE_VERSION = '4.7.1';
+const MAPLIBRE_LEAFLET_VERSION = '0.1.3';
 const LEAFLET_CSS = `https://unpkg.com/leaflet@${LEAFLET_VERSION}/dist/leaflet.css`;
 const LEAFLET_JS = `https://unpkg.com/leaflet@${LEAFLET_VERSION}/dist/leaflet.js`;
 const CLUSTER_CSS = `https://unpkg.com/leaflet.markercluster@${CLUSTER_VERSION}/dist/MarkerCluster.css`;
 const CLUSTER_JS = `https://unpkg.com/leaflet.markercluster@${CLUSTER_VERSION}/dist/leaflet.markercluster.js`;
+const MAPLIBRE_CSS = `https://unpkg.com/maplibre-gl@${MAPLIBRE_VERSION}/dist/maplibre-gl.css`;
+const MAPLIBRE_JS = `https://unpkg.com/maplibre-gl@${MAPLIBRE_VERSION}/dist/maplibre-gl.js`;
+const MAPLIBRE_LEAFLET_JS = `https://unpkg.com/@maplibre/maplibre-gl-leaflet@${MAPLIBRE_LEAFLET_VERSION}/leaflet-maplibre-gl.js`;
+// Векторный стиль «Схемы» — OpenFreeMap (бесплатно, без ключа и лимитов, можно в прод)
+const OFM_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
-export const TILES: Record<'scheme' | 'sat', { url: string; attribution: string; subdomains?: string }> = {
-  // Светлая «Схема» — CartoDB Positron (бесплатно, без ключа): приглушённая гамма как в макете
-  scheme: { url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', attribution: '© OpenStreetMap © CARTO', subdomains: 'abcd' },
+export const TILES: Record<'scheme' | 'sat', { url: string; attribution: string; subdomains?: string; maxZoom?: number }> = {
+  // Растровый fallback «Схемы» (если MapLibre/WebGL недоступен) — стандартные тайлы OSM.
+  // Основная «Схема» — векторная (OpenFreeMap liberty + name:ru), см. getOfmStyle().
+  scheme: { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: '© OpenStreetMap contributors', maxZoom: 19 },
   sat: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attribution: '© Esri' },
 };
+
+/** Палитра под 2GIS: тёплый светло-серый фон, жёлтые магистрали, мягкие вода/зелень.
+ *  Ключ — исходный цвет в liberty, значение — наш (swap по значению устойчивее, чем по id). */
+const OFM_COLOR_SWAP: Record<string, string> = {
+  '#f8f4f0': '#f1efe9',                       // фон суши
+  'rgb(158,189,255)': '#a6d1e8',              // вода
+  '#a0c8f0': '#a6d1e8',                       // реки/ручьи
+  '#d8e8c8': '#cfe8b0',                       // парки
+  'rgba(176, 213, 154, 1)': '#c9e6ab',        // трава
+  'hsla(98,61%,72%,0.7)': 'rgba(185,221,160,0.75)', // лес
+  'hsl(35,8%,85%)': '#e5dfd2',                // здания
+  '#fc8': '#ffd95e',                          // магистрали
+  '#ffdaa6': '#ffe58a',                       // магистрали в тоннелях
+  '#fea': '#ffeb99',                          // trunk/primary/secondary
+  '#e9ac77': '#dfc26e',                       // оранжевые обводки дорог → жёлто-серые
+  '#cfcdca': '#d8d4cb',                       // обводки мелких улиц
+};
+
+// зум появления названий улиц (раньше, чем в liberty — как у 2GIS/Krisha)
+const STREET_NAME_MINZOOM: Record<string, number> = {
+  'highway-name-major': 10,   // было 12.2
+  'highway-name-minor': 12,   // было 15
+  'highway-name-path': 13.5,  // было 15.5
+};
+
+/** Стиль OFM с правками: подписи по-русски (name:ru), улицы раньше, цвета 2GIS */
+let ofmStyleCache: Promise<unknown> | null = null;
+function getOfmStyle(): Promise<any> {
+  if (!ofmStyleCache) {
+    ofmStyleCache = fetch(OFM_STYLE_URL)
+      .then(r => { if (!r.ok) throw new Error('style fetch failed'); return r.json(); })
+      .then((style: any) => {
+        // выпилить бледный растровый рельеф natural_earth (z<6) — плоский фон чище, как у 2GIS
+        style.layers = (style.layers as any[]).filter(l => l.source !== 'ne2_shaded');
+        for (const layer of style.layers ?? []) {
+          const tf = layer.layout?.['text-field'];
+          // подписи-названия → русский с фолбэком на местное имя (ref/номера домов не трогаем)
+          if (tf && JSON.stringify(tf).includes('name')) {
+            layer.layout['text-field'] = ['coalesce', ['get', 'name:ru'], ['get', 'name']];
+          }
+          if (layer.id in STREET_NAME_MINZOOM) layer.minzoom = STREET_NAME_MINZOOM[layer.id];
+          // главные улицы: крупнее и контрастнее на городских зумах (в liberty 12px и #666 — терялись)
+          if (layer.id === 'highway-name-major') {
+            layer.layout['text-size'] = ['interpolate', ['linear'], ['zoom'], 10, 11, 13, 13, 16, 15];
+            layer.paint = { ...layer.paint, 'text-color': '#3f3f46', 'text-halo-width': 1.5 };
+          }
+          // перекраска под 2GIS
+          const paint = layer.paint;
+          if (paint) {
+            for (const key of ['background-color', 'fill-color', 'line-color']) {
+              const c = paint[key];
+              if (typeof c === 'string' && OFM_COLOR_SWAP[c]) paint[key] = OFM_COLOR_SWAP[c];
+            }
+          }
+        }
+        return style;
+      });
+    ofmStyleCache.catch(() => { ofmStyleCache = null; }); // ошибку не кэшируем
+  }
+  return ofmStyleCache as Promise<any>;
+}
+
+/** Только подписи (города/улицы/вода) — накладываются поверх спутника (гибрид) */
+const LABEL_SOURCE_LAYERS = new Set(['place', 'transportation_name', 'water_name', 'aerodrome_label']);
+function getOfmLabelsStyle(): Promise<any> {
+  return getOfmStyle().then((style: any) => ({
+    ...style,
+    layers: (style.layers as any[])
+      .filter(l => l.type === 'symbol' && LABEL_SOURCE_LAYERS.has(l['source-layer']))
+      // на снимках читается только белый текст с тёмным гало (как у гибридов Яндекс/2GIS)
+      .map(l => ({
+        ...l,
+        paint: { ...l.paint, 'text-color': '#ffffff', 'text-halo-color': 'rgba(0,0,0,0.78)', 'text-halo-width': 1.4, 'text-halo-blur': 0.4 },
+      })),
+  }));
+}
+
+function rasterSchemeLayer(Lf: L) {
+  return Lf.tileLayer(TILES.scheme.url, { attribution: TILES.scheme.attribution, subdomains: TILES.scheme.subdomains ?? 'abc', maxZoom: TILES.scheme.maxZoom ?? 19 });
+}
+
+/** GL-слой нельзя добавлять во время зум-анимации Leaflet — у плагина ещё нет _glMap
+ *  и его обработчики зума падают (jumpTo undefined). Ждём zoomend. */
+function whenMapIdle(map: L, fn: () => void) {
+  if (map._animatingZoom) map.once('zoomend', fn);
+  else fn();
+}
+
+/** Без WebGL конструктор maplibregl.Map бросает исключение ВНУТРИ addTo — Leaflet
+ *  к этому моменту уже привязал обработчики зума слоя, и они «зомби» ломают карту. */
+let webglOk: boolean | null = null;
+function webglAvailable(): boolean {
+  if (webglOk === null) {
+    try {
+      const c = document.createElement('canvas');
+      webglOk = !!(c.getContext('webgl2') || c.getContext('webgl'));
+    } catch { webglOk = false; }
+  }
+  return webglOk;
+}
+
+/** addTo с зачисткой: если GL-слой упал при добавлении — снять его обработчики с карты */
+function tryAddGl(Lf: L, map: L, style: unknown): L | null {
+  const gl = Lf.maplibreGL({ style });
+  try {
+    gl.addTo(map);
+    return gl;
+  } catch {
+    try { map.removeLayer(gl); } catch { /* onRemove тоже падает без _glMap */ }
+    try { map.off(gl.getEvents(), gl); } catch { /* страховка от зомби-обработчиков */ }
+    return null;
+  }
+}
+
+/** Монтирует «Схему»: векторную (GL), при любой ошибке — растровый OSM.
+ *  stale() проверяется перед каждым асинхронным шагом: слой не попадёт
+ *  на размонтированную карту (StrictMode) или после переключения на спутник. */
+function mountSchemeLayer(Lf: L, map: L, stale: () => boolean, setRef: (layer: L) => void) {
+  const mountRaster = () => { const r = rasterSchemeLayer(Lf).addTo(map); setRef(r); };
+  if (!Lf.maplibreGL || !webglAvailable()) { mountRaster(); return; }
+  getOfmStyle()
+    .then(style => {
+      if (stale()) return;
+      whenMapIdle(map, () => {
+        if (stale()) return;
+        const gl = tryAddGl(Lf, map, style);
+        if (gl) setRef(gl); else mountRaster();
+      });
+    })
+    .catch(() => { if (!stale()) mountRaster(); });
+}
 
 // стартовый вид — вся страна (пользователь сам приближается к нужному месту)
 const KZ_CENTER: [number, number] = [48.0, 67.5];
@@ -99,6 +238,8 @@ export function CatalogMap({ items, activeId, hoverId, onPinHover, onPinClick, o
   const polygonRef = useRef<L>(null);
   const movedByUser = useRef(false);
   const fitted = useRef(false);
+  const layerModeRef = useRef<'scheme' | 'sat'>('scheme');
+  const labelsRef = useRef<L>(null); // GL-подписи поверх спутника (гибрид)
   const [ready, setReady] = useState(false);
 
   const cbRef = useRef({ onPinHover, onPinClick, onMapClick, onViewportChange });
@@ -109,9 +250,13 @@ export function CatalogMap({ items, activeId, hoverId, onPinHover, onPinClick, o
   // ── загрузка Leaflet ──
   useEffect(() => {
     let cancelled = false;
-    loadCss(LEAFLET_CSS); loadCss(CLUSTER_CSS);
+    loadCss(LEAFLET_CSS); loadCss(CLUSTER_CSS); loadCss(MAPLIBRE_CSS);
     loadScript(LEAFLET_JS, () => !!(window as any).L)
       .then(() => loadScript(CLUSTER_JS, () => !!(window as any).L?.markerClusterGroup))
+      // MapLibre (векторная схема) не критичен: не загрузился — работаем на растровом OSM
+      .then(() => loadScript(MAPLIBRE_JS, () => !!(window as any).maplibregl)
+        .then(() => loadScript(MAPLIBRE_LEAFLET_JS, () => !!(window as any).L?.maplibreGL))
+        .catch(() => { /* fallback на растр */ }))
       .then(() => { if (!cancelled) setReady(true); })
       .catch(() => { /* карта не критична — список работает без неё */ });
     return () => { cancelled = true; };
@@ -122,9 +267,13 @@ export function CatalogMap({ items, activeId, hoverId, onPinHover, onPinClick, o
     if (!ready || !containerRef.current || mapRef.current) return;
     const Lf = (window as any).L;
     if (!Lf || (containerRef.current as any)._leaflet_id) return;
-    const map = Lf.map(containerRef.current, { zoomControl: false, attributionControl: true });
+    // attributionControl: false — по требованию заказчика подпись скрыта.
+    // ВНИМАНИЕ: атрибуция «© OpenStreetMap contributors» — условие бесплатного
+    // использования тайлов OSM; перед продом желательно вернуть (true).
+    let disposed = false;
+    const map = Lf.map(containerRef.current, { zoomControl: false, attributionControl: false, maxZoom: 19 });
     map.setView(KZ_CENTER, KZ_ZOOM);
-    tileRef.current = Lf.tileLayer(TILES.scheme.url, { attribution: TILES.scheme.attribution, subdomains: TILES.scheme.subdomains ?? 'abc', maxZoom: 19 }).addTo(map);
+    mountSchemeLayer(Lf, map, () => disposed || layerModeRef.current !== 'scheme', layer => { tileRef.current = layer; });
 
     const cluster = Lf.markerClusterGroup({
       showCoverageOnHover: false,
@@ -156,7 +305,7 @@ export function CatalogMap({ items, activeId, hoverId, onPinHover, onPinClick, o
 
     mapRef.current = map;
     const markers = markersRef.current;
-    return () => { map.remove(); mapRef.current = null; markers.clear(); fitted.current = false; };
+    return () => { disposed = true; map.remove(); mapRef.current = null; labelsRef.current = null; markers.clear(); fitted.current = false; };
   }, [ready]);
 
   // ── маркеры ──
@@ -217,9 +366,30 @@ export function CatalogMap({ items, activeId, hoverId, onPinHover, onPinClick, o
     },
     setLayer: (layer) => {
       const Lf = (window as any).L, map = mapRef.current;
-      if (!Lf || !map) return;
+      if (!Lf || !map || layerModeRef.current === layer) return;
+      layerModeRef.current = layer;
       tileRef.current?.remove();
-      tileRef.current = Lf.tileLayer(TILES[layer].url, { attribution: TILES[layer].attribution, subdomains: TILES[layer].subdomains ?? 'abc', maxZoom: 19 }).addTo(map);
+      tileRef.current = null;
+      labelsRef.current?.remove();
+      labelsRef.current = null;
+      if (layer === 'sat') {
+        tileRef.current = Lf.tileLayer(TILES.sat.url, { attribution: TILES.sat.attribution, maxZoom: TILES.sat.maxZoom ?? 19 }).addTo(map);
+        // гибрид: русские подписи (города/улицы) поверх снимков
+        if (Lf.maplibreGL && webglAvailable()) {
+          const stale = () => mapRef.current !== map || layerModeRef.current !== 'sat';
+          getOfmLabelsStyle().then(style => {
+            if (stale()) return;
+            whenMapIdle(map, () => {
+              if (stale()) return;
+              labelsRef.current = tryAddGl(Lf, map, style); // null — просто снимки без подписей
+            });
+          }).catch(() => { /* без подписей — просто снимки */ });
+        }
+      } else {
+        mountSchemeLayer(Lf, map, () => mapRef.current !== map || layerModeRef.current !== 'scheme', l => { tileRef.current = l; });
+      }
+      // CSS-тюнинг цвета — только для растрового OSM-fallback, спутник/вектор без фильтра
+      containerRef.current?.classList.toggle('is-sat', layer === 'sat');
     },
     pinPoint: (id) => {
       const map = mapRef.current, m = markersRef.current.get(id);
