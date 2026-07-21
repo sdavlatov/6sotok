@@ -1,265 +1,308 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Container } from '@/components/layout/container';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { pushDataLayer } from '@/lib/analytics';
-import { LAND_CATEGORIES, UTILITIES, LEGAL_FILTERS } from '@/lib/listing-constants';
 import { generateTitle } from '@/lib/listing-title';
 import { useAuth } from '@/context/auth-context';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Bookmark, Play, Plane, Lock, Upload, Camera } from 'lucide-react';
+import { MapEditor, type LatLng } from './map-editor';
+import './submit.css';
 
-// ── форматирование цены ──────────────────────────────────────────────────────
+/* ───────────────────────── утилиты ───────────────────────── */
 const fmtPrice = (v: string) => {
   const d = v.replace(/\D/g, '');
   return d ? d.replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : '';
 };
 const rawPrice = (v: string) => Number(v.replace(/\s/g, ''));
+const human = (n: number) => (isFinite(n) ? Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : '0');
+const mln = (n: number) => {
+  if (!isFinite(n) || n <= 0) return '—';
+  if (n >= 1e6) return `${(n / 1e6).toFixed(n >= 1e7 ? 0 : 1)} млн`;
+  if (n >= 1e3) return `${Math.round(n / 1e3)} тыс`;
+  return human(n);
+};
 
-const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-const LEAFLET_JS  = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-const KZ_CENTER: [number, number] = [48.0, 68.0];
-// Приблизительные границы Казахстана
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const KZ_BOUNDS: any = [[40.5, 50.3], [55.5, 87.3]];
+/* ───────────────────────── справочники ───────────────────────── */
+const PLOT_TYPES: { k: string; s: string }[] = [
+  { k: 'ИЖС', s: 'жилое строительство' },
+  { k: 'Дача', s: 'СНТ · ДСК' },
+  { k: 'ЛПХ', s: 'личное хозяйство' },
+  { k: 'КХ', s: 'крестьянское хоз-во' },
+  { k: 'Коммерция', s: 'нежилое назнач.' },
+  { k: 'Сельхоз', s: 'пашня · сенокос' },
+  { k: 'Промбаза', s: 'склад · цех' },
+  { k: 'Другое', s: 'свой вариант' },
+];
 
-function loadLeaflet(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (window.L) { resolve(); return; }
-    if (!document.querySelector(`link[href="${LEAFLET_CSS}"]`)) {
-      const l = document.createElement('link');
-      l.rel = 'stylesheet'; l.href = LEAFLET_CSS;
-      document.head.appendChild(l);
-    }
-    const ex = document.querySelector<HTMLScriptElement>(`script[src="${LEAFLET_JS}"]`);
-    if (ex) { ex.addEventListener('load', () => resolve(), { once: true }); return; }
-    const s = document.createElement('script');
-    s.src = LEAFLET_JS; s.async = true;
-    s.onload = () => resolve(); s.onerror = () => reject();
-    document.head.appendChild(s);
-  });
+const BIZ_CATEGORIES: { k: string; s: string; value: string }[] = [
+  { k: 'Кафе / ресторан', s: 'питание', value: 'cafe' },
+  { k: 'Розница', s: 'магазин · бутик', value: 'shop' },
+  { k: 'Услуги', s: 'салон · сервис', value: 'service' },
+  { k: 'Производство', s: 'цех · мини-завод', value: 'production' },
+  { k: 'Склад / база', s: 'логистика', value: 'warehouse' },
+  { k: 'Гостиница', s: 'отель · дом отдыха', value: 'hotel' },
+  { k: 'Автобизнес', s: 'СТО · автомойка', value: 'service' },
+  { k: 'Онлайн / IT', s: 'сайт · приложение', value: 'other' },
+];
+
+const KZ_CITIES = [
+  'Алматы', 'Астана', 'Шымкент', 'Актобе', 'Атырау', 'Павлодар', 'Семей', 'Караганда',
+  'Тараз', 'Усть-Каменогорск', 'Актау', 'Уральск', 'Костанай', 'Кызылорда', 'Талдыкорган',
+  'Каскелен', 'Талгар', 'Есик', 'Конаев', 'Туркестан', 'Кокшетау', 'Петропавловск',
+];
+
+/* Тумблеры участка → маппинг на поля бэкенда */
+const LAND_TOGGLES: { key: string; label: string }[] = [
+  { key: 'hasStateAct', label: 'Акт на землю' },
+  { key: 'hasElectricity', label: 'Электричество' },
+  { key: 'hasWater', label: 'Скважина / вода' },
+  { key: 'hasGas', label: 'Газ' },
+  { key: 'hasSewer', label: 'Канализация / септик' },
+  { key: 'hasRoadAccess', label: 'Подъезд / дорога' },
+  { key: 'isDivisible', label: 'Делимый участок' },
+  { key: 'noEncumbrances', label: 'Без обременений' },
+];
+
+const BIZ_ASSETS: { key: string; label: string }[] = [
+  { key: 'aEquip', label: 'Оборудование включено' },
+  { key: 'aOnline', label: 'Сайт · соцсети · база клиентов' },
+  { key: 'aTeam', label: 'Команда остаётся' },
+  { key: 'aBrand', label: 'Бренд и торговая марка' },
+  { key: 'aLease', label: 'Договор аренды (пролонгация)' },
+  { key: 'aSuppliers', label: 'Поставщики (контракты)' },
+];
+
+const CHART = [44, 52, 58, 62, 60, 68, 72, 70, 75, 78, 84, 88];
+
+/* ───────────────────────── мелкие UI-примитивы ───────────────────────── */
+const Lab = ({ children }: { children: React.ReactNode }) => (
+  <span className="mono text-[10.5px] font-semibold uppercase tracking-[0.1em] text-ink-500">{children}</span>
+);
+const Tag = ({ children }: { children: React.ReactNode }) => (
+  <span className="mono text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">{children}</span>
+);
+
+function Field({ label, value, onChange, placeholder, prefix, suffix, mono, type = 'text', inputMode, list }: {
+  label?: string; value: string; onChange?: (v: string) => void; placeholder?: string;
+  prefix?: string; suffix?: string; mono?: boolean; type?: string;
+  inputMode?: 'text' | 'numeric' | 'decimal'; list?: string;
+}) {
+  return (
+    <label className="flex w-full flex-col gap-1.5">
+      {label && <Lab>{label}</Lab>}
+      <span className="flex h-12 items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-3.5 transition-shadow focus-within:border-[var(--brand)] focus-within:shadow-[0_0_0_4px_rgba(6,111,54,0.1)]">
+        {prefix && <span className={`shrink-0 text-sm font-semibold text-ink-400 ${mono ? 'mono' : ''}`}>{prefix}</span>}
+        <input
+          type={type} inputMode={inputMode} value={value} placeholder={placeholder} list={list}
+          onChange={e => onChange?.(e.target.value)} readOnly={!onChange}
+          className={`min-w-0 flex-1 bg-transparent text-[14.5px] font-medium text-ink-900 outline-none placeholder:font-normal placeholder:text-ink-300 ${mono ? 'mono' : ''}`}
+        />
+        {suffix && <span className="mono shrink-0 text-[11.5px] font-medium text-ink-400">{suffix}</span>}
+      </span>
+    </label>
+  );
 }
 
-// ── Карта: точка + рисование границ участка ─────────────────────────────────
-type LatLng = { lat: number; lng: number };
+const CityDatalist = () => (
+  <datalist id="kz-cities">{KZ_CITIES.map(c => <option key={c} value={c} />)}</datalist>
+);
 
-function LocationPicker({ value, onChange, boundary, onBoundaryChange }: {
-  value: LatLng | null;
-  onChange: (v: LatLng | null) => void;
-  boundary: LatLng[] | null;
-  onBoundaryChange: (b: LatLng[] | null) => void;
-}) {
-  const mapEl = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mapRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const pinRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const polygonRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const draftPolyRef = useRef<any>(null);
-  const drawPtsRef = useRef<[number, number][]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const dotMarkersRef = useRef<any[]>([]);
-  const modeRef = useRef<'pin' | 'draw'>('pin');
-  const [ready, setReady] = useState(false);
-  const [mode, setMode] = useState<'pin' | 'draw'>('pin');
-  const [drawCount, setDrawCount] = useState(0);
-
-  useEffect(() => { modeRef.current = mode; }, [mode]);
-  useEffect(() => { loadLeaflet().then(() => setReady(true)).catch(() => {}); }, []);
-
-  useEffect(() => {
-    if (!ready || !mapEl.current || mapRef.current || !window.L) return;
-    if ((mapEl.current as HTMLElement & { _leaflet_id?: number })._leaflet_id) return;
-    const L = window.L;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const map: any = L.map(mapEl.current, {
-      zoomControl: true, scrollWheelZoom: true,
-      maxBounds: KZ_BOUNDS, maxBoundsViscosity: 1.0, doubleClickZoom: false,
-    });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap', maxZoom: 19,
-    }).addTo(map);
-    map.fitBounds(KZ_BOUNDS);
-    map.once('moveend', () => map.setMinZoom(map.getZoom()));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    map.on('click', (e: any) => {
-      const { lat, lng } = e.latlng;
-      if (modeRef.current === 'pin') {
-        onChange({ lat: +lat.toFixed(6), lng: +lng.toFixed(6) });
-      } else {
-        const pt: [number, number] = [+lat.toFixed(6), +lng.toFixed(6)];
-        drawPtsRef.current.push(pt);
-        setDrawCount(drawPtsRef.current.length);
-        // Видимый маркер-точка
-        const dot = L.circleMarker(pt, {
-          radius: 6, color: '#ffffff', weight: 2,
-          fillColor: '#066F36', fillOpacity: 1,
-        }).addTo(map);
-        dotMarkersRef.current.push(dot);
-        if (draftPolyRef.current) draftPolyRef.current.remove();
-        if (drawPtsRef.current.length >= 2) {
-          draftPolyRef.current = L.polygon(drawPtsRef.current, {
-            color: '#066F36', weight: 2, dashArray: '6 4', fillOpacity: 0.08,
-          }).addTo(map);
-        }
-      }
-    });
-    mapRef.current = map;
-    return () => { map.remove(); mapRef.current = null; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready]);
-
-  // Render saved boundary
-  useEffect(() => {
-    if (!ready || !mapRef.current || !window.L) return;
-    const L = window.L;
-    if (polygonRef.current) { polygonRef.current.remove(); polygonRef.current = null; }
-    if (boundary && boundary.length >= 3) {
-      polygonRef.current = L.polygon(boundary.map(p => [p.lat, p.lng]), {
-        color: '#066F36', weight: 2, fillOpacity: 0.15,
-      }).addTo(mapRef.current);
-      mapRef.current.fitBounds(polygonRef.current.getBounds(), { padding: [20, 20] });
-    }
-  }, [boundary, ready]);
-
-  // Render pin
-  useEffect(() => {
-    if (!ready || !mapRef.current || !window.L) return;
-    const L = window.L;
-    if (!value) { pinRef.current?.remove(); pinRef.current = null; return; }
-    const icon = L.divIcon({
-      className: '',
-      html: `<div style="width:18px;height:18px;background:#066F36;border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.35)"></div>`,
-      iconAnchor: [9, 9],
-    });
-    if (pinRef.current) pinRef.current.setLatLng([value.lat, value.lng]);
-    else pinRef.current = L.marker([value.lat, value.lng], { icon }).addTo(mapRef.current);
-  }, [value, ready]);
-
-  const clearDots = () => {
-    dotMarkersRef.current.forEach(d => d.remove());
-    dotMarkersRef.current = [];
-  };
-
-  const finishDraw = () => {
-    if (drawPtsRef.current.length >= 3) {
-      onBoundaryChange(drawPtsRef.current.map(([lat, lng]) => ({ lat, lng })));
-    }
-    if (draftPolyRef.current) { draftPolyRef.current.remove(); draftPolyRef.current = null; }
-    clearDots();
-    drawPtsRef.current = []; setDrawCount(0); setMode('pin');
-  };
-  const cancelDraw = () => {
-    if (draftPolyRef.current) { draftPolyRef.current.remove(); draftPolyRef.current = null; }
-    clearDots();
-    drawPtsRef.current = []; setDrawCount(0); setMode('pin');
-  };
-
+function Toggle({ label, on, onClick }: { label: string; on: boolean; onClick: () => void }) {
   return (
-    <div className="space-y-2">
-      {/* Переключатель режима */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <button type="button" onClick={() => { cancelDraw(); setMode('pin'); }}
-          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${mode === 'pin' ? 'bg-zinc-900 text-white border-zinc-900' : 'bg-white text-zinc-500 border-zinc-200 hover:border-zinc-300'}`}>
-          Отметить точку
+    <button type="button" onClick={onClick}
+      className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-colors ${on ? 'border-[var(--brand)] bg-[var(--brand-50)]' : 'border-[var(--line)] bg-white hover:border-ink-300'}`}>
+      <span className={`relative h-5 w-8 shrink-0 rounded-full transition-colors ${on ? 'bg-[var(--brand)]' : 'bg-zinc-300'}`}>
+        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${on ? 'left-[14px]' : 'left-0.5'}`} />
+      </span>
+      <span className="flex-1 text-[13px] font-medium leading-tight text-ink-900">{label}</span>
+    </button>
+  );
+}
+
+function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick}
+      className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[12.5px] font-medium transition-colors ${active ? 'border-[var(--brand)] bg-[var(--brand-50)] text-[var(--brand-ink)]' : 'border-[var(--line)] bg-white text-ink-900 hover:border-ink-300'}`}>
+      {active && <span className="flex size-3.5 items-center justify-center rounded-full bg-[var(--brand)] text-[9px] font-black text-white">✓</span>}
+      {label}
+    </button>
+  );
+}
+
+function Tile({ k, s, active, onClick }: { k: string; s: string; active: boolean; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick}
+      className={`h-16 rounded-xl border px-3 py-2 text-left transition-colors ${active ? 'border-[1.5px] border-[var(--brand)] bg-[var(--brand-50)]' : 'border-[var(--line)] bg-white hover:border-ink-300'}`}>
+      <div className={`text-[13.5px] font-extrabold leading-tight tracking-[-0.02em] ${active ? 'text-[var(--brand-ink)]' : 'text-ink-900'}`}>{k}</div>
+      <div className={`mono mt-0.5 text-[9.5px] leading-tight ${active ? 'text-[var(--brand)]' : 'text-ink-400'}`}>{s}</div>
+    </button>
+  );
+}
+
+const H3 = ({ children, req }: { children: React.ReactNode; req?: boolean }) => (
+  <div className="mb-3 flex items-baseline justify-between">
+    <h3 className="text-[17px] font-extrabold tracking-[-0.035em] text-ink-900">{children}</h3>
+    {req && <span className="mono text-[10px] uppercase tracking-[0.08em] text-ink-400">обязательно</span>}
+  </div>
+);
+
+/* Зелёная плашка «сверено / бесплатно» */
+const GreenNote = ({ children }: { children: React.ReactNode }) => (
+  <div className="flex items-center gap-2.5 rounded-xl border border-[rgba(6,111,54,0.18)] bg-[rgba(6,111,54,0.06)] px-3.5 py-2.5">
+    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-white"><Check className="size-3.5" strokeWidth={3} /></span>
+    <div className="flex-1 text-[13px] leading-snug text-[var(--brand-ink)]">{children}</div>
+  </div>
+);
+
+/* ───────────────────────── экран выбора типа ───────────────────────── */
+function TypeChooser({ onPick }: { onPick: (e: 'land' | 'business') => void }) {
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
+      <Tag>новое объявление</Tag>
+      <h1 className="mt-3 text-3xl font-black leading-[1.05] tracking-[-0.05em] text-ink-900 sm:text-4xl">
+        Что будете продавать?
+      </h1>
+      <p className="mt-3 max-w-md text-[14px] leading-relaxed text-ink-500">
+        Поля и проверки разные — выберите, чтобы мы не задавали лишнего.
+      </p>
+
+      <div className="mt-8 grid gap-4 sm:grid-cols-2">
+        {/* Участок */}
+        <button type="button" onClick={() => onPick('land')}
+          className="group overflow-hidden rounded-3xl border-[1.5px] border-[var(--brand)] bg-[var(--brand-50)] text-left transition-shadow hover:shadow-lg">
+          <div className="map-bg relative h-32">
+            <svg className="absolute inset-0 h-full w-full" viewBox="0 0 360 128" preserveAspectRatio="none">
+              <polygon className="dash" points="80,34 230,22 300,60 250,104 120,110" fill="rgba(6,111,54,0.22)" stroke="#066F36" strokeWidth="1.5" strokeDasharray="4 3" />
+            </svg>
+            <span className="mono absolute right-3 top-3 rounded bg-[rgba(9,9,11,0.85)] px-2 py-1 text-[9.5px] font-semibold uppercase tracking-[0.06em] text-white">~3 мин</span>
+          </div>
+          <div className="p-5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-black tracking-[-0.04em] text-[var(--brand-ink)]">Участок земли</h3>
+              <span className="flex size-6 items-center justify-center rounded-full bg-[var(--brand)] text-white transition-transform group-hover:translate-x-0.5"><ChevronRight className="size-3.5" strokeWidth={3} /></span>
+            </div>
+            <p className="mt-1.5 text-[12.5px] leading-snug text-ink-700">
+              ИЖС, дача, ЛПХ, коммерция или с/х. Контур на карте, сверка с кадастром.
+            </p>
+          </div>
         </button>
-        <button type="button" onClick={() => setMode('draw')}
-          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${mode === 'draw' ? 'bg-primary text-white border-primary' : 'bg-white text-zinc-500 border-zinc-200 hover:border-zinc-300'}`}>
-          Нарисовать границы участка
+
+        {/* Бизнес */}
+        <button type="button" onClick={() => onPick('business')}
+          className="group overflow-hidden rounded-3xl border border-[var(--line)] bg-white text-left transition-shadow hover:shadow-lg">
+          <div className="ph-biz noise relative h-32">
+            <span className="mono absolute left-3 top-3 rounded bg-[rgba(9,9,11,0.85)] px-2 py-1 text-[9.5px] font-bold uppercase tracking-[0.06em] text-white">NDA</span>
+            <span className="mono absolute right-3 top-3 rounded bg-[rgba(9,9,11,0.85)] px-2 py-1 text-[9.5px] font-semibold uppercase tracking-[0.06em] text-white">~5 мин</span>
+          </div>
+          <div className="p-5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-black tracking-[-0.04em] text-ink-900">Готовый бизнес</h3>
+              <span className="flex size-6 items-center justify-center rounded-full bg-ink-900 text-white transition-transform group-hover:translate-x-0.5"><ChevronRight className="size-3.5" strokeWidth={3} /></span>
+            </div>
+            <p className="mt-1.5 text-[12.5px] leading-snug text-ink-500">
+              Кафе, магазин, сервис, производство. Финансы под NDA, окупаемость и P&amp;L.
+            </p>
+          </div>
         </button>
-        {boundary && (
-          <button type="button" onClick={() => onBoundaryChange(null)}
-            className="ml-auto text-xs font-semibold text-red-400 hover:text-red-600 transition-colors">
-            Очистить границу
-          </button>
-        )}
       </div>
 
-      {/* Карта */}
-      <div className="relative rounded-2xl overflow-hidden border border-zinc-200" style={{ isolation: 'isolate' }}>
-        {!ready && (
-          <div className="absolute inset-0 flex items-center justify-center bg-zinc-100 z-10 text-xs font-semibold text-zinc-400">
-            Загрузка карты...
-          </div>
-        )}
-        <div ref={mapEl} style={{ height: 280 }} />
-        {ready && (
-          <div className="absolute inset-x-0 top-3 flex justify-center pointer-events-none z-[400]">
-            {mode === 'pin' && !value && !boundary && (
-              <span className="bg-black/60 text-white text-[11px] font-semibold px-3 py-1.5 rounded-full backdrop-blur-sm">
-                Нажмите чтобы поставить точку
-              </span>
-            )}
-            {mode === 'draw' && (
-              <span className="bg-primary text-white text-[11px] font-semibold px-3 py-1.5 rounded-full">
-                {drawCount === 0
-                  ? 'Кликайте по углам участка'
-                  : `${drawCount} точ${drawCount === 1 ? 'ка' : drawCount < 5 ? 'ки' : 'ек'} · минимум 3 для завершения`}
-              </span>
-            )}
-          </div>
-        )}
+      <div className="mt-6 text-center">
+        <a href="tel:+77000000000" className="text-[13px] font-medium text-ink-500">
+          Помощь с публикацией <span className="font-bold text-[var(--brand)]">· бесплатный звонок</span>
+        </a>
       </div>
-
-      {/* Кнопки рисования */}
-      {mode === 'draw' && (
-        <div className="flex gap-2">
-          <button type="button" onClick={finishDraw} disabled={drawCount < 3}
-            className="px-4 py-2 rounded-xl text-xs font-bold bg-primary text-white disabled:opacity-40 transition-all">
-            Сохранить границу ({drawCount} точек)
-          </button>
-          <button type="button" onClick={cancelDraw}
-            className="px-4 py-2 rounded-xl text-xs font-bold bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-all">
-            Отмена
-          </button>
-        </div>
-      )}
-
-      {value && mode === 'pin' && (
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-zinc-400">{value.lat}, {value.lng}</span>
-          <button type="button" onClick={() => onChange(null)}
-            className="text-xs font-semibold text-red-400 hover:text-red-600 transition-colors">
-            Убрать точку
-          </button>
-        </div>
-      )}
-      {boundary && <p className="text-xs text-primary font-semibold">✓ Граница участка сохранена ({boundary.length} точек)</p>}
     </div>
   );
 }
 
-// ── Константы ────────────────────────────────────────────────────────────────
-const KZ_CITIES = [
-  'Алматы', 'Астана', 'Шымкент', 'Актобе', 'Атырау', 'Павлодар', 'Семей',
-  'Қарағанды', 'Тараз', 'Өскемен', 'Актау', 'Уральск', 'Петропавловск',
-  'Талдыкорган', 'Кызылорда', 'Туркестан', 'Кокшетау', 'Темиртау',
-  'Экибастуз', 'Рудный', 'Жанаозен', 'Конаев', 'Степногорск', 'Балхаш',
-  'Сатпаев', 'Риддер', 'Байконур', 'Жезказган', 'Каскелен', 'Талгар',
-  'Есик', 'Капшагай', 'Щучинск', 'Бурабай', 'Хромтау', 'Боралдай',
-  'Отеген батыр', 'Жаркент', 'Ленгер', 'Кентау', 'Сарыагаш', 'Шардара',
-  'Арысь', 'Аксай', 'Аркалык', 'Аксу', 'Приозёрск', 'Абай', 'Житикара',
-  'Аральск', 'Форт-Шевченко', 'Бейнеу', 'Зайсан', 'Алтай', 'Каратау',
-  'Шу', 'Мамлютка', 'Лисаковск', 'Ушарал',
-];
+/* ───────────────────────── рельс шагов (десктоп) ───────────────────────── */
+function StepRail({ steps, current, percent, minutes }: {
+  steps: { t: string; s: string }[]; current: number; percent: number; minutes: number;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      {steps.map((s, i) => {
+        const done = i < current, now = i === current;
+        return (
+          <div key={i} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${now ? 'bg-[var(--paper-2)]' : ''}`}>
+            <span className={`mono flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold ${done ? 'bg-[var(--brand)] text-white' : now ? 'bg-ink-900 text-white' : 'border border-[var(--line)] bg-white text-ink-400'}`}>
+              {done ? '✓' : i + 1}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className={`truncate text-[13px] font-bold tracking-[-0.02em] ${done || now ? 'text-ink-900' : 'text-ink-400'}`}>{s.t}</div>
+              <div className="truncate text-[11px] text-ink-400">{s.s}</div>
+            </div>
+          </div>
+        );
+      })}
+      <div className="mt-4 rounded-xl bg-[var(--paper-2)] p-3.5">
+        <Lab>заполнено</Lab>
+        <div className="mt-1.5 text-2xl font-black tracking-[-0.04em] text-[var(--brand-ink)]">{percent}%</div>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white">
+          <div className="h-full rounded-full bg-[var(--brand)] transition-all" style={{ width: `${percent}%` }} />
+        </div>
+        <p className="mt-2.5 text-[11px] leading-snug text-ink-500">~{minutes} мин до публикации.</p>
+      </div>
+    </div>
+  );
+}
 
-const RELIEF_TYPES = ['Ровный', 'Под уклон'];
+/* Мобильный прогресс (шапка) */
+function MobileProgress({ step, total }: { step: number; total: number }) {
+  return (
+    <div className="flex gap-1 lg:hidden">
+      {Array.from({ length: total }).map((_, i) => (
+        <span key={i} className={`h-[3px] flex-1 rounded-full ${i <= step ? 'bg-[var(--brand)]' : 'bg-[var(--paper-3)]'}`} />
+      ))}
+    </div>
+  );
+}
 
-const OWNERSHIP_TYPES = ['Частная собственность', 'Аренда'] as const;
-const LOCATION_TYPES = [
-  { value: 'city', label: 'В городе' },
-  { value: 'suburb', label: 'В пригороде' },
-  { value: 'highway', label: 'Вдоль трассы' },
-  { value: 'water', label: 'Возле водоёма' },
-  { value: 'foothills', label: 'В предгорьях' },
-  { value: 'dacha', label: 'В дачном массиве' },
-] as const;
-const PLOT_SHAPES = ['Прямоугольный', 'Квадратный', 'Г-образный', 'Трапеция', 'Нестандартный'] as const;
+/* Загрузка документов (локально к заявке — бэкенд-поля нет, прикладывается к модерации) */
+function DocUploader() {
+  const [docs, setDocs] = useState<File[]>([]);
+  const dref = useRef<HTMLInputElement>(null);
+  return (
+    <div className="space-y-2.5">
+      <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-[1.5px] border-dashed border-[var(--brand)] bg-gradient-to-b from-[var(--brand-50)] to-white px-5 py-6 text-center">
+        <span className="flex size-10 items-center justify-center rounded-full bg-[var(--brand)] text-white"><Upload className="size-5" /></span>
+        <div className="text-[15px] font-black tracking-[-0.02em] text-[var(--brand-ink)]">Перетащите файлы или выберите</div>
+        <div className="max-w-sm text-[12px] leading-snug text-ink-500">Можно фото бумаги с телефона — выправим перспективу. До 20 МБ за файл.</div>
+        <input ref={dref} type="file" multiple className="hidden" accept=".pdf,.jpg,.jpeg,.png,.heic,.docx"
+          onChange={e => { const f = Array.from(e.target.files ?? []); if (f.length) setDocs(p => [...p, ...f]); e.target.value = ''; }} />
+      </label>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <button type="button" onClick={() => dref.current?.click()} className="flex items-center gap-2.5 rounded-xl border border-[var(--line)] bg-white px-3.5 py-2.5 text-left">
+          <span className="flex size-8 items-center justify-center rounded-lg bg-ink-900 text-white"><Camera className="size-4" /></span>
+          <div className="flex-1"><div className="text-[13px] font-bold text-ink-900">Сфотографировать</div><div className="text-[11px] text-ink-500">камера телефона</div></div>
+        </button>
+        <button type="button" onClick={() => dref.current?.click()} className="flex items-center gap-2.5 rounded-xl border border-[var(--line)] bg-white px-3.5 py-2.5 text-left">
+          <span className="mono flex size-8 items-center justify-center rounded-lg bg-[#003B7A] text-[11px] font-black text-white">eG</span>
+          <div className="flex-1"><div className="text-[13px] font-bold text-ink-900">Из eGov.kz</div><div className="text-[11px] text-ink-500">выписка по ИИН</div></div>
+        </button>
+      </div>
+      {docs.length > 0 && (
+        <div className="flex flex-col gap-2">
+          {docs.map((d, i) => (
+            <div key={i} className="flex items-center gap-3 rounded-xl border border-[var(--line)] bg-white px-3.5 py-2.5">
+              <span className="mono flex h-11 w-9 items-center justify-center rounded border border-[var(--line)] text-[9px] font-black text-[var(--brand)]">{(d.name.split('.').pop() || 'DOC').slice(0, 4).toUpperCase()}</span>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[13px] font-bold text-ink-900">{d.name}</div>
+                <div className="mono flex items-center gap-1.5 text-[10.5px] text-ink-500"><Lock className="size-3" /> {(d.size / 1024 / 1024).toFixed(1)} МБ · защищено NDA</div>
+              </div>
+              <button type="button" onClick={() => setDocs(p => p.filter((_, j) => j !== i))} className="text-ink-400 hover:text-ink-900">✕</button>
+            </div>
+          ))}
+          <p className="mono text-[10.5px] text-ink-400">Документы прикладываются к заявке — модератор проверит перед публикацией.</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
-// ── Главный компонент ────────────────────────────────────────────────────────
+/* ───────────────────────── главный компонент ───────────────────────── */
 export default function AddListingPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -268,646 +311,789 @@ export default function AddListingPage() {
     if (!loading && !user) router.replace('/login?next=/add-listing');
   }, [loading, user, router]);
 
-  const [errors, setErrors]             = useState<Record<string, string>>({});
+  const [entity, setEntity] = useState<'land' | 'business' | null>(null);
+  const [step, setStep] = useState(0);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted]   = useState(false);
-  const [countdown, setCountdown]       = useState(5);
-  const [photos, setPhotos]             = useState<File[]>([]);
-  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
-  const [dragIndex, setDragIndex]       = useState<number | null>(null);
-  const [dragOver, setDragOver]         = useState<number | null>(null);
-  const [markerPos, setMarkerPos]       = useState<LatLng | null>(null);
-  const [plotBoundary, setPlotBoundary] = useState<LatLng[] | null>(null);
-  const [isGeocoding, setIsGeocoding]   = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [countdown, setCountdown] = useState(5);
 
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
+  const [markerPos, setMarkerPos] = useState<LatLng | null>(null);
+  const [boundary, setBoundary] = useState<LatLng[] | null>(null);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  // Данные участка
   const [fd, setFd] = useState({
     dealType: 'sale' as 'sale' | 'rent',
-    landType: '', area: '', price: '',
-    location: '', address: '',
-    locationType: [] as string[],
-    hasElectricity: false, hasGas: false, hasWater: false, hasSewer: false, hasRoadAccess: false,
-    hasStateAct: true, isPledged: false, isDivisible: false, isOnRedLine: false,
-    hasEncumbrances: false, canChangePurpose: false,
-    ownershipType: '', purpose: '',
-    landCategory: '', cadastralNumber: '',
-    reliefType: '', plotShape: '',
+    landType: '', area: '', price: '', priceUsd: false, mortgage: false,
+    location: '', address: '', cadastralNumber: '',
+    hasStateAct: false, hasElectricity: false, hasWater: false, hasGas: false,
+    hasSewer: false, hasRoadAccess: false, isDivisible: false, noEncumbrances: false,
+    canChangePurpose: false,
     description: '',
-    name: '', phone: '', hasWhatsApp: false,
+    name: '', phone: '', wantCall: true, wantWhatsApp: true,
+  });
+  // Данные бизнеса
+  const [bd, setBd] = useState({
+    category: '', name: '', age: '', legalForm: '', employees: '',
+    location: '', address: '', buildingArea: '', rent: '', floor: '',
+    revenue: '', profit: '', price: '',
+    hideUntilNda: true,
+    aEquip: false, aOnline: false, aTeam: false, aBrand: false, aLease: false, aSuppliers: false,
+    description: '',
+    name2: '', phone: '', wantCall: true, wantWhatsApp: true,
   });
 
-  // Заполнить контакты из аккаунта
   useEffect(() => {
     if (user) {
-      setFd(prev => ({
-        ...prev,
-        name: user.name || prev.name,
-        phone: user.phone || prev.phone,
-      }));
+      setFd(p => ({ ...p, name: p.name || user.name || '', phone: p.phone || user.phone || '' }));
+      setBd(p => ({ ...p, name2: p.name2 || user.name || '', phone: p.phone || user.phone || '' }));
     }
   }, [user]);
 
-  const set = (k: keyof typeof fd, v: string | boolean | string[]) =>
-    setFd(prev => ({ ...prev, [k]: v }));
+  useEffect(() => { pushDataLayer('add_listing_open'); }, []);
+  useEffect(() => () => { photoPreviews.forEach(u => URL.revokeObjectURL(u)); }, [photoPreviews]);
 
-  const toggle = (k: keyof typeof fd) =>
-    setFd(prev => ({ ...prev, [k]: !prev[k] }));
+  const setL = (k: keyof typeof fd, v: string | boolean) => setFd(p => ({ ...p, [k]: v }));
+  const setB = (k: keyof typeof bd, v: string | boolean) => setBd(p => ({ ...p, [k]: v }));
 
-  const toggleLocationType = (val: string) =>
-    setFd(prev => ({
-      ...prev,
-      locationType: prev.locationType.includes(val)
-        ? prev.locationType.filter(v => v !== val)
-        : [...prev.locationType, val],
-    }));
-
-  // Заголовок генерируем МЫ по правилу продукта (клиент его не заполняет) — см. lib/listing-title
-  const autoTitle = generateTitle({
-    landType: fd.landType,
-    purpose: fd.purpose,
-    area: fd.area ? Number(fd.area) : undefined,
-    reliefType: fd.reliefType,
-    plotShape: fd.plotShape,
-    hasStateAct: fd.hasStateAct,
-    hasElectricity: fd.hasElectricity,
-    hasWater: fd.hasWater,
-    hasGas: fd.hasGas,
-    locationType: fd.locationType,
-  });
-
-  // Обратное геокодирование при постановке точки
+  // Обратное геокодирование при постановке точки (участок)
   useEffect(() => {
     if (!markerPos) return;
-    const controller = new AbortController();
+    const ctrl = new AbortController();
     setIsGeocoding(true);
-    fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${markerPos.lat}&lon=${markerPos.lng}&format=json&accept-language=ru`,
-      { signal: controller.signal }
-    )
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${markerPos.lat}&lon=${markerPos.lng}&format=json&accept-language=ru`, { signal: ctrl.signal })
       .then(r => r.json())
       .then(data => {
-        const addr = data.address ?? {};
-        const road   = addr.road || addr.residential || addr.pedestrian || '';
-        const nbhd   = addr.neighbourhood || addr.suburb || addr.city_district || '';
-        const city   = addr.city || addr.town || addr.village || addr.county || '';
-        const state  = (addr.state || '').replace(/\s*область$/i, ' обл.').trim();
-        // Улица/район → поле address; город+область → location
-        const streetParts = [road, nbhd].filter(Boolean);
-        if (streetParts.length) set('address', streetParts.join(', '));
-        const cityParts = [city, state].filter(Boolean);
-        if (cityParts.length) set('location', cityParts.join(', '));
+        const a = data.address ?? {};
+        const road = a.road || a.residential || a.pedestrian || '';
+        const nbhd = a.neighbourhood || a.suburb || a.city_district || '';
+        const city = a.city || a.town || a.village || a.county || '';
+        const state = (a.state || '').replace(/\s*область$/i, ' обл.').trim();
+        const street = [road, nbhd].filter(Boolean).join(', ');
+        const loc = [city, state].filter(Boolean).join(', ');
+        if (street) setL('address', street);
+        if (loc) setL('location', loc);
       })
       .catch(() => {})
       .finally(() => setIsGeocoding(false));
-    return () => controller.abort();
+    return () => ctrl.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [markerPos]);
 
-  useEffect(() => {
-    pushDataLayer('add_listing_open');
-    return () => { photoPreviews.forEach(url => URL.revokeObjectURL(url)); };
-  }, []);
-
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotos = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-    setPhotos(prev => [...prev, ...files]);
-    setPhotoPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))]);
+    setPhotos(p => [...p, ...files]);
+    setPhotoPreviews(p => [...p, ...files.map(f => URL.createObjectURL(f))]);
     e.target.value = '';
   };
-
   const removePhoto = (i: number) => {
-    setPhotos(prev => prev.filter((_, j) => j !== i));
-    setPhotoPreviews(prev => { URL.revokeObjectURL(prev[i]); return prev.filter((_, j) => j !== i); });
+    setPhotos(p => p.filter((_, j) => j !== i));
+    setPhotoPreviews(p => { URL.revokeObjectURL(p[i]); return p.filter((_, j) => j !== i); });
   };
-
   const movePhoto = (from: number, to: number) => {
     if (from === to) return;
-    const reorder = <T,>(arr: T[]) => {
-      const next = [...arr];
-      const [item] = next.splice(from, 1);
-      next.splice(to, 0, item);
-      return next;
-    };
-    setPhotos(prev => reorder(prev));
-    setPhotoPreviews(prev => reorder(prev));
+    const re = <T,>(arr: T[]) => { const n = [...arr]; const [it] = n.splice(from, 1); n.splice(to, 0, it); return n; };
+    setPhotos(re); setPhotoPreviews(re);
   };
 
-  const validate = (): Record<string, string> => {
-    const e: Record<string, string> = {};
-    if (!fd.area || Number(fd.area) <= 0) e.area = 'Укажите площадь';
-    if (!fd.price || rawPrice(fd.price) <= 0) e.price = 'Укажите цену';
-    if (!fd.phone.trim()) e.phone = 'Укажите телефон';
-    if (photos.length === 0) e.photos = 'Добавьте хотя бы одно фото';
-    return e;
+  // ── деривативы ──
+  const landAutoTitle = generateTitle({
+    landType: fd.landType, area: fd.area ? Number(fd.area) : undefined,
+    hasStateAct: fd.hasStateAct, hasElectricity: fd.hasElectricity, hasWater: fd.hasWater, hasGas: fd.hasGas,
+  });
+  const landPerSotka = fd.area && fd.price ? rawPrice(fd.price) / Number(fd.area) : 0;
+  const bizMargin = bd.revenue && bd.profit ? (rawPrice(bd.profit) / rawPrice(bd.revenue)) * 100 : 0;
+  const bizPayback = bd.profit && bd.price ? rawPrice(bd.price) / rawPrice(bd.profit) : 0;
+  const bizMultiple = bd.profit && bd.price ? rawPrice(bd.price) / (rawPrice(bd.profit) * 12) : 0;
+
+  const landSteps = [
+    { t: 'Тип и расположение', s: 'Категория · карта · кадастр' },
+    { t: 'Параметры и цена', s: 'Площадь, цена, документы' },
+    { t: 'Фотографии', s: 'Минимум 4 · обложка' },
+    { t: 'Контакты и публикация', s: 'Кто отвечает покупателю' },
+  ];
+  const bizSteps = [
+    { t: 'Категория бизнеса', s: 'Сегмент · возраст · персонал' },
+    { t: 'Локация и помещение', s: 'Адрес · площадь · аренда' },
+    { t: 'Финансы и цена', s: 'Выручка, прибыль, окупаемость' },
+    { t: 'Документы и фото', s: 'Опись активов · фото' },
+    { t: 'Контакты и публикация', s: 'NDA · кто отвечает' },
+  ];
+  const steps = entity === 'business' ? bizSteps : landSteps;
+  const total = steps.length;
+  const minutes = entity === 'business' ? 5 : 3;
+
+  // Чек-лист (участок) для процента и сайдбара
+  const landChecklist: [string, boolean][] = [
+    ['Тип и категория', !!fd.landType],
+    ['Адрес и контур', !!markerPos || !!boundary || !!fd.location.trim()],
+    ['Площадь и цена', !!fd.area && rawPrice(fd.price) > 0],
+    ['Документы', LAND_TOGGLES.some(t => (fd as Record<string, unknown>)[t.key])],
+    ['Описание ≥ 200 знаков', fd.description.trim().length >= 200],
+    ['Фото ≥ 4 шт', photos.length >= 4],
+    ['Контакты', !!fd.phone.trim()],
+  ];
+  const bizChecklist: [string, boolean][] = [
+    ['Категория и название', !!bd.category && !!bd.name.trim()],
+    ['Локация и площадь', !!bd.location.trim() && !!bd.buildingArea],
+    ['Финансы и цена', rawPrice(bd.revenue) > 0 && rawPrice(bd.price) > 0],
+    ['Опись активов', BIZ_ASSETS.some(a => (bd as Record<string, unknown>)[a.key])],
+    ['Фото ≥ 4 шт', photos.length >= 4],
+    ['Контакты', !!bd.phone.trim()],
+  ];
+  const checklist = entity === 'business' ? bizChecklist : landChecklist;
+  const percent = useMemo(() => Math.round((checklist.filter(c => c[1]).length / checklist.length) * 100), [checklist]);
+
+  const isLast = step === total - 1;
+
+  /* ── навигация ── */
+  const goNext = () => {
+    setErrors({});
+    if (isLast) { submit('published'); return; }
+    setStep(s => Math.min(s + 1, total - 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const goBack = () => {
+    if (step === 0) { setEntity(null); return; }
+    setStep(s => s - 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  /* ── боевой сабмит ── */
+  const uploadPhotos = async (): Promise<string[]> => {
+    const ids: string[] = [];
+    for (const file of photos) {
+      const form = new FormData();
+      form.append('file', file);
+      const r = await fetch('/api/media', { method: 'POST', body: form });
+      if (r.ok) { const d = await r.json(); ids.push(d.doc.id); }
+    }
+    return ids;
   };
 
   const submit = async (status: 'draft' | 'published') => {
-    pushDataLayer('add_listing_submit_attempt');
-    const errs = validate();
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      pushDataLayer('add_listing_submit_error', { form: 'add_listing' });
-      setTimeout(() => {
-        const el = document.querySelector<HTMLElement>('[data-error="true"]');
-        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 50);
+    pushDataLayer('add_listing_submit_attempt', { entity });
+    // финальная валидация
+    const e: Record<string, string> = {};
+    if (entity === 'land') {
+      if (!fd.landType) e.landType = 'Выберите тип участка';
+      if (!fd.area || Number(fd.area) <= 0) e.area = 'Укажите площадь';
+      if (rawPrice(fd.price) <= 0) e.price = 'Укажите цену';
+      if (!fd.phone.trim()) e.phone = 'Укажите телефон';
+      if (photos.length === 0) e.photos = 'Добавьте хотя бы одно фото';
+    } else {
+      if (!bd.category) e.category = 'Выберите категорию';
+      if (!bd.name.trim()) e.name = 'Укажите название';
+      if (rawPrice(bd.price) <= 0) e.price = 'Укажите цену';
+      if (!bd.phone.trim()) e.phone = 'Укажите телефон';
+      if (photos.length === 0) e.photos = 'Добавьте хотя бы одно фото';
+    }
+    if (Object.keys(e).length) {
+      setErrors(e);
+      pushDataLayer('add_listing_submit_error', { entity });
+      // Перепрыгнуть на шаг с первой ошибкой, чтобы она была видна
+      const landStepOf: Record<string, number> = { landType: 0, area: 1, price: 1, photos: 2, phone: 3 };
+      const bizStepOf: Record<string, number> = { category: 0, name: 0, price: 2, photos: 3, phone: 4 };
+      const map = entity === 'business' ? bizStepOf : landStepOf;
+      const firstStep = Object.keys(e).map(k => map[k]).filter(v => v !== undefined).sort((a, b) => a - b)[0];
+      if (firstStep !== undefined && firstStep !== step) {
+        setStep(firstStep);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
       return;
     }
-    setErrors({});
     setIsSubmitting(true);
     try {
-      const mediaIds: string[] = [];
-      for (const file of photos) {
-        const form = new FormData();
-        form.append('file', file);
-        const r = await fetch('/api/media', { method: 'POST', body: form });
-        if (r.ok) { const d = await r.json(); mediaIds.push(d.doc.id); }
+      const images = (await uploadPhotos()).map(id => ({ image: id }));
+      let body: Record<string, unknown>;
+      if (entity === 'land') {
+        body = {
+          title: landAutoTitle || 'Участок',
+          listingCategory: 'land',
+          dealType: fd.dealType,
+          landType: fd.landType || 'ИЖС',
+          area: Number(fd.area),
+          price: rawPrice(fd.price),
+          location: fd.location || 'Казахстан',
+          address: fd.address || undefined,
+          hasElectricity: fd.hasElectricity, hasGas: fd.hasGas, hasWater: fd.hasWater,
+          hasSewer: fd.hasSewer, hasRoadAccess: fd.hasRoadAccess,
+          hasStateAct: fd.hasStateAct, isDivisible: fd.isDivisible,
+          hasEncumbrances: !fd.noEncumbrances,
+          canChangePurpose: fd.canChangePurpose,
+          cadastralNumber: fd.cadastralNumber || undefined,
+          plotBoundary: boundary ? JSON.stringify(boundary) : undefined,
+          description: fd.description || undefined,
+          lat: markerPos?.lat, lng: markerPos?.lng,
+        };
+      } else {
+        const parts: string[] = [];
+        if (bd.legalForm) parts.push(`Юр. форма: ${bd.legalForm}`);
+        if (bd.age) parts.push(`Возраст: ${bd.age}`);
+        if (bd.employees) parts.push(`Сотрудников: ${bd.employees}`);
+        if (bd.profit) parts.push(`Чистая прибыль/мес: ${human(rawPrice(bd.profit))} ₸`);
+        if (bd.rent) parts.push(`Аренда/собственность: ${bd.rent}`);
+        const assetsOn = BIZ_ASSETS.filter(a => (bd as Record<string, unknown>)[a.key]).map(a => a.label);
+        if (assetsOn.length) parts.push(`В продажу входит: ${assetsOn.join(', ')}`);
+        const extra = parts.length ? `\n\n${parts.join(' · ')}` : '';
+        body = {
+          title: bd.name || 'Готовый бизнес',
+          listingCategory: 'business',
+          dealType: 'sale',
+          businessType: bd.category || 'other',
+          price: rawPrice(bd.price),
+          buildingArea: bd.buildingArea ? Number(bd.buildingArea) : undefined,
+          monthlyRevenue: bd.revenue ? rawPrice(bd.revenue) : undefined,
+          paybackMonths: bizPayback ? Math.round(bizPayback) : undefined,
+          isOperational: true,
+          floor: bd.floor ? Number(bd.floor) : undefined,
+          location: bd.location || 'Казахстан',
+          address: bd.address || undefined,
+          description: (bd.description || '') + extra || undefined,
+          lat: markerPos?.lat, lng: markerPos?.lng,
+        };
       }
-      const body = {
-        title: autoTitle || 'Участок',
-        listingCategory: 'land',
-        dealType: fd.dealType,
-        landType: fd.landType || 'ИЖС',
-        area: Number(fd.area),
-        price: rawPrice(fd.price),
-        location: fd.location || 'Казахстан',
-        address: fd.address || undefined,
-        locationType: fd.locationType.length ? fd.locationType : undefined,
-        hasElectricity: fd.hasElectricity, hasGas: fd.hasGas,
-        hasWater: fd.hasWater, hasSewer: fd.hasSewer, hasRoadAccess: fd.hasRoadAccess,
-        hasStateAct: fd.hasStateAct, isPledged: fd.isPledged,
-        isDivisible: fd.isDivisible, isOnRedLine: fd.isOnRedLine,
-        hasEncumbrances: fd.hasEncumbrances,
-        canChangePurpose: fd.canChangePurpose,
-        ownershipType: fd.ownershipType || undefined,
-        purpose: fd.purpose || undefined,
-        landCategory: fd.landCategory || undefined,
-        cadastralNumber: fd.cadastralNumber || undefined,
-        reliefType: fd.reliefType || undefined,
-        plotShape: fd.plotShape || undefined,
-        plotBoundary: plotBoundary ? JSON.stringify(plotBoundary) : undefined,
-        description: fd.description || undefined,
+      const common = {
         seller: user?.id || undefined,
-        sellerName: fd.name, sellerPhone: fd.phone, sellerHasWhatsApp: fd.hasWhatsApp,
+        sellerName: entity === 'land' ? fd.name : bd.name2,
+        sellerPhone: entity === 'land' ? fd.phone : bd.phone,
+        sellerHasWhatsApp: entity === 'land' ? fd.wantWhatsApp : bd.wantWhatsApp,
         sellerIsAgency: user?.isAgency ?? false,
-        lat: markerPos?.lat, lng: markerPos?.lng,
         status,
-        images: mediaIds.map(id => ({ image: id })),
+        images,
       };
       const r = await fetch('/api/listings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...body, ...common }),
       });
       if (!r.ok) {
         const err = await r.json().catch(() => ({}));
         throw new Error(err?.errors?.[0]?.message ?? 'Ошибка сервера');
       }
-      pushDataLayer('add_listing_submit_success', { form: 'add_listing', status });
+      pushDataLayer('add_listing_submit_success', { entity, status });
       setIsSubmitted(true);
       let c = 5;
       const timer = setInterval(() => {
-        c -= 1;
-        setCountdown(c);
+        c -= 1; setCountdown(c);
         if (c <= 0) { clearInterval(timer); router.push('/profile'); }
       }, 1000);
-    } catch (e) {
-      setErrors({ submit: e instanceof Error ? e.message : 'Ошибка при отправке. Попробуйте ещё раз.' });
+    } catch (err) {
+      setErrors({ submit: err instanceof Error ? err.message : 'Ошибка при отправке. Попробуйте ещё раз.' });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const boolVals: Record<string, boolean> = {
-    hasElectricity: fd.hasElectricity, hasGas: fd.hasGas, hasWater: fd.hasWater,
-    hasSewer: fd.hasSewer, hasRoadAccess: fd.hasRoadAccess,
-    isPledged: fd.isPledged, isOnRedLine: fd.isOnRedLine, isDivisible: fd.isDivisible,
-  };
-
-  const inputCls = (err?: string) =>
-    `w-full rounded-2xl border bg-zinc-50 px-4 py-3.5 text-sm font-bold text-zinc-900 outline-none transition-colors focus:bg-white focus:ring-4 focus:ring-primary/10 placeholder:font-medium placeholder:text-zinc-400 ${err ? 'border-red-400 focus:border-red-400' : 'border-zinc-200 focus:border-primary'}`;
-
-  const SectionHead = ({ n, title, hint }: { n: number; title: string; hint?: string }) => (
-    <div className="flex items-start gap-3 mb-5">
-      <div className="w-7 h-7 rounded-full bg-zinc-900 flex items-center justify-center shrink-0 mt-0.5">
-        <span className="text-[11px] font-black text-white">{n}</span>
-      </div>
-      <div>
-        <h2 className="text-base font-bold text-zinc-900 leading-snug">{title}</h2>
-        {hint && <p className="text-xs text-zinc-400 mt-0.5">{hint}</p>}
-      </div>
-    </div>
-  );
-
-  const Pill = ({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) => (
-    <button type="button" onClick={onClick}
-      className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all active:scale-95 ${
-        active
-          ? 'bg-primary border-primary text-white shadow-sm'
-          : 'bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:text-zinc-700'
-      }`}>
-      {label}
-    </button>
-  );
-
-  if (loading) {
+  /* ── экраны загрузки/гварда ── */
+  if (loading || !user) {
     return (
-      <div className="min-h-[calc(100vh-80px)] bg-zinc-50 flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      <div className="flex min-h-[calc(100vh-140px)] items-center justify-center bg-[var(--paper)]">
+        <div className="size-8 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
       </div>
     );
   }
 
-  if (!user) {
+  if (!entity) {
     return (
-      <div className="min-h-[calc(100vh-80px)] bg-zinc-50 flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      <div className="submit-page min-h-[calc(100vh-140px)]">
+        <TypeChooser onPick={(e) => { setEntity(e); setStep(0); pushDataLayer('add_listing_pick_entity', { entity: e }); }} />
       </div>
     );
   }
 
+  /* ── успех ── */
+  if (isSubmitted) {
+    return (
+      <div className="submit-page flex min-h-[calc(100vh-140px)] items-center justify-center px-4">
+        <div className="w-full max-w-md rounded-3xl border border-[var(--line)] bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-[var(--brand)]">
+            <Check className="size-7 text-white" strokeWidth={3} />
+          </div>
+          <h2 className="text-lg font-black tracking-tight text-ink-900">Отправлено на модерацию</h2>
+          <p className="mt-1.5 text-[13px] text-ink-500">Публикация бесплатна. Объявление пройдёт проверку — обычно до 15 минут.</p>
+          <p className="mono mt-3 text-[11px] text-ink-400">Переход в кабинет через {countdown} сек…</p>
+          <button onClick={() => router.push('/profile')} className="mt-3 text-[13px] font-bold text-[var(--brand)] hover:underline">Перейти сейчас →</button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ───────────────────────── мастер ───────────────────────── */
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900">
-      <div className="py-8 pb-28">
-        <Container>
+    <div className="submit-page min-h-[calc(100vh-140px)] pb-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Хлебные крошки + заголовок */}
+        <div className="pt-6">
+          <div className="flex items-center gap-1.5 text-[12.5px] text-ink-500">
+            <Link href="/profile" className="hover:text-ink-900">Кабинет</Link>
+            <span className="text-ink-300">/</span>
+            <button onClick={() => setEntity(null)} className="hover:text-ink-900">Новое объявление</button>
+            <span className="text-ink-300">/</span>
+            <span className="font-semibold text-ink-900">{entity === 'business' ? 'Готовый бизнес' : 'Участок'}</span>
+          </div>
+          <div className="mt-3 flex items-end justify-between gap-4">
+            <div>
+              <Tag>{String(step + 1).padStart(2, '0')} · {steps[step].t.toLowerCase()}</Tag>
+              <h1 className="mt-1.5 text-2xl font-black leading-none tracking-[-0.05em] text-[var(--brand-ink)] sm:text-3xl">
+                Подача объявления — <span className="text-ink-300">{entity === 'business' ? 'бизнес' : 'участок'}</span>
+              </h1>
+            </div>
+            <button onClick={() => submit('draft')} disabled={isSubmitting}
+              className="hidden shrink-0 rounded-xl border border-[var(--line)] bg-white px-4 py-2.5 text-[13px] font-bold text-ink-700 transition-colors hover:bg-[var(--paper-2)] disabled:opacity-50 sm:block">
+              Сохранить черновик
+            </button>
+          </div>
+        </div>
 
-          <div className="max-w-2xl mx-auto mb-7">
-            <Link href="/profile" className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-400 hover:text-zinc-600 transition-colors mb-5">
-              <ChevronLeft className="size-4" />
-              Личный кабинет
-            </Link>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900">Новое объявление</h1>
-            <p className="mt-1.5 text-sm text-zinc-500">Земельный участок · Казахстан</p>
+        {/* Мобильный прогресс */}
+        <div className="mt-4 lg:hidden">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="mono text-[10px] font-semibold uppercase tracking-[0.1em] text-ink-400">Шаг {step + 1} из {total}</span>
+            <span className="mono text-[10px] font-semibold text-[var(--brand)]">{percent}%</span>
+          </div>
+          <MobileProgress step={step} total={total} />
+        </div>
+
+        {/* Сетка: рельс | форма | сайдбар */}
+        <div className="mt-6 grid gap-7 lg:grid-cols-[220px_1fr_320px]">
+          {/* Рельс */}
+          <aside className="hidden lg:block">
+            <StepRail steps={steps} current={step} percent={percent} minutes={minutes} />
+          </aside>
+
+          {/* Форма */}
+          <div className="min-w-0">
+            {entity === 'land' ? renderLandStep() : renderBizStep()}
           </div>
 
-          <form onSubmit={e => { e.preventDefault(); submit('draft'); }} className="max-w-2xl mx-auto space-y-3">
-
-            {/* ── 1. Основное ───────────────────────────────────────────────── */}
-            <section className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-5 sm:p-7 space-y-5">
-              <SectionHead n={1} title="Основная информация" />
-
-              {/* Тип сделки — сегментированный контрол */}
-              <div className="flex rounded-2xl bg-zinc-100 p-1 gap-1">
-                {(['sale', 'rent'] as const).map(dt => (
-                  <button key={dt} type="button" onClick={() => set('dealType', dt)}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                      fd.dealType === dt
-                        ? 'bg-white text-zinc-900 shadow-sm'
-                        : 'text-zinc-400 hover:text-zinc-600'
-                    }`}>
-                    {dt === 'sale' ? 'Продажа' : 'Сдать в аренду'}
-                  </button>
+          {/* Сайдбар — превью + чек-лист */}
+          <aside className="hidden flex-col gap-3.5 lg:flex">
+            {entity === 'land' ? LandPreview() : BizPreview()}
+            <div className="rounded-2xl border border-[var(--line)] bg-white p-4">
+              <Lab>чек-лист</Lab>
+              <div className="mt-2.5 flex flex-col gap-2">
+                {checklist.map(([t, ok], i) => (
+                  <div key={i} className="flex items-center gap-2.5">
+                    <span className={`flex size-4 items-center justify-center rounded-full text-[10px] font-black ${ok ? 'bg-[var(--brand)] text-white' : 'border-[1.5px] border-dashed border-ink-300'}`}>{ok ? '✓' : ''}</span>
+                    <span className={`flex-1 text-[12.5px] ${ok ? 'text-ink-900' : 'text-ink-500'}`}>{t}</span>
+                  </div>
                 ))}
               </div>
-
-              {/* Тип участка */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-3">
-                  Тип участка <span className="text-red-400">*</span>
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {LAND_CATEGORIES.map(cat => (
-                    <Pill key={cat} label={cat}
-                      active={fd.landType === cat}
-                      onClick={() => set('landType', fd.landType === cat ? '' : cat)} />
-                  ))}
-                </div>
+            </div>
+            <div className="rounded-2xl bg-[var(--brand-ink)] p-4 text-white">
+              <span className="mono text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55">совет</span>
+              <div className="mt-2 text-[14px] font-extrabold tracking-[-0.025em]">
+                {entity === 'business' ? 'P&L за 12 месяцев' : 'Живое фото — большой плюс'}
               </div>
+              <p className="mt-1.5 text-[12px] leading-snug text-white/70">
+                {entity === 'business'
+                  ? 'Опись активов и отчёт P&L повышают доверие. Серьёзные покупатели фильтруют по детализации.'
+                  : 'Объявления с реальными фото участка и подъезда кликают заметно чаще стоковых.'}
+              </p>
+            </div>
+          </aside>
+        </div>
+      </div>
 
-              {/* Площадь + Цена */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">
-                    Площадь <span className="text-red-400">*</span>
-                  </label>
-                  <div className="relative">
-                    <input type="number" min="1" placeholder="6"
-                      value={fd.area} onChange={e => set('area', e.target.value)}
-                      data-error={errors.area ? 'true' : undefined}
-                      className={inputCls(errors.area)} />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400 pointer-events-none">сот.</span>
-                  </div>
-                  {errors.area && <p className="mt-1 text-xs text-red-500">{errors.area}</p>}
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">
-                    {fd.dealType === 'rent' ? 'Аренда / мес.' : 'Цена'} <span className="text-red-400">*</span>
-                  </label>
-                  <div className="relative">
-                    <input type="text" inputMode="numeric"
-                      placeholder={fd.dealType === 'rent' ? '150 000' : '15 000 000'}
-                      value={fd.price} onChange={e => set('price', fmtPrice(e.target.value))}
-                      className={inputCls(errors.price)} />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400 pointer-events-none">
-                      {fd.dealType === 'rent' ? '₸/мес' : '₸'}
-                    </span>
-                  </div>
-                  {errors.price && <p className="mt-1 text-xs text-red-500">{errors.price}</p>}
-                </div>
-              </div>
-
-              {autoTitle && (
-                <p className="text-xs text-zinc-400">
-                  Заголовок: <span className="font-semibold text-zinc-600">{autoTitle}</span>
-                </p>
-              )}
-            </section>
-
-            {/* ── 2. Фото ───────────────────────────────────────────────────── */}
-            <section className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-5 sm:p-7 space-y-4">
-              <SectionHead n={2} title="Фото и видео" hint="Фото и видео увеличивают просмотры в 3–5 раз" />
-
-              {/* Подсказки форматов */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-xl border border-primary/20 bg-primary-soft p-3 flex gap-2.5 items-start">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-primary mt-0.5 shrink-0"><rect x="2" y="6" width="15" height="12" rx="2"/><path d="m17 9 5-3v12l-5-3V9Z"/></svg>
-                  <div>
-                    <p className="text-xs font-bold text-zinc-800">Видео 9:16</p>
-                    <p className="text-[11px] text-zinc-500 leading-relaxed">как Reels · MP4/MOV · до 200 МБ</p>
-                  </div>
-                </div>
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 flex gap-2.5 items-start">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400 mt-0.5 shrink-0"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-                  <div>
-                    <p className="text-xs font-bold text-zinc-800">Фото</p>
-                    <p className="text-[11px] text-zinc-500 leading-relaxed">JPG · PNG · до 50 МБ</p>
-                  </div>
-                </div>
-              </div>
-
-              {photoPreviews.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-[11px] text-zinc-400">Перетащите чтобы изменить порядок · первое — обложка</p>
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                    {photoPreviews.map((src, i) => {
-                      const isVid = photos[i]?.type.startsWith('video/');
-                      return (
-                        <div key={i} draggable
-                          onDragStart={() => setDragIndex(i)}
-                          onDragOver={e => { e.preventDefault(); setDragOver(i); }}
-                          onDrop={e => { e.preventDefault(); if (dragIndex !== null) movePhoto(dragIndex, i); setDragIndex(null); setDragOver(null); }}
-                          onDragEnd={() => { setDragIndex(null); setDragOver(null); }}
-                          className={`relative aspect-square rounded-xl overflow-hidden bg-zinc-100 group cursor-grab transition-all ${dragOver === i && dragIndex !== i ? 'ring-2 ring-primary' : ''} ${dragIndex === i ? 'opacity-40' : ''}`}>
-                          {i === 0 && <div className="absolute top-1 left-1 z-10 bg-primary text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">1</div>}
-                          {isVid ? (
-                            <>
-                              <video src={src} className="w-full h-full object-cover" muted playsInline />
-                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                <div className="w-7 h-7 rounded-full bg-black/50 flex items-center justify-center">
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
-                                </div>
-                              </div>
-                            </>
-                          ) : (
-                            <img src={src} alt="" className="w-full h-full object-cover" />
-                          )}
-                          <button type="button" onClick={() => removePhoto(i)}
-                            className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              <label data-error={errors.photos ? 'true' : undefined} className={`flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed cursor-pointer transition-all group ${
-                errors.photos ? 'border-red-300 bg-red-50' : 'border-zinc-200 bg-zinc-50 hover:border-primary/40 hover:bg-primary-soft/30'
-              } ${photoPreviews.length > 0 ? 'h-20' : 'h-36'}`}>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={`mb-1.5 text-zinc-400 group-hover:text-primary transition-colors ${photoPreviews.length > 0 ? 'w-5 h-5' : 'w-7 h-7'}`}>
-                  <path fillRule="evenodd" d="M11.47 2.47a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1-1.06 1.06l-3.22-3.22V16.5a.75.75 0 0 1-1.5 0V4.81L8.03 8.03a.75.75 0 0 1-1.06-1.06l4.5-4.5ZM3 15.75a.75.75 0 0 1 .75.75v2.25a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5V16.5a.75.75 0 0 1 1.5 0v2.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V16.5a.75.75 0 0 1 .75-.75Z" clipRule="evenodd" />
-                </svg>
-                <span className="text-sm font-semibold text-zinc-500 group-hover:text-primary transition-colors">
-                  {photos.length > 0 ? 'Добавить ещё' : 'Загрузить фото или видео'}
-                </span>
-                {photos.length === 0 && <span className="text-xs text-zinc-400 mt-0.5">JPG, PNG, MP4, MOV · до 200 МБ</span>}
-                <input ref={fileInputRef} type="file" className="hidden" multiple
-                  accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm"
-                  onChange={handlePhotoChange} />
-              </label>
-              {errors.photos && <p className="text-xs text-red-500">{errors.photos}</p>}
-            </section>
-
-            {/* ── 3. Расположение ───────────────────────────────────────────── */}
-            <section className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-5 sm:p-7 space-y-4">
-              <SectionHead n={3} title="Расположение" />
-
-              <LocationPicker
-                value={markerPos} onChange={setMarkerPos}
-                boundary={plotBoundary} onBoundaryChange={setPlotBoundary}
-              />
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Город</label>
-                  <div className="relative">
-                    <input type="text" list="kz-cities" placeholder="Алматы, Каскелен..."
-                      value={fd.location} onChange={e => set('location', e.target.value)}
-                      className={inputCls()} />
-                    {isGeocoding && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-primary animate-pulse">Определяем...</span>}
-                  </div>
-                  <datalist id="kz-cities">{KZ_CITIES.map(c => <option key={c} value={c} />)}</datalist>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Адрес / ориентир</label>
-                  <input type="text" placeholder="вдоль трассы БАК..."
-                    value={fd.address} onChange={e => set('address', e.target.value)}
-                    className={inputCls()} />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Окружение</label>
-                <div className="flex flex-wrap gap-2">
-                  {LOCATION_TYPES.map(({ value, label }) => (
-                    <Pill key={value} label={label}
-                      active={fd.locationType.includes(value)}
-                      onClick={() => toggleLocationType(value)} />
-                  ))}
-                </div>
-              </div>
-            </section>
-
-            {/* ── 4. Характеристики ─────────────────────────────────────────── */}
-            <section className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-5 sm:p-7 space-y-5">
-              <SectionHead n={4} title="Характеристики участка" />
-
-              {/* Коммуникации */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Коммуникации</label>
-                <div className="flex flex-wrap gap-2">
-                  {UTILITIES.map(({ key, icon: Icon, label, active }) => (
-                    <button key={key} type="button" onClick={() => toggle(key as keyof typeof fd)}
-                      className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border transition-all active:scale-95 ${
-                        boolVals[key] ? active : 'bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:text-zinc-700'
-                      }`}>
-                      <Icon className="w-3.5 h-3.5" strokeWidth={2.5} />
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="border-t border-zinc-100 pt-4 space-y-4">
-                {/* Право собственности */}
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Право собственности</label>
-                  <div className="flex gap-2 flex-wrap">
-                    <Pill label="Частная собственность"
-                      active={fd.ownershipType === 'Частная собственность'}
-                      onClick={() => set('ownershipType', fd.ownershipType === 'Частная собственность' ? '' : 'Частная собственность')} />
-                    <Pill label="Гос. аренда"
-                      active={fd.ownershipType === 'Аренда'}
-                      onClick={() => set('ownershipType', fd.ownershipType === 'Аренда' ? '' : 'Аренда')} />
-                  </div>
-                </div>
-
-                {/* Геометрия */}
-                <div className="space-y-3">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400">Геометрия</label>
-                  <div>
-                    <p className="text-xs text-zinc-400 mb-2">Рельеф</p>
-                    <div className="flex gap-2">
-                      {RELIEF_TYPES.map(r => (
-                        <button key={r} type="button" onClick={() => set('reliefType', fd.reliefType === r ? '' : r)}
-                          className={`flex-1 py-2 rounded-xl text-sm font-semibold border transition-all ${
-                            fd.reliefType === r ? 'bg-primary border-primary text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-300'
-                          }`}>
-                          {r}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs text-zinc-400 mb-2">Форма участка</p>
-                    <div className="flex flex-wrap gap-2">
-                      {PLOT_SHAPES.map(s => (
-                        <Pill key={s} label={s}
-                          active={fd.plotShape === s}
-                          onClick={() => set('plotShape', fd.plotShape === s ? '' : s)} />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* ── 5. Документы ──────────────────────────────────────────────── */}
-            <section className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-5 sm:p-7 space-y-4">
-              <SectionHead n={5} title="Юридические данные" />
-
-              <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={() => toggle('hasStateAct')}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border transition-all active:scale-95 ${
-                    fd.hasStateAct ? 'bg-primary-soft border-primary/30 text-primary' : 'bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300'
-                  }`}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                  Гос. акт
-                </button>
-                {LEGAL_FILTERS.map(({ key, icon: Icon, label, active }) => (
-                  <button key={key} type="button" onClick={() => toggle(key as keyof typeof fd)}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border transition-all active:scale-95 ${
-                      boolVals[key] ? active : 'bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300'
-                    }`}>
-                    <Icon className="w-3.5 h-3.5" strokeWidth={2.5} />
-                    {label}
-                  </button>
-                ))}
-                <button type="button" onClick={() => toggle('hasEncumbrances')}
-                  className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all active:scale-95 ${
-                    fd.hasEncumbrances ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300'
-                  }`}>
-                  Обременения
-                </button>
-                <button type="button" onClick={() => toggle('canChangePurpose')}
-                  className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all active:scale-95 ${
-                    fd.canChangePurpose ? 'bg-sky-50 border-sky-300 text-sky-700' : 'bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300'
-                  }`}>
-                  Смена назначения
-                </button>
-              </div>
-
-              <div className="pt-2 border-t border-zinc-100">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Кадастровый номер</label>
-                <input type="text" placeholder="20-315-094-111"
-                  value={fd.cadastralNumber} onChange={e => set('cadastralNumber', e.target.value)}
-                  className={inputCls()} />
-              </div>
-            </section>
-
-            {/* ── 6. Описание ───────────────────────────────────────────────── */}
-            <section className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-5 sm:p-7 space-y-3">
-              <div className="flex items-start justify-between">
-                <SectionHead n={6} title="Описание" hint="Необязательно, но помогает покупателям" />
-                <span className="text-xs text-zinc-400 mt-1">{fd.description.length}/2000</span>
-              </div>
-              <textarea rows={4} maxLength={2000}
-                placeholder="Плюсы участка, особенности, история продажи, что рядом..."
-                value={fd.description} onChange={e => set('description', e.target.value)}
-                className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 placeholder:text-zinc-400 resize-none transition-all" />
-            </section>
-
-            {/* ── 7. Контакты ───────────────────────────────────────────────── */}
-            <section className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-5 sm:p-7 space-y-4">
-              <SectionHead n={7} title="Ваши контакты" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Имя</label>
-                  <input type="text" placeholder="Как к вам обращаться"
-                    value={fd.name} onChange={e => set('name', e.target.value)}
-                    className={inputCls()} />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Телефон <span className="text-red-400">*</span></label>
-                  <input type="tel" placeholder="+7 700 000 00 00"
-                    value={fd.phone} onChange={e => set('phone', e.target.value)}
-                    data-error={errors.phone ? 'true' : undefined}
-                    className={inputCls(errors.phone)} />
-                  {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
-                </div>
-              </div>
-              <label className="flex items-center gap-3 cursor-pointer select-none w-fit">
-                <div onClick={() => toggle('hasWhatsApp')}
-                  className={`relative w-10 h-6 rounded-full transition-colors ${fd.hasWhatsApp ? 'bg-[#25D366]' : 'bg-zinc-200'}`}>
-                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${fd.hasWhatsApp ? 'translate-x-5' : 'translate-x-1'}`} />
-                </div>
-                <span className="text-sm font-medium text-zinc-600">Есть WhatsApp на этом номере</span>
-              </label>
-            </section>
-
-            {/* ── Кнопки ────────────────────────────────────────────────────── */}
-            {errors.submit && <p className="text-sm text-red-500 text-center">{errors.submit}</p>}
-            {isSubmitted ? (
-              <div className="rounded-2xl bg-primary-soft border border-primary/20 px-6 py-8 text-center space-y-2">
-                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center mx-auto mb-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                </div>
-                <p className="font-bold text-zinc-900 text-base">Объявление отправлено на проверку</p>
-                <p className="text-sm text-zinc-500">Публикация в течение 24 часов</p>
-                <p className="text-xs text-zinc-400 pt-1">Переход в личный кабинет через {countdown} сек...</p>
-                <button type="button" onClick={() => router.push('/profile')}
-                  className="mt-2 text-sm font-semibold text-primary hover:underline">
-                  Перейти сейчас →
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-col sm:flex-row gap-2">
-                <button type="button" onClick={() => submit('draft')} disabled={isSubmitting}
-                  className="sm:w-auto rounded-2xl border border-zinc-200 px-6 py-3.5 text-sm font-bold text-zinc-600 hover:bg-zinc-100 transition-colors disabled:opacity-50">
-                  Сохранить черновик
-                </button>
-                <button type="submit" disabled={isSubmitting}
-                  className="flex-1 rounded-2xl bg-primary py-3.5 text-sm font-bold text-white shadow-md shadow-primary/20 transition-all hover:bg-primary-hover hover:-translate-y-0.5 active:scale-95 disabled:opacity-60 disabled:pointer-events-none">
-                  {isSubmitting ? 'Отправка...' : 'Опубликовать'}
-                </button>
-              </div>
-            )}
-
-          </form>
-        </Container>
+      {/* Sticky-панель действий */}
+      <div className="sticky bottom-0 z-30 mt-8 border-t border-[var(--line)] bg-white/95 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3.5 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3">
+            <button onClick={goBack} disabled={isSubmitting}
+              className="inline-flex h-11 items-center gap-1.5 rounded-xl border border-[var(--line)] bg-white px-4 text-[13px] font-bold text-ink-700 transition-colors hover:bg-[var(--paper-2)] disabled:opacity-50">
+              <ChevronLeft className="size-4" /> Назад
+            </button>
+            <span className="mono hidden text-[10.5px] uppercase tracking-[0.08em] text-ink-400 sm:block">
+              шаг {step + 1} из {total} · ~{minutes} мин
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="hidden text-[12px] text-ink-500 sm:block">Публикация — бесплатно</span>
+            <button onClick={goNext} disabled={isSubmitting}
+              className={`inline-flex h-12 items-center gap-2 rounded-xl px-5 text-[14px] font-bold text-white transition-all disabled:opacity-60 ${isLast ? 'bg-[var(--brand)] shadow-[0_10px_30px_-12px_rgba(6,111,54,0.6)] hover:bg-[var(--brand-700)]' : 'bg-ink-900 hover:bg-black'}`}>
+              {isSubmitting ? 'Отправка…' : isLast ? 'Опубликовать бесплатно' : `Дальше — ${steps[step + 1].t.split(' ')[0]}`}
+              {!isSubmitting && <ChevronRight className="size-4" />}
+            </button>
+          </div>
+        </div>
+        {errors.submit && <p className="pb-2 text-center text-[12px] text-ink-900">{errors.submit}</p>}
       </div>
     </div>
   );
+
+  /* ═══════════════ участок — шаги ═══════════════ */
+  function renderLandStep() {
+    if (step === 0) return (
+      <div className="space-y-7">
+        <section>
+          <H3 req>Тип участка</H3>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {PLOT_TYPES.map(t => (
+              <Tile key={t.k} k={t.k} s={t.s} active={fd.landType === t.k}
+                onClick={() => setL('landType', fd.landType === t.k ? '' : t.k)} />
+            ))}
+          </div>
+          {errors.landType && <p className="mt-2 text-[12px] text-ink-900">{errors.landType}</p>}
+        </section>
+
+        <section>
+          <H3>Адрес и границы</H3>
+          <div className="mb-3 grid gap-2.5 sm:grid-cols-2">
+            <div className="relative">
+              <CityDatalist />
+              <Field label="Область / город" value={fd.location} onChange={v => setL('location', v)} placeholder="Алматинская обл., Талгар" list="kz-cities" />
+              {isGeocoding && <span className="mono absolute right-3 top-9 text-[10px] font-bold text-[var(--brand)]">определяем…</span>}
+            </div>
+            <Field label="Кадастровый номер" value={fd.cadastralNumber} onChange={v => setL('cadastralNumber', v)} placeholder="03-068-026-841" mono />
+          </div>
+          <MapEditor value={markerPos} onChange={setMarkerPos} boundary={boundary} onBoundaryChange={setBoundary} />
+          {boundary && (
+            <div className="mt-2.5">
+              <GreenNote><strong>Контур сохранён.</strong> Площадь по контуру подставится автоматически — сверьте с выпиской из кадастра.</GreenNote>
+            </div>
+          )}
+          <div className="mt-3">
+            <Field label="Адрес / ориентир" value={fd.address} onChange={v => setL('address', v)} placeholder="вдоль трассы, рядом школа…" />
+          </div>
+        </section>
+      </div>
+    );
+
+    if (step === 1) return (
+      <div className="space-y-7">
+        <section>
+          <H3 req>Площадь и цена</H3>
+          <div className="grid gap-2.5 sm:grid-cols-3">
+            <Field label="Площадь" value={fd.area} onChange={v => setL('area', v.replace(/[^\d.]/g, ''))} placeholder="6" suffix="соток" mono inputMode="decimal" />
+            <Field label={fd.dealType === 'rent' ? 'Аренда / мес.' : 'Цена'} value={fd.price} onChange={v => setL('price', fmtPrice(v))} placeholder="15 000 000" prefix="₸" mono inputMode="numeric" />
+            <Field label="Цена за сотку" value={landPerSotka ? `≈ ${human(landPerSotka)}` : ''} placeholder="считаем сами" suffix="₸ / сот." mono />
+          </div>
+          {(errors.area || errors.price) && <p className="mt-2 text-[12px] text-ink-900">{errors.area || errors.price}</p>}
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            <Chip label="Цена в долларах" active={fd.priceUsd} onClick={() => setL('priceUsd', !fd.priceUsd)} />
+            <Chip label="Возможна ипотека" active={fd.mortgage} onClick={() => setL('mortgage', !fd.mortgage)} />
+          </div>
+        </section>
+
+        <section>
+          <H3>Документы и коммуникации</H3>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {LAND_TOGGLES.map(t => (
+              <Toggle key={t.key} label={t.label} on={!!(fd as Record<string, unknown>)[t.key]}
+                onClick={() => setL(t.key as keyof typeof fd, !(fd as Record<string, unknown>)[t.key])} />
+            ))}
+          </div>
+          <div className="mt-2">
+            <Toggle label="Возможна смена целевого назначения" on={fd.canChangePurpose} onClick={() => setL('canChangePurpose', !fd.canChangePurpose)} />
+          </div>
+        </section>
+
+        <section>
+          <div className="mb-2 flex items-baseline justify-between">
+            <H3>Описание</H3>
+            <span className="mono text-[10px] text-ink-400">{fd.description.length} / 1500</span>
+          </div>
+          <textarea rows={5} maxLength={1500} value={fd.description} onChange={e => setL('description', e.target.value)}
+            placeholder="Что выгодно отличает участок: соседи, подъезд, вид, история продажи…"
+            className="w-full resize-none rounded-xl border border-[var(--line)] bg-white px-3.5 py-3 text-[14px] leading-relaxed text-ink-900 outline-none transition-shadow placeholder:text-ink-300 focus:border-[var(--brand)] focus:shadow-[0_0_0_4px_rgba(6,111,54,0.1)]" />
+          <p className="mt-1.5 text-[11.5px] text-ink-400">Без эмодзи и КАПСА — алгоритм понижает такие тексты в выдаче.</p>
+        </section>
+      </div>
+    );
+
+    if (step === 2) return PhotosStep({ min: 4, kind: 'land' });
+
+    return ContactsStep({ kind: 'land' });
+  }
+
+  /* ═══════════════ бизнес — шаги ═══════════════ */
+  function renderBizStep() {
+    if (step === 0) return (
+      <div className="space-y-7">
+        <section>
+          <H3 req>Категория и формат</H3>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {BIZ_CATEGORIES.map(t => (
+              <Tile key={t.k} k={t.k} s={t.s} active={bd.category === t.value}
+                onClick={() => setB('category', bd.category === t.value ? '' : t.value)} />
+            ))}
+          </div>
+          {errors.category && <p className="mt-2 text-[12px] text-ink-900">{errors.category}</p>}
+          <div className="mt-3 grid gap-2.5 sm:grid-cols-3">
+            <Field label="Название бизнеса" value={bd.name} onChange={v => setB('name', v)} placeholder="Кофейня «Талгар Бин»" />
+            <Field label="Возраст" value={bd.age} onChange={v => setB('age', v)} placeholder="4 года" />
+            <Field label="Юр. форма" value={bd.legalForm} onChange={v => setB('legalForm', v)} placeholder="ИП на упрощёнке" />
+          </div>
+          {errors.name && <p className="mt-2 text-[12px] text-ink-900">{errors.name}</p>}
+        </section>
+      </div>
+    );
+
+    if (step === 1) return (
+      <div className="space-y-7">
+        <section>
+          <H3>Помещение и адрес</H3>
+          <div className="mb-2.5 grid gap-2.5 sm:grid-cols-2">
+            <div><CityDatalist /><Field label="Город" value={bd.location} onChange={v => setB('location', v)} placeholder="Алматы, мкр Самал-1" list="kz-cities" /></div>
+            <Field label="Адрес" value={bd.address} onChange={v => setB('address', v)} placeholder="ул. Жолдасбекова, 28" />
+          </div>
+          <div className="grid gap-2.5 sm:grid-cols-3">
+            <Field label="Площадь помещения" value={bd.buildingArea} onChange={v => setB('buildingArea', v.replace(/\D/g, ''))} placeholder="86" suffix="м²" mono inputMode="numeric" />
+            <Field label="Этаж" value={bd.floor} onChange={v => setB('floor', v.replace(/\D/g, ''))} placeholder="1" mono inputMode="numeric" />
+            <Field label="Сотрудников" value={bd.employees} onChange={v => setB('employees', v.replace(/\D/g, ''))} placeholder="5" mono inputMode="numeric" />
+          </div>
+          <div className="mt-2.5">
+            <Field label="Аренда / собственность" value={bd.rent} onChange={v => setB('rent', v)} placeholder="Аренда · 800 000 ₸/мес · до 2028" />
+          </div>
+        </section>
+      </div>
+    );
+
+    if (step === 2) return (
+      <div className="space-y-7">
+        <section>
+          <div className="mb-3 flex items-baseline justify-between">
+            <h3 className="text-[17px] font-extrabold tracking-[-0.035em] text-ink-900">Финансы</h3>
+            <button type="button" onClick={() => setB('hideUntilNda', !bd.hideUntilNda)} className="flex items-center gap-2">
+              <span className="text-[11.5px] text-ink-500">Скрывать суммы до NDA</span>
+              <span className={`relative h-5 w-8 rounded-full transition-colors ${bd.hideUntilNda ? 'bg-[var(--brand)]' : 'bg-zinc-300'}`}>
+                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${bd.hideUntilNda ? 'left-[14px]' : 'left-0.5'}`} />
+              </span>
+            </button>
+          </div>
+          <div className="grid gap-2.5 sm:grid-cols-3">
+            <Field label="Выручка / месяц" value={bd.revenue} onChange={v => setB('revenue', fmtPrice(v))} placeholder="4 200 000" prefix="₸" mono inputMode="numeric" />
+            <Field label="Чистая прибыль / мес" value={bd.profit} onChange={v => setB('profit', fmtPrice(v))} placeholder="850 000" prefix="₸" mono inputMode="numeric" />
+            <Field label="Маржа" value={bizMargin ? `≈ ${bizMargin.toFixed(1)} %` : ''} placeholder="считаем сами" mono />
+          </div>
+          <div className="mt-2.5 grid gap-2.5 sm:grid-cols-3">
+            <Field label="Цена бизнеса" value={bd.price} onChange={v => setB('price', fmtPrice(v))} placeholder="14 500 000" prefix="₸" mono inputMode="numeric" />
+            <Field label="Окупаемость" value={bizPayback ? `${Math.round(bizPayback)} мес` : ''} placeholder="—" mono />
+            <Field label="Кратность к прибыли" value={bizMultiple ? `× ${bizMultiple.toFixed(1)}` : ''} placeholder="—" mono />
+          </div>
+          {errors.price && <p className="mt-2 text-[12px] text-ink-900">{errors.price}</p>}
+
+          {/* мини-чарт */}
+          <div className="mt-3.5 rounded-xl border border-[var(--line)] bg-white p-4">
+            <div className="flex items-baseline justify-between">
+              <Lab>выручка по месяцам · 12 мес</Lab>
+              <span className="mono text-[11px] font-bold text-[var(--brand)]">↑ тренд роста</span>
+            </div>
+            <div className="mt-3 flex h-16 items-end gap-1">
+              {CHART.map((h, i) => (
+                <div key={i} className="flex-1 rounded-t-[3px]" style={{ height: `${h}%`, background: i >= 9 ? 'var(--brand)' : i >= 5 ? 'var(--brand-300)' : 'var(--paper-3)' }} />
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-3">
+            <div className="flex items-start gap-2.5 rounded-xl bg-[var(--brand-ink)] p-3.5 text-white">
+              <Lock className="mt-0.5 size-4 shrink-0 text-[var(--brand-300)]" />
+              <div className="text-[12px] leading-snug">
+                <strong>Скрытые финансы открываются после NDA.</strong>{' '}
+                <span className="text-white/70">В превью — только диапазон и кратность. Точные цифры покупатель увидит после согласия с NDA.</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <H3>Что входит в продажу</H3>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {BIZ_ASSETS.map(a => (
+              <Toggle key={a.key} label={a.label} on={!!(bd as Record<string, unknown>)[a.key]}
+                onClick={() => setB(a.key as keyof typeof bd, !(bd as Record<string, unknown>)[a.key])} />
+            ))}
+          </div>
+        </section>
+      </div>
+    );
+
+    if (step === 3) return (
+      <div className="space-y-7">
+        {PhotosStep({ min: 4, kind: 'business' })}
+        <section>
+          <H3>Документы (по NDA)</H3>
+          <DocUploader />
+          <p className="mt-2 text-[11.5px] text-ink-400">
+            Форматы: PDF · JPG · PNG · HEIC · DOCX→PDF. Документы с меткой NDA видны покупателю только после согласия с соглашением о неразглашении.
+          </p>
+        </section>
+      </div>
+    );
+
+    return ContactsStep({ kind: 'business' });
+  }
+
+  /* ═══════════════ общие шаги ═══════════════ */
+  function PhotosStep({ min, kind }: { min: number; kind: 'land' | 'business' }) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <H3 req>Фотографии</H3>
+          <p className="-mt-1 text-[13px] leading-snug text-ink-500">
+            Минимум <strong>{min} фото</strong>. Первое станет обложкой — выбирайте лучшее{kind === 'business' ? ': фасад, зал, кухня' : ': вид, границы, подъезд'}.
+          </p>
+        </div>
+
+        {photoPreviews.length > 0 && (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {photoPreviews.map((src, i) => {
+              const isVid = photos[i]?.type.startsWith('video/');
+              return (
+                <div key={i} draggable
+                  onDragStart={() => setDragIndex(i)}
+                  onDragOver={e => { e.preventDefault(); setDragOver(i); }}
+                  onDrop={e => { e.preventDefault(); if (dragIndex !== null) movePhoto(dragIndex, i); setDragIndex(null); setDragOver(null); }}
+                  onDragEnd={() => { setDragIndex(null); setDragOver(null); }}
+                  className={`group relative aspect-[4/3] cursor-grab overflow-hidden rounded-xl bg-[var(--paper-2)] transition-all ${dragOver === i && dragIndex !== i ? 'ring-2 ring-[var(--brand)]' : ''} ${dragIndex === i ? 'opacity-40' : ''} ${i === 0 ? 'border-2 border-[var(--brand)]' : 'border border-[var(--line)]'}`}>
+                  {i === 0 && <span className="absolute left-1.5 top-1.5 z-10 rounded bg-[var(--brand)] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">Обложка</span>}
+                  {isVid
+                    ? <><video src={src} className="h-full w-full object-cover" muted playsInline /><div className="pointer-events-none absolute inset-0 flex items-center justify-center"><span className="flex size-8 items-center justify-center rounded-full bg-black/50"><Play className="size-3.5 text-white" fill="white" /></span></div></>
+                    : <img src={src} alt="" className="h-full w-full object-cover" />}
+                  <button type="button" onClick={() => removePhoto(i)}
+                    className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100">✕</button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <label className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-[1.5px] border-dashed transition-colors ${errors.photos ? 'border-ink-400 bg-[var(--paper-2)]' : 'border-ink-300 bg-[var(--paper-2)] hover:border-[var(--brand)]'} ${photoPreviews.length ? 'h-20' : 'h-36'}`}>
+          <Upload className="mb-1.5 size-5 text-ink-400" />
+          <span className="text-[13px] font-semibold text-ink-600">{photos.length ? 'Добавить ещё' : 'Загрузить фото или видео'}</span>
+          {!photos.length && <span className="mt-0.5 text-[11px] text-ink-400">JPG · PNG · MP4 · MOV · до 200 МБ</span>}
+          <input ref={fileRef} type="file" className="hidden" multiple
+            accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" onChange={handlePhotos} />
+        </label>
+        {errors.photos && <p className="text-[12px] text-ink-900">{errors.photos}</p>}
+
+        {kind === 'land' && (
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-ink-300 bg-white px-3.5 py-3">
+              <span className="flex size-8 items-center justify-center rounded-lg bg-[var(--paper-2)]"><Play className="size-4 text-ink-500" /></span>
+              <div className="flex-1"><div className="text-[13px] font-bold text-ink-900">Видео-обход</div><div className="text-[11px] text-ink-500">до 60 сек · +35% к просмотрам</div></div>
+            </div>
+            <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-ink-300 bg-white px-3.5 py-3">
+              <span className="flex size-8 items-center justify-center rounded-lg bg-[var(--paper-2)]"><Plane className="size-4 text-ink-500" /></span>
+              <div className="flex-1"><div className="text-[13px] font-bold text-ink-900">Аэро-фото / дрон</div><div className="text-[11px] text-ink-500">заказать у фотографа · сервис</div></div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function ContactsStep({ kind }: { kind: 'land' | 'business' }) {
+    const name = kind === 'land' ? fd.name : bd.name2;
+    const phone = kind === 'land' ? fd.phone : bd.phone;
+    const call = kind === 'land' ? fd.wantCall : bd.wantCall;
+    const wa = kind === 'land' ? fd.wantWhatsApp : bd.wantWhatsApp;
+    const setName = (v: string) => kind === 'land' ? setL('name', v) : setB('name2', v);
+    const setPhone = (v: string) => kind === 'land' ? setL('phone', v) : setB('phone', v);
+    const setCall = () => kind === 'land' ? setL('wantCall', !call) : setB('wantCall', !call);
+    const setWa = () => kind === 'land' ? setL('wantWhatsApp', !wa) : setB('wantWhatsApp', !wa);
+    const initials = (name || 'ВЫ').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+
+    return (
+      <div className="space-y-7">
+        <section>
+          <H3>Кто ответит покупателю</H3>
+          <div className="mb-3 flex items-center gap-3 rounded-xl border border-[var(--line)] bg-white px-3.5 py-3">
+            <span className="flex size-10 items-center justify-center rounded-full bg-[var(--brand-ink)] text-[14px] font-extrabold text-white">{initials}</span>
+            <div className="flex-1">
+              <div className="text-[14px] font-bold tracking-[-0.02em] text-ink-900">{name || 'Ваше имя'} · {user?.isAgency ? 'агент' : 'хозяин'}</div>
+              <div className="mono text-[11px] text-ink-500">{phone || '+7 (___) ___ __ __'}</div>
+            </div>
+          </div>
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            <Field label="Имя" value={name} onChange={setName} placeholder="Как к вам обращаться" />
+            <Field label="Телефон" value={phone} onChange={setPhone} placeholder="+7 700 000 00 00" mono />
+          </div>
+          {errors.phone && <p className="mt-2 text-[12px] text-ink-900">{errors.phone}</p>}
+        </section>
+
+        <section>
+          <H3>Способы связи</H3>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Toggle label="Звонок" on={call} onClick={setCall} />
+            <Toggle label="WhatsApp" on={wa} onClick={setWa} />
+          </div>
+        </section>
+
+        <GreenNote>
+          <strong>Публикация бесплатна.</strong> Продвинуть объявление (Срочно, Реклама) можно позже — из личного кабинета.
+        </GreenNote>
+
+        <p className="rounded-xl bg-[var(--paper-2)] px-3.5 py-3 text-[11.5px] leading-snug text-ink-500">
+          Нажимая «Опубликовать», вы подтверждаете <Link href="/terms" className="text-ink-900 underline">оферту</Link> и достоверность данных. Объявление пройдёт модерацию — обычно до 15 минут.
+        </p>
+      </div>
+    );
+  }
+
+  /* ═══════════════ живой превью ═══════════════ */
+  function LandPreview() {
+    return (
+      <div>
+        <Lab>превью карточки</Lab>
+        <div className="mt-2 overflow-hidden rounded-2xl border border-[var(--line)] bg-white">
+          <div className="ph-plot noise relative aspect-[5/3]">
+            {photoPreviews[0] && <img src={photoPreviews[0]} alt="" className="absolute inset-0 h-full w-full object-cover" />}
+            <span className="absolute left-2.5 top-2.5 rounded bg-[var(--brand-ink)] px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-white">Черновик</span>
+            <span className="absolute right-2.5 top-2.5 flex size-6 items-center justify-center rounded-lg border border-black/5 bg-white/90 text-ink-500"><Bookmark className="size-3.5" /></span>
+          </div>
+          <div className="p-4">
+            <div className="mono text-[10px] uppercase tracking-[0.08em] text-ink-400">{fd.landType || 'участок'}{fd.location ? ` · ${fd.location.split(',')[0]}` : ''}</div>
+            <div className="mt-1 text-[16px] font-black leading-tight tracking-[-0.035em] text-ink-900">{landAutoTitle || 'Заголовок появится автоматически'}</div>
+            <div className="mt-3 flex items-end justify-between">
+              <div>
+                <div className="text-xl font-black tracking-[-0.04em] text-ink-900">{fd.price ? `${mln(rawPrice(fd.price))} ₸` : '— ₸'}</div>
+                <div className="mono mt-0.5 text-[10px] text-[var(--brand)]">{landPerSotka ? `${mln(landPerSotka)} / сотка` : 'цена за сотку'}</div>
+              </div>
+              <span className="mono text-[10px] font-bold text-[var(--brand)]">только что</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function BizPreview() {
+    return (
+      <div>
+        <Lab>превью карточки</Lab>
+        <div className="mt-2 overflow-hidden rounded-2xl border border-[var(--line)] bg-white">
+          <div className="ph-biz noise relative aspect-[5/3]">
+            {photoPreviews[0] && <img src={photoPreviews[0]} alt="" className="absolute inset-0 h-full w-full object-cover" />}
+            <span className="absolute left-2.5 top-2.5 rounded bg-[var(--brand-ink)] px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-white">Бизнес</span>
+            {bizMultiple > 0 && <span className="mono absolute right-2.5 top-2.5 rounded bg-white px-1.5 py-0.5 text-[9.5px] font-bold text-ink-900">× {bizMultiple.toFixed(1)}</span>}
+          </div>
+          <div className="p-4">
+            <div className="mono text-[10px] uppercase tracking-[0.08em] text-ink-400">
+              {BIZ_CATEGORIES.find(c => c.value === bd.category)?.k.split(' ')[0] || 'бизнес'}{bd.location ? ` · ${bd.location.split(',')[0]}` : ''}
+            </div>
+            <div className="mt-1 text-[16px] font-black leading-tight tracking-[-0.035em] text-ink-900">{bd.name || 'Название бизнеса'}</div>
+            <div className="mt-2.5 grid grid-cols-2 gap-2 border-y border-[var(--line)] py-2.5">
+              <div><div className="mono text-[9px] uppercase tracking-[0.08em] text-ink-400">Выручка/мес</div><div className="mt-0.5 text-[13px] font-extrabold tracking-[-0.02em] text-ink-900">{bd.hideUntilNda ? 'по NDA' : bd.revenue ? `${mln(rawPrice(bd.revenue))} ₸` : '—'}</div></div>
+              <div><div className="mono text-[9px] uppercase tracking-[0.08em] text-ink-400">Окупаемость</div><div className="mt-0.5 text-[13px] font-extrabold tracking-[-0.02em] text-ink-900">{bizPayback ? `${Math.round(bizPayback)} мес` : '—'}</div></div>
+            </div>
+            <div className="mt-3 flex items-end justify-between">
+              <div className="text-xl font-black tracking-[-0.04em] text-ink-900">{bd.price ? `${mln(rawPrice(bd.price))} ₸` : '— ₸'}</div>
+              <span className="mono text-[10px] font-bold text-[var(--brand)]">NDA · открыть</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 }

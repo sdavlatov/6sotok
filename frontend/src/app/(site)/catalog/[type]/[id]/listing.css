@@ -1,0 +1,128 @@
+/* ===== Карточка объявления (PDP) — визуальные хелперы по макету
+   «Дизайн html/Дизайн карточки объявления/listing.html».
+   Токены (--brand*, --ink-*, --line, font-mono) берём из globals.css.
+   Всё скоупим под .pdp-page. ===== */
+
+.pdp-page { background: #fff; color: #09090b; }
+.pdp-page .num { font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+
+/* ── Section header ── */
+.pdp-page .sec-label { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+.pdp-page .sec-num  { font: 600 11px/1 'JetBrains Mono', ui-monospace, monospace; letter-spacing: .1em; color: #066F36; }
+.pdp-page .sec-name { font: 600 11px/1 'JetBrains Mono', ui-monospace, monospace; text-transform: uppercase; letter-spacing: .16em; color: #71717a; }
+.pdp-page .sec-rule { flex: 1; height: 1px; background: #ececec; }
+
+/* ── Фото-заглушки участка (как в каталоге) ── */
+.pdp-page .noise::after { content: ''; position: absolute; inset: 0; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence baseFrequency='0.9'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/></svg>"); opacity: .025; pointer-events: none; mix-blend-mode: multiply; }
+.pdp-page .plot-img-1 { background-color: #e7ecdf; background-image: repeating-linear-gradient(45deg, rgba(6,111,54,.08) 0, rgba(6,111,54,.08) 1px, transparent 1px, transparent 12px), radial-gradient(ellipse 320px 220px at 30% 70%, rgba(44,166,78,.30), transparent 70%), radial-gradient(ellipse 280px 180px at 80% 30%, rgba(140,170,90,.25), transparent 70%); }
+.pdp-page .plot-img-2 { background-color: #e9e3d4; background-image: repeating-linear-gradient(-45deg, rgba(120,90,40,.08) 0, rgba(120,90,40,.08) 1px, transparent 1px, transparent 14px), radial-gradient(ellipse 220px 160px at 60% 50%, rgba(180,140,80,.3), transparent 70%); }
+.pdp-page .plot-img-3 { background-color: #dfe7ec; background-image: repeating-linear-gradient(0deg, rgba(60,90,120,.06) 0, rgba(60,90,120,.06) 1px, transparent 1px, transparent 10px), radial-gradient(ellipse 240px 140px at 40% 60%, rgba(120,160,190,.35), transparent 70%); }
+.pdp-page .plot-img-4 { background-color: #e8eadd; background-image: repeating-linear-gradient(90deg, rgba(80,100,50,.07) 0, rgba(80,100,50,.07) 2px, transparent 2px, transparent 18px), radial-gradient(ellipse 200px 130px at 50% 40%, rgba(140,160,90,.3), transparent 70%); }
+.pdp-page .plot-img-5 { background-color: #e3ebde; background-image: repeating-linear-gradient(-30deg, rgba(6,111,54,.10) 0, rgba(6,111,54,.10) 2px, transparent 2px, transparent 16px), radial-gradient(ellipse 220px 140px at 55% 50%, rgba(44,166,78,.2), transparent 70%); }
+
+/* ── Чипы / теги ── */
+.pdp-page .chip-urgent { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px 0 7px; border-radius: 6px; background: #09090b; color: #fff; font: 700 11.5px/1 'Inter'; letter-spacing: -.005em; }
+.pdp-page .chip-ready  { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px 0 9px; border-radius: 7px; background: #f0fdf4; color: #066F36; font: 600 12.5px/1 'Inter'; letter-spacing: -.01em; border: 1px solid rgba(6,111,54,.22); }
+.pdp-page .tag  { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 6px; background: #e4e4e7; color: #3f3f46; font: 500 11px/1 'Inter'; }
+.pdp-page .tag-g { background: #f0fdf4; color: #066F36; }
+
+.pdp-page .save-btn { width: 34px; height: 34px; border-radius: 9px; background: rgba(255,255,255,.9); backdrop-filter: blur(6px); border: 1px solid rgba(9,9,11,.06); display: grid; place-items: center; color: #52525b; cursor: pointer; transition: .15s; }
+.pdp-page .save-btn:hover { background: #fff; color: #09090b; }
+.pdp-page .save-btn.on { color: #066F36; }
+
+.pdp-page .sticky-card { position: sticky; top: 88px; }
+
+/* ── Коммуникации ── */
+.pdp-page .util { display: flex; align-items: center; gap: 11px; padding: 11px 0; border-top: 1px solid #ececec; }
+.pdp-page .util .mk { width: 24px; height: 24px; border-radius: 999px; display: grid; place-items: center; flex-shrink: 0; }
+.pdp-page .util.on .mk { background: #066F36; color: #fff; }
+.pdp-page .util.off .mk { background: #f4f4f5; color: #c4c4cc; }
+.pdp-page .util .nm { font: 600 14px/1 'Inter'; color: #18181b; }
+.pdp-page .util.off .nm { color: #a1a1aa; }
+.pdp-page .util .sub { font: 500 13px/1 'Inter'; color: #a1a1aa; }
+.pdp-page .util .no { margin-left: auto; font: 500 11px/1 'JetBrains Mono', ui-monospace, monospace; color: #c4c4cc; }
+
+/* ── Характеристики (dl) ── */
+.pdp-page .spec { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 12px 0; border-top: 1px solid #ececec; }
+.pdp-page .spec dt { font: 500 13.5px/1.3 'Inter'; color: #71717a; }
+.pdp-page .spec dd { font: 600 14px/1.3 'Inter'; color: #18181b; margin: 0; text-align: right; }
+.pdp-page .spec.col-h { border-top: none; padding-bottom: 6px; }
+.pdp-page .spec.col-h dt { font: 600 10.5px/1 'JetBrains Mono', ui-monospace, monospace; text-transform: uppercase; letter-spacing: .14em; color: #a1a1aa; }
+.pdp-page .spec .dd-on { color: #18181b; }
+.pdp-page .spec .dd-off { color: #a1a1aa; font-weight: 500; }
+
+/* ── Документы ── */
+.pdp-page .doc { display: flex; gap: 14px; align-items: center; padding: 13px 14px; border: 1px solid #e4e4e7; border-radius: 14px; background: #fff; cursor: pointer; transition: .18s; text-align: left; width: 100%; }
+.pdp-page .doc:hover { border-color: #09090b; box-shadow: 0 10px 30px -14px rgba(9,9,11,.22); transform: translateY(-2px); }
+.pdp-page .doc .thumb { width: 48px; height: 60px; border-radius: 7px; flex-shrink: 0; position: relative; overflow: hidden; background: #fafafa; border: 1px solid #e4e4e7; box-shadow: 0 2px 6px -3px rgba(9,9,11,.2); }
+.pdp-page .doc .thumb .ln { position: absolute; left: 7px; height: 2px; border-radius: 2px; background: #e4e4e7; }
+.pdp-page .doc .thumb .seal { position: absolute; right: 5px; bottom: 6px; width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid #c4c4cc; }
+.pdp-page .doc .badge { font: 700 9px/1 'JetBrains Mono', ui-monospace, monospace; letter-spacing: .1em; color: #71717a; border: 1px solid #d4d4d8; border-radius: 4px; padding: 2px 4px; }
+.pdp-page .doc .t { font: 600 14px/1.25 'Inter'; color: #18181b; }
+.pdp-page .doc .m { font: 500 11.5px/1 'Inter'; color: #a1a1aa; margin-top: 4px; }
+.pdp-page .doc .open { margin-left: auto; color: #a1a1aa; flex-shrink: 0; }
+.pdp-page .doc:hover .open { color: #09090b; }
+
+/* ── Карта ── */
+.pdp-page .map-bg { background-color: #e6ede7; background-image:
+  linear-gradient(95deg, transparent 39%, rgba(255,255,255,.85) 39%, rgba(255,255,255,.85) 39.4%, transparent 39.4%),
+  linear-gradient(170deg, transparent 28%, rgba(255,255,255,.85) 28%, rgba(255,255,255,.85) 28.5%, transparent 28.5%),
+  linear-gradient(rgba(6,111,54,.06) 1px, transparent 1px),
+  linear-gradient(90deg, rgba(6,111,54,.06) 1px, transparent 1px),
+  radial-gradient(ellipse 520px 400px at 22% 34%, rgba(44,166,78,.18), transparent 70%),
+  radial-gradient(ellipse 360px 260px at 78% 70%, rgba(44,166,78,.14), transparent 70%),
+  radial-gradient(ellipse 200px 160px at 60% 16%, rgba(212,192,132,.28), transparent 70%);
+  background-size: 100% 100%,100% 100%,58px 58px,58px 58px,100% 100%,100% 100%,100% 100%; }
+.pdp-page .plot-trace { fill: rgba(6,111,54,.18); stroke: #066F36; stroke-width: 2; stroke-dasharray: 5 3; animation: pdp-dash 30s linear infinite; }
+@keyframes pdp-dash { to { stroke-dashoffset: -100; } }
+@keyframes pdp-pulse-pin { 0%,100% { transform: scale(1); opacity: .4; } 50% { transform: scale(1.7); opacity: 0; } }
+.pdp-page .pin-pulse { animation: pdp-pulse-pin 2.6s cubic-bezier(.4,0,.6,1) infinite; }
+.pdp-page .poi { position: absolute; transform: translate(-50%,-50%); display: flex; align-items: center; gap: 5px; height: 26px; padding: 0 9px 0 5px; border-radius: 999px; background: #fff; border: 1px solid #e4e4e7; box-shadow: 0 3px 10px -4px rgba(9,9,11,.25); font: 600 11px/1 'Inter'; color: #18181b; white-space: nowrap; }
+.pdp-page .poi .pd { width: 16px; height: 16px; border-radius: 50%; background: #f4f4f5; color: #71717a; display: grid; place-items: center; }
+.pdp-page .poi .dm { font: 500 10px/1 'JetBrains Mono', ui-monospace, monospace; color: #a1a1aa; }
+
+/* ── Похожие карточки ── */
+.pdp-page .ncard { display: flex; flex-direction: column; background: #fff; border: 1px solid #e4e4e7; border-radius: 14px; overflow: hidden; transition: transform .25s, box-shadow .25s, border-color .2s; }
+.pdp-page .ncard:hover { transform: translateY(-3px); box-shadow: 0 14px 34px -14px rgba(9,9,11,.20); border-color: #066F36; }
+
+/* ── Section nav ── */
+.pdp-page .secnav-i { display: inline-flex; align-items: center; height: 32px; padding: 0 13px; border-radius: 999px; font: 600 12.5px/1 'Inter'; color: #52525b; white-space: nowrap; transition: .15s; cursor: pointer; }
+.pdp-page .secnav-i:hover { background: #f4f4f5; color: #18181b; }
+.pdp-page .secnav-i.active { background: #09090b; color: #fff; }
+
+/* ── Travel-time chips ── */
+.pdp-page .tt { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 11px; border-radius: 8px; background: #f4f4f5; color: #52525b; font: 500 12px/1 'Inter'; }
+.pdp-page .tt b { font: 600 12px/1 'JetBrains Mono', ui-monospace, monospace; color: #18181b; }
+.pdp-page .tt svg { color: #a1a1aa; }
+
+/* ── Share / print ── */
+.pdp-page .share-btn { height: 36px; padding: 0 13px; border-radius: 10px; border: 1px solid #e4e4e7; background: #fff; color: #3f3f46; font: 600 12.5px/1 'Inter'; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; transition: .15s; }
+.pdp-page .share-btn:hover { border-color: #09090b; color: #09090b; }
+
+/* ── Modal (документы) ── */
+.pdp-modal { position: fixed; inset: 0; z-index: 1200; display: none; align-items: center; justify-content: center; padding: 20px; }
+.pdp-modal.open { display: flex; }
+.pdp-modal .modal-scrim { position: absolute; inset: 0; background: rgba(9,9,11,.55); backdrop-filter: blur(3px); }
+.pdp-modal .modal-panel { position: relative; width: 100%; max-width: 560px; max-height: 90vh; background: #fff; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 40px 90px -30px rgba(9,9,11,.6); animation: pdp-pop .22s cubic-bezier(.2,.8,.2,1); }
+@keyframes pdp-pop { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+.pdp-modal .modal-head { display: flex; align-items: center; gap: 12px; padding: 15px 18px; border-bottom: 1px solid #ececec; }
+.pdp-modal .modal-body { overflow: auto; background: #f4f4f5; padding: 22px; }
+.pdp-modal .sheet { background: #fff; border: 1px solid #e4e4e7; border-radius: 6px; box-shadow: 0 8px 30px -14px rgba(9,9,11,.3); padding: 28px 30px; min-height: 400px; }
+
+/* ── Lightbox ── */
+.pdp-lb { position: fixed; inset: 0; z-index: 1200; display: none; align-items: center; justify-content: center; padding: 20px; }
+.pdp-lb.open { display: flex; }
+.pdp-lb .lb-scrim { position: absolute; inset: 0; background: rgba(9,9,11,.86); backdrop-filter: blur(2px); }
+.pdp-lb .lb-stage { width: min(1000px,92vw); height: min(660px,80vh); border-radius: 18px; overflow: hidden; position: relative; box-shadow: 0 40px 90px -30px rgba(0,0,0,.7); }
+.pdp-lb .lb-stage img { width: 100%; height: 100%; object-fit: cover; }
+.pdp-lb .lb-ctrl { position: fixed; top: 50%; transform: translateY(-50%); width: 48px; height: 48px; border-radius: 999px; background: rgba(255,255,255,.92); color: #09090b; display: grid; place-items: center; cursor: pointer; z-index: 1210; border: none; transition: .15s; }
+.pdp-lb .lb-ctrl:hover { background: #fff; transform: translateY(-50%) scale(1.06); }
+.pdp-lb .lb-prev { left: 24px; }
+.pdp-lb .lb-next { right: 24px; }
+.pdp-lb .lb-counter { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); z-index: 1210; font: 600 12px/1 'JetBrains Mono', ui-monospace, monospace; color: #fff; background: rgba(9,9,11,.55); padding: 9px 15px; border-radius: 999px; }
+.pdp-lb .lb-close { position: fixed; top: 22px; right: 22px; z-index: 1211; width: 42px; height: 42px; border-radius: 999px; background: rgba(255,255,255,.92); color: #09090b; display: grid; place-items: center; cursor: pointer; border: none; }
+.pdp-lb .lb-close:hover { background: #fff; }
+
+@media print {
+  .pdp-page #pdp-secnav, .pdp-modal, .pdp-lb, .save-btn, .pdp-mobile-cta { display: none !important; }
+}

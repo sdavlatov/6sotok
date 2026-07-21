@@ -1,0 +1,55 @@
+/* ===== Подача объявления — визуальные хелперы по макету «Подача объявлений/submit-listing.html» ===== */
+/* Токены (--brand, --ink-*, --paper-*, --line) берём из globals.css. Здесь только фактуры. */
+
+.submit-page {
+  background: var(--paper);
+  background-image:
+    linear-gradient(rgba(6, 111, 54, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(6, 111, 54, 0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+/* Карта-заглушка (карточка «участок» на экране выбора типа) */
+.submit-page .map-bg {
+  background-color: #e6ede7;
+  background-image:
+    linear-gradient(rgba(6, 111, 54, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(6, 111, 54, 0.06) 1px, transparent 1px),
+    radial-gradient(ellipse 260px 200px at 22% 30%, rgba(44, 166, 78, 0.22), transparent 70%),
+    radial-gradient(ellipse 220px 160px at 75% 55%, rgba(44, 166, 78, 0.16), transparent 70%);
+  background-size: 40px 40px, 40px 40px, 100% 100%, 100% 100%;
+}
+
+/* Фактура фото-заглушек (превью бизнеса) */
+.submit-page .ph-biz {
+  background-color: #e8ebe0;
+  background-image:
+    repeating-linear-gradient(-45deg, rgba(9, 9, 11, 0.05) 0, rgba(9, 9, 11, 0.05) 1px, transparent 1px, transparent 14px),
+    radial-gradient(ellipse 220px 160px at 60% 50%, rgba(44, 166, 78, 0.2), transparent 70%);
+}
+.submit-page .ph-plot {
+  background-color: #e7ecdf;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(6, 111, 54, 0.08) 0, rgba(6, 111, 54, 0.08) 1px, transparent 1px, transparent 12px),
+    radial-gradient(ellipse 200px 120px at 30% 70%, rgba(44, 166, 78, 0.25), transparent 70%);
+}
+
+.submit-page .noise::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence baseFrequency='0.85'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/></svg>");
+  opacity: 0.04;
+  mix-blend-mode: multiply;
+}
+
+@keyframes submit-dash { to { stroke-dashoffset: -100; } }
+.submit-page .dash { animation: submit-dash 30s linear infinite; }
+
+/* Скрыть скроллбар у прокручиваемых панелей */
+.submit-page .no-bar::-webkit-scrollbar { display: none; }
+.submit-page .no-bar { scrollbar-width: none; }
+
+/* Тумблер-переключатель Leaflet-зум не нужен — прячем встроенную атрибуцию карты аккуратно */
+.submit-map .leaflet-control-attribution { font-size: 9px; opacity: 0.6; }

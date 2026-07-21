@@ -1,0 +1,17 @@
+/* ===== Личный кабинет — визуальные хелперы по макету «Личный кабинет/» ===== */
+/* Токены (--brand*, --ink-*, --paper*, --line) берём из globals.css. Здесь только фон и mono. */
+
+.cabinet-page {
+  background: var(--paper);
+  min-height: calc(100vh - 69px);
+}
+
+/* Моно-подписи макета (цифры, лейблы, №) — JetBrains Mono */
+.cabinet-page .mono,
+.cabinet-page.mono {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Скрыть скроллбар у горизонтальных лент чипов (мобайл) */
+.cabinet-page .no-bar::-webkit-scrollbar { display: none; }
+.cabinet-page .no-bar { scrollbar-width: none; }
