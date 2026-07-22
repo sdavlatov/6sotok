@@ -55,6 +55,10 @@ way[highway~"^(trunk|primary|motorway)$"](around:5000,${lat},${lng});
     // ничего нет», его кешируем.
     if (!res.ok) throw new Error(`overpass ${res.status}`);
     const data = await res.json();
+    // Overpass умеет отвечать 200 с полем remark («runtime error: Query timed
+    // out…») — это сбой под видом успеха. Без этой проверки он кешировался бы
+    // на сутки как честное «рядом ничего нет».
+    if (typeof data.remark === 'string') throw new Error(`overpass remark: ${data.remark.slice(0, 80)}`);
     if (!data.elements?.length) return { mapPOIs: [], travel: [] };
 
     const seen = new Set<string>();
@@ -104,7 +108,8 @@ way[highway~"^(trunk|primary|motorway)$"](around:5000,${lat},${lng});
     throw e instanceof Error ? e : new Error('overpass failed');
   }
   },
-  ['pdp-overpass'],
+  // при отравлении кеша пустышками ключ бампаем — Data Cache Vercel переживает деплой
+  ['pdp-overpass-v2'],
   { revalidate: 86400 },
 );
 
