@@ -34,7 +34,7 @@ function fmtDist(m: number) { return m < 1000 ? `${Math.round(m)} м` : `${(m / 
 function fmtMin(m: number) { return m < 500 ? `${Math.max(1, Math.round(m / 80))} мин` : `${Math.max(1, Math.round(m / 600))} мин`; }
 
 
-const fetchLocationDataCached = unstable_cache(
+export const fetchLocationDataCached = unstable_cache(
   async (lat: number, lng: number): Promise<LocationData> => {
   try {
     const q = `[out:json][timeout:10];(
@@ -111,6 +111,8 @@ way[highway~"^(trunk|primary|motorway)$"](around:5000,${lat},${lng});
 /**
  * Публичная обёртка: сбой Overpass не должен ломать карточку. Ошибка сюда
  * долетает НЕ закешированной, поэтому следующий посетитель попробует снова.
+ * Тем, кому важно отличить «не смогли» от «рядом правда пусто» (напр. чтобы не
+ * прибивать неудачу в CDN), нужен fetchLocationDataCached напрямую.
  */
 export async function fetchLocationData(lat: number, lng: number): Promise<LocationData> {
   try {
