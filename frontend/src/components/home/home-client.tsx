@@ -7,6 +7,7 @@
    ========================================================================= */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useCurrency } from '@/context/currency-context';
 import { listingUrl } from '@/lib/listing-url';
@@ -178,7 +179,7 @@ function Hero({ featured, landCount }: { featured: HomeFeatured[]; landCount: nu
               <div ref={cardRef} className="card overflow-hidden relative fw-topround">
                 <div className="relative aspect-[16/10]">
                   <div key={`ph-${idx}`} className={`absolute inset-0 fw-anim ${cur.image ? '' : phClass(cur.landType)}`}>
-                    {cur.image && <img src={cur.image} alt={cur.title} className="absolute inset-0 w-full h-full object-cover" />}
+                    {cur.image && <Image src={cur.image} alt={cur.title} fill priority sizes="(max-width: 1024px) 100vw, 620px" className="object-cover" />}
                   </div>
                   <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(180deg,transparent 52%,rgba(20,22,15,.42))' }} />
                   <span className="absolute top-4 left-4 z-10 pointer-events-none inline-flex items-center h-[22px] px-[9px] rounded-md mono text-[10px] uppercase tracking-[0.08em] text-ink-500" style={{ background: 'rgba(250,250,247,0.82)', backdropFilter: 'blur(6px)', border: '1px solid rgba(20,22,15,0.06)' }}>Реклама</span>

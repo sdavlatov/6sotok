@@ -1,20 +1,25 @@
 import { HomeClient, type HomeFeatured } from '@/components/home/home-client';
-import { getListings, getBusinessListings } from '@/lib/api';
+import { getListings, getListingCounts, getListingLocations } from '@/lib/api';
 
-export const dynamic = 'force-dynamic';
+// ISR: страница отдаётся из кеша CDN, пересобирается раз в 5 минут либо сразу
+// по revalidateTag('listings') из хука коллекции. Было force-dynamic — каждый
+// запрос заново поднимал Payload и ходил в Neon.
+export const revalidate = 300;
 
 export default async function HomePage() {
-  const [landListings, businessListings] = await Promise.all([
-    getListings({ limit: '500' }),
-    getBusinessListings(),
+  // Раньше здесь грузились 500 участков + 200 бизнесов целиком (с depth: 1, то есть
+  // с джойном медиа) — ради трёх счётчиков и 10 карточек витрины.
+  const [featuredSource, counts, locations] = await Promise.all([
+    // с запасом: ниже отсеиваются объявления без цены/площади, нужно 10 карточек
+    getListings({ limit: '40' }),
+    getListingCounts(),
+    getListingLocations(),
   ]);
 
-  const locationsCount = new Set(
-    [...landListings, ...businessListings].map(l => l.location).filter(Boolean),
-  ).size;
+  const locationsCount = locations.length;
 
   // рекламная витрина hero + live-тикер — свежие участки с ценой
-  const featured: HomeFeatured[] = landListings
+  const featured: HomeFeatured[] = featuredSource
     .filter(l => l.price && l.area)
     .slice(0, 10)
     .map(l => ({
@@ -31,8 +36,8 @@ export default async function HomePage() {
   return (
     <HomeClient
       featured={featured}
-      landCount={landListings.length}
-      businessCount={businessListings.length}
+      landCount={counts.land}
+      businessCount={counts.business}
       locationsCount={locationsCount}
     />
   );

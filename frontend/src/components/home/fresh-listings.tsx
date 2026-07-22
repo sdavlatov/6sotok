@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { SearchX } from 'lucide-react';
 
 const PLOT = ['plot-img', 'plot-img-2', 'plot-img-3', 'plot-img-4', 'plot-img-5', 'plot-img-6'];
@@ -58,11 +59,12 @@ export function FreshListings({ listings }: Props) {
               >
                 <div className={`relative aspect-[4/3] overflow-hidden bg-zinc-100 ${PLOT[idx % 6]}`}>
                   {l.image && (
-                    <img
+                    <Image
                       src={l.image}
                       alt={l.title}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
+                      fill
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   )}
                   <div className="absolute bottom-2 left-2">

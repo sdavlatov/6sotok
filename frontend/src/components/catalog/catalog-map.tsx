@@ -191,6 +191,17 @@ function loadCss(href: string): void {
   link.rel = 'stylesheet'; link.href = href;
   document.head.appendChild(link);
 }
+/**
+ * Кладёт скрипт в кеш браузера, не выполняя его. Порядок выполнения ниже задан
+ * зависимостями (cluster требует L, maplibre-gl-leaflet — и L, и maplibregl),
+ * но качать их по очереди незачем: суммарно это ~1 МБ и 4 round-trip'а.
+ */
+function preloadScript(src: string): void {
+  if (document.querySelector(`link[rel="preload"][href="${src}"]`)) return;
+  const link = document.createElement('link');
+  link.rel = 'preload'; link.as = 'script'; link.href = src;
+  document.head.appendChild(link);
+}
 
 export interface MapPinItem {
   id: string;
@@ -251,11 +262,24 @@ export function CatalogMap({ items, activeId, hoverId, onPinHover, onPinClick, o
   useEffect(() => {
     let cancelled = false;
     loadCss(LEAFLET_CSS); loadCss(CLUSTER_CSS); loadCss(MAPLIBRE_CSS);
-    loadScript(LEAFLET_JS, () => !!(window as any).L)
-      .then(() => loadScript(CLUSTER_JS, () => !!(window as any).L?.markerClusterGroup))
-      // MapLibre (векторная схема) не критичен: не загрузился — работаем на растровом OSM
-      .then(() => loadScript(MAPLIBRE_JS, () => !!(window as any).maplibregl)
-        .then(() => loadScript(MAPLIBRE_LEAFLET_JS, () => !!(window as any).L?.maplibreGL))
+
+    // качаем все четыре сразу…
+    [LEAFLET_JS, CLUSTER_JS, MAPLIBRE_JS, MAPLIBRE_LEAFLET_JS].forEach(preloadScript);
+
+    // …а выполняем по зависимостям: leaflet→cluster и maplibre-gl независимы
+    // друг от друга, поэтому идут двумя параллельными ветками.
+    const leafletChain = loadScript(LEAFLET_JS, () => !!(window as any).L)
+      .then(() => loadScript(CLUSTER_JS, () => !!(window as any).L?.markerClusterGroup));
+
+    // MapLibre (векторная схема) не критичен: не загрузился — работаем на растровом OSM.
+    // Отказ гасим сразу (→ false), иначе он повиснет unhandled rejection'ом до
+    // момента, когда до этой ветки доберётся leafletChain.
+    const maplibreChain = loadScript(MAPLIBRE_JS, () => !!(window as any).maplibregl)
+      .then(() => true, () => false);
+
+    leafletChain
+      .then(() => maplibreChain
+        .then(ok => { if (ok) return loadScript(MAPLIBRE_LEAFLET_JS, () => !!(window as any).L?.maplibreGL); })
         .catch(() => { /* fallback на растр */ }))
       .then(() => { if (!cancelled) setReady(true); })
       .catch(() => { /* карта не критична — список работает без неё */ });

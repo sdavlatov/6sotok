@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { ListingMap, type MapPOI } from '@/components/listings/listing-map';
 import './listing.css';
@@ -113,6 +114,22 @@ function docLines(n: number) {
 
 export function ListingView({ d }: { d: PdpData }) {
   const [lb, setLb] = useState<{ open: boolean; i: number }>({ open: false, i: 0 });
+  // POI («что рядом» + пины на карте) грузим после отрисовки: публичный Overpass
+  // отвечает 7–9 с, на сервере он держал TTFB карточки. На сервере результат
+  // кеширован на сутки, поэтому ждёт его только первый посетитель объявления.
+  const [poi, setPoi] = useState<{ mapPOIs: PdpData['mapPOIs']; travel: PdpData['travel'] }>(
+    { mapPOIs: d.mapPOIs, travel: d.travel },
+  );
+
+  useEffect(() => {
+    if (!d.hasMap || d.lat == null || d.lng == null) return;
+    const ac = new AbortController();
+    fetch(`/api/poi?lat=${d.lat}&lng=${d.lng}`, { signal: ac.signal })
+      .then(r => (r.ok ? r.json() : null))
+      .then(j => { if (j) setPoi({ mapPOIs: j.mapPOIs ?? [], travel: j.travel ?? [] }); })
+      .catch(() => { /* POI — украшение карточки, молча обходимся без них */ });
+    return () => ac.abort();
+  }, [d.hasMap, d.lat, d.lng]);
   const [phoneShown, setPhoneShown] = useState(false);
   const [saved, setSaved] = useState(false);
   const [shareLbl, setShareLbl] = useState('Поделиться');
@@ -213,9 +230,9 @@ export function ListingView({ d }: { d: PdpData }) {
           <div className="flex justify-between items-start gap-4">
             <div>
               <div style={{ font: '700 15px/1.25 Inter', color: '#18181b' }}>Акт на право частной собственности на земельный участок</div>
-              {d.cadastralNumber && <div style={{ font: '500 11px/1.4 JetBrains Mono', color: '#a1a1aa', marginTop: 6 }}>№ {d.cadastralNumber}</div>}
+              {d.cadastralNumber && <div style={{ font: '500 11px/1.4 var(--font-mono), JetBrains Mono, ui-monospace, monospace', color: '#a1a1aa', marginTop: 6 }}>№ {d.cadastralNumber}</div>}
             </div>
-            <div style={{ width: 54, height: 54, flexShrink: 0, borderRadius: '50%', border: '2px solid #066F36', opacity: .5, display: 'grid', placeItems: 'center', font: '700 7.5px/1.2 JetBrains Mono', color: '#066F36', textAlign: 'center' }}>ГОС<br />АКТ</div>
+            <div style={{ width: 54, height: 54, flexShrink: 0, borderRadius: '50%', border: '2px solid #066F36', opacity: .5, display: 'grid', placeItems: 'center', font: '700 7.5px/1.2 var(--font-mono), JetBrains Mono, ui-monospace, monospace', color: '#066F36', textAlign: 'center' }}>ГОС<br />АКТ</div>
           </div>
           <div className="mt-5 grid gap-3">
             {[
@@ -227,7 +244,7 @@ export function ListingView({ d }: { d: PdpData }) {
             ].map(([k, v]) => (
               <div key={k} className="flex justify-between gap-4" style={{ font: '400 13px/1.4 Inter' }}>
                 <span style={{ color: '#71717a' }}>{k}</span>
-                <span style={{ color: '#18181b', fontWeight: 600, textAlign: 'right', fontFamily: 'JetBrains Mono' }}>{v}</span>
+                <span style={{ color: '#18181b', fontWeight: 600, textAlign: 'right', fontFamily: 'var(--font-mono), ui-monospace, monospace' }}>{v}</span>
               </div>
             ))}
           </div>
@@ -245,22 +262,22 @@ export function ListingView({ d }: { d: PdpData }) {
       body: (
         <>
           <div style={{ font: '700 15px/1.25 Inter', color: '#18181b' }}>Межевой план земельного участка</div>
-          <div style={{ font: '500 11px/1.4 JetBrains Mono', color: '#a1a1aa', marginTop: 6 }}>Система координат СК-63</div>
+          <div style={{ font: '500 11px/1.4 var(--font-mono), JetBrains Mono, ui-monospace, monospace', color: '#a1a1aa', marginTop: 6 }}>Система координат СК-63</div>
           <div className="mt-4" style={{ background: '#fafafa', border: '1px solid #e4e4e7', borderRadius: 8, height: 220, position: 'relative', overflow: 'hidden' }}>
             <svg viewBox="0 0 400 220" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
               <defs><pattern id="pdpg" width="26" height="26" patternUnits="userSpaceOnUse"><path d="M26 0H0V26" fill="none" stroke="#e4e4e7" strokeWidth="1" /></pattern></defs>
               <rect width="400" height="220" fill="url(#pdpg)" />
               <polygon points="120,52 285,44 300,146 135,164" fill="rgba(6,111,54,.12)" stroke="#066F36" strokeWidth="2" />
               {[[120, 52], [285, 44], [300, 146], [135, 164]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="3.5" fill="#066F36" />)}
-              {d.frontWidth && <text x="192" y="34" fontFamily="JetBrains Mono" fontSize="9" fill="#71717a">{d.frontWidth} м</text>}
-              {d.depth && <text x="312" y="102" fontFamily="JetBrains Mono" fontSize="9" fill="#71717a">{d.depth} м</text>}
+              {d.frontWidth && <text x="192" y="34" fontFamily="var(--font-mono), ui-monospace, monospace" fontSize="9" fill="#71717a">{d.frontWidth} м</text>}
+              {d.depth && <text x="312" y="102" fontFamily="var(--font-mono), ui-monospace, monospace" fontSize="9" fill="#71717a">{d.depth} м</text>}
             </svg>
           </div>
           <div className="mt-4 grid gap-3">
             {['т.1', 'т.2', 'т.3', 'т.4'].map(t => (
               <div key={t} className="flex justify-between gap-4" style={{ font: '400 13px/1.4 Inter' }}>
                 <span style={{ color: '#71717a' }}>Точка {t.slice(2)}</span>
-                <span style={{ color: '#18181b', fontWeight: 600, fontFamily: 'JetBrains Mono' }}>по кадастру</span>
+                <span style={{ color: '#18181b', fontWeight: 600, fontFamily: 'var(--font-mono), ui-monospace, monospace' }}>по кадастру</span>
               </div>
             ))}
           </div>
@@ -292,7 +309,7 @@ export function ListingView({ d }: { d: PdpData }) {
                 onClick={() => setLb({ open: true, i: Math.min(i, lbCount - 1) })}
                 className={`gallery-tile relative overflow-hidden cursor-zoom-in ${isFirst ? 'col-span-4 sm:col-span-2 row-span-2' : 'hidden sm:block'} ${url ? '' : `${cls} noise`}`}
               >
-                {url && <img src={url} alt={d.title} className="absolute inset-0 w-full h-full object-cover" loading={isFirst ? 'eager' : 'lazy'} />}
+                {url && <Image src={url} alt={d.title} fill priority={isFirst} sizes={isFirst ? '(max-width: 640px) 100vw, 620px' : '310px'} className="object-cover" />}
                 {isFirst && (
                   <>
                     {d.urgent && (
@@ -426,7 +443,7 @@ export function ListingView({ d }: { d: PdpData }) {
                   <div className="mt-4 flex items-center gap-6">
                     <div className="relative w-[150px] h-[150px] shrink-0 rounded-2xl border border-zinc-200 bg-zinc-50 overflow-hidden">
                       <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full">
-                        <text x="50" y="11" textAnchor="middle" fontFamily="JetBrains Mono" fontSize="7" fontWeight="600" fill="#066F36">С · горы</text>
+                        <text x="50" y="11" textAnchor="middle" fontFamily="var(--font-mono), ui-monospace, monospace" fontSize="7" fontWeight="600" fill="#066F36">С · горы</text>
                         <polygon points="22,32 33,20 44,32" fill="#d4d4d8" />
                         <polygon points="39,32 53,17 67,32" fill="#c4c4cc" />
                         <polygon points="60,32 71,22 82,32" fill="#d4d4d8" />
@@ -434,7 +451,7 @@ export function ListingView({ d }: { d: PdpData }) {
                         <rect x="33" y="40" width="34" height="38" rx="3" fill="rgba(6,111,54,.10)" stroke="#066F36" strokeWidth="1.6" />
                         <line x1="50" y1="55" x2="50" y2="63" stroke="#066F36" strokeWidth="1.4" />
                         <polygon points="50,52 47.5,57 52.5,57" fill="#066F36" />
-                        <text x="50" y="95" textAnchor="middle" fontFamily="JetBrains Mono" fontSize="7" fill="#71717a">Ю · улица</text>
+                        <text x="50" y="95" textAnchor="middle" fontFamily="var(--font-mono), ui-monospace, monospace" fontSize="7" fill="#71717a">Ю · улица</text>
                       </svg>
                     </div>
                     <ul className="text-[13.5px] leading-snug text-zinc-700 space-y-2.5">
@@ -473,13 +490,13 @@ export function ListingView({ d }: { d: PdpData }) {
             {d.hasMap && (
               <section id="s-map" className="py-9 border-b border-zinc-200">
                 <div className="sec-label"><span className="sec-num">04</span><span className="sec-name">Где это и что рядом</span><span className="sec-rule" />{d.location && <span className="text-[11px] text-zinc-400 font-mono">{d.location}</span>}</div>
-                {d.travel.length > 0 && (
+                {poi.travel.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-3">
-                    {d.travel.map((t, i) => <span key={i} className="tt">{t.label} <b>{t.value}</b></span>)}
+                    {poi.travel.map((t, i) => <span key={i} className="tt">{t.label} <b>{t.value}</b></span>)}
                   </div>
                 )}
                 <div className="relative h-[300px] sm:h-[380px] rounded-2xl overflow-hidden border border-zinc-200 isolate z-0">
-                  <ListingMap lat={d.lat!} lng={d.lng!} title={d.title} pois={d.mapPOIs} />
+                  <ListingMap lat={d.lat!} lng={d.lng!} title={d.title} pois={poi.mapPOIs} />
                 </div>
               </section>
             )}
@@ -638,7 +655,7 @@ function NearbyCard({ s }: { s: PdpSimilar }) {
   return (
     <Link href={s.href} className="ncard group">
       <div className={`relative overflow-hidden ${s.cover ? '' : `${s.placeholder} noise`}`} style={{ aspectRatio: '5/3' }}>
-        {s.cover && <img src={s.cover} alt={s.title} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />}
+        {s.cover && <Image src={s.cover} alt={s.title} fill sizes="(max-width: 640px) 60vw, 260px" className="object-cover" />}
         <span className="absolute bottom-2 left-2 z-[2] font-mono text-[9px] text-zinc-700 bg-white/70 rounded px-1.5 py-0.5">{s.photos} фото</span>
       </div>
       <div className="p-3">

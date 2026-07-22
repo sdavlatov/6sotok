@@ -3,6 +3,7 @@ import { postgresAdapter } from '@payloadcms/db-postgres'
 import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { ru } from '@payloadcms/translations/languages/ru'
+import sharp from 'sharp'
 import path from 'path'
 
 import { Listings } from './src/collections/Listings'
@@ -44,6 +45,10 @@ export default buildConfig({
   ],
 
   editor: lexicalEditor(),
+
+  // Без sharp Payload не выполняет ресайз, хотя в Media.ts заданы imageSizes:
+  // в хранилище ложились только оригиналы (мегабайты на фото).
+  sharp,
 
   secret: process.env.PAYLOAD_SECRET as string,
 

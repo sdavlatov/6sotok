@@ -8,6 +8,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Bookmark, Plus, ChevronLeft, Check } from 'lucide-react';
@@ -555,7 +556,7 @@ function MobileRowCard({ listing: l, viewed, fav, cmp, onFav, onCmp, onOpen }: {
       onClick={onOpen}
     >
       <div className={`w-24 h-24 rounded-xl relative shrink-0 overflow-hidden pimg pimg-${meta.imgIdx} ${viewed ? 'opacity-70' : ''}`}>
-        {l.image && <img src={l.image} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />}
+        {l.image && <Image src={l.image} alt="" fill sizes="96px" className="object-cover" />}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-center gap-2">
@@ -671,7 +672,7 @@ function MobileDetailSheet({ listing: l, visible, fav, onFav, onOpen, onClose }:
                   {isVideoUrl(src) ? (
                     <video src={src} controls playsInline preload="metadata" className="w-full h-full object-cover bg-zinc-900" />
                   ) : (
-                    <img src={src} alt={i === 0 ? l.title : ''} draggable={false} loading={i === 0 ? undefined : 'lazy'} className="w-full h-full object-cover select-none" />
+                    <Image src={src} alt={i === 0 ? l.title : ''} fill draggable={false} priority={i === 0} sizes="100vw" className="object-cover select-none" />
                   )}
                 </div>
               ))}

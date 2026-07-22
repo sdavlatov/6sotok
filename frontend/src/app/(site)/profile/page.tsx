@@ -6,6 +6,7 @@
    Демо (нет бэкенда): продвижение, услуги, заявки, баланс, аналитика — как в макете. */
 
 import React, { useState, useEffect } from 'react'
+import Image from 'next/image';
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/auth-context'
 import './cabinet.css'
@@ -112,7 +113,7 @@ const Thumb = ({ i = 0, size = 56, r = 10, star, url }: { i?: number; size?: num
     {url
       ? (/\.(mp4|mov|webm)$/i.test(url)
         ? <video src={url} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        : <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />)
+        : <Image src={url} alt="" fill sizes={`${size}px`} style={{ objectFit: 'cover' }} />)
       : <svg viewBox="0 0 56 56" width={size} height={size} style={{ position: 'absolute', inset: 0 }} preserveAspectRatio="none">
           <polygon points="14,18 40,12 46,30 34,44 16,40" fill="rgba(6,111,54,.16)" stroke="#066F36" strokeWidth="1.4" strokeDasharray="3 2" />
         </svg>}

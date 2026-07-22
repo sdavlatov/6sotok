@@ -5,6 +5,8 @@ import { Plus } from 'lucide-react';
 import { Breadcrumbs } from '@/components/layout/breadcrumbs';
 import { CompareClient } from './compare-client';
 
+// Страница читает searchParams, поэтому рендерится динамически в любом случае.
+// Дорогая часть — запрос к БД — закеширована в lib/api.ts (тег 'listings').
 export const dynamic = 'force-dynamic';
 
 interface Props {

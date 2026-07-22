@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Check, X, Plus, ArrowUpDown } from 'lucide-react';
@@ -341,7 +342,7 @@ export function CompareClient({ initialListings }: { initialListings: Listing[] 
                   <div className="p-4">
                     {/* Photo */}
                     <div className={`relative rounded-xl overflow-hidden aspect-[5/3] mb-3 ${PLOT_BG[i % PLOT_BG.length]}`}>
-                      {l.image && <img src={l.image} alt={l.title} className="w-full h-full object-cover" />}
+                      {l.image && <Image src={l.image} alt={l.title} fill sizes="(max-width: 768px) 60vw, 280px" className="object-cover" />}
                       {l.isNegotiable && <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-amber-500 text-white text-[9px] font-bold uppercase tracking-wider">Торг</span>}
                     </div>
                     {/* Title row */}

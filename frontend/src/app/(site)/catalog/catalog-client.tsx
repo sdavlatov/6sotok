@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Bookmark, Plus, Check, ArrowDownUp } from 'lucide-react';
 import type { Listing } from '@/types/listing';
@@ -496,7 +497,7 @@ export function CatalogClient({ allListings, initialFilters }: CatalogClientProp
                   const meta = cardMeta(l);
                   return (
                     <div key={l.id} className={`relative w-12 h-12 rounded-lg overflow-visible ring-2 ring-zinc-900 ring-offset-1 pimg pimg-${meta.imgIdx}`}>
-                      {l.image && <img src={l.image} alt="" className="absolute inset-0 w-full h-full object-cover rounded-lg" loading="lazy" />}
+                      {l.image && <Image src={l.image} alt="" fill sizes="48px" className="object-cover rounded-lg" />}
                       <button
                         type="button"
                         onClick={() => toggleCompare(String(l.id))}
@@ -726,7 +727,7 @@ function DesktopCard({ listing: l, ad, isViewed, isFav, isCmp, isHovered, onHove
     >
       <div className="flex gap-3">
         <div className={`relative w-[120px] h-[88px] rounded-xl overflow-hidden shrink-0 pimg pimg-${meta.imgIdx} ${isViewed ? 'opacity-70' : ''}`}>
-          {l.image && <img src={l.image} alt={l.title} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />}
+          {l.image && <Image src={l.image} alt={l.title} fill sizes="120px" className="object-cover" />}
           {ad && (
             <span className="absolute left-1.5 top-1.5 inline-flex items-center h-[18px] px-[7px] rounded-md bg-[rgba(250,250,247,0.85)] backdrop-blur-sm text-[#5b5e54] font-mono text-[8.5px] font-medium uppercase tracking-[0.08em] border border-black/5 z-[1]">Реклама</span>
           )}
@@ -853,7 +854,7 @@ function MapCard({ listing: l, pos, bounds, pinned, onOpen, onClose }: {
       <span className={arrow.cls} style={arrow.style as React.CSSProperties} />
       <div className="rounded-2xl overflow-hidden">
         <div className={`relative aspect-[16/9] pimg pimg-${meta.imgIdx}`}>
-          {l.image && <img src={l.image} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />}
+          {l.image && <Image src={l.image} alt="" fill sizes="320px" className="object-cover" />}
           {meta.drop && (
             <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-white/90 backdrop-blur text-zinc-900 text-[10px] font-bold uppercase tracking-wider z-[1]">−{meta.drop}%</span>
           )}

@@ -4,23 +4,13 @@ import { notFound } from 'next/navigation';
 import { SLUG_LANDTYPE, listingUrl } from '@/lib/listing-url';
 import { ViewTracker } from '@/components/listings/view-tracker';
 import { Breadcrumbs } from '@/components/layout/breadcrumbs';
-import { ListingView, type PdpData, type PdpSimilar, type PdpTravel } from './listing-view';
-import type { MapPOI } from '@/components/listings/listing-map';
+import { ListingView, type PdpData, type PdpSimilar } from './listing-view';
 import type { Listing } from '@/types/listing';
 import type { Metadata } from 'next';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 300;
 
-/* ─── POI / расстояния (Overpass) ─────────────────────────────────────────── */
-const POI_TYPES: Record<string, { label: string; dot: string }> = {
-  school:       { label: 'Школа',       dot: '#18181b' },
-  hospital:     { label: 'Больница',    dot: '#18181b' },
-  clinic:       { label: 'Клиника',     dot: '#18181b' },
-  pharmacy:     { label: 'Аптека',      dot: '#18181b' },
-  supermarket:  { label: 'Супермаркет', dot: '#18181b' },
-  kindergarten: { label: 'Детсад',      dot: '#18181b' },
-};
-
+/* ─── Расстояние до похожих объявлений ───────────────────────────────────── */
 function haversine(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371000;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -29,74 +19,6 @@ function haversine(lat1: number, lng1: number, lat2: number, lng2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 function fmtDist(m: number) { return m < 1000 ? `${Math.round(m)} м` : `${(m / 1000).toFixed(1)} км`; }
-function fmtMin(m: number) { return m < 500 ? `${Math.max(1, Math.round(m / 80))} мин` : `${Math.max(1, Math.round(m / 600))} мин`; }
-
-interface LocationData { mapPOIs: MapPOI[]; travel: PdpTravel[] }
-
-async function fetchLocationData(lat: number, lng: number): Promise<LocationData> {
-  try {
-    const q = `[out:json][timeout:20];(
-node[amenity~"^(school|hospital|clinic|pharmacy|kindergarten)$"](around:3000,${lat},${lng});
-node[shop=supermarket](around:3000,${lat},${lng});
-node[aeroway=aerodrome](around:120000,${lat},${lng});
-way[highway~"^(trunk|primary|motorway)$"](around:5000,${lat},${lng});
-);out center;`;
-    const res = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      body: `data=${encodeURIComponent(q)}`,
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': '6sotok-kz/1.0' },
-      next: { revalidate: 86400 },
-      signal: AbortSignal.timeout(14000),
-    });
-    if (!res.ok) return { mapPOIs: [], travel: [] };
-    const data = await res.json();
-    if (!data.elements?.length) return { mapPOIs: [], travel: [] };
-
-    const seen = new Set<string>();
-    const mapPOIs: MapPOI[] = [];
-    let airport: { dist: number; name: string } | null = null;
-    let school: { dist: number } | null = null;
-    let clinic: { dist: number; label: string } | null = null;
-    let road: { dist: number } | null = null;
-
-    for (const el of data.elements as any[]) {
-      const elLat = el.lat ?? el.center?.lat;
-      const elLon = el.lon ?? el.center?.lon;
-      if (!elLat || !elLon) continue;
-      const dist = haversine(lat, lng, elLat, elLon);
-      const aeroway = el.tags?.aeroway;
-      const highway = el.tags?.highway;
-      const amenity = el.tags?.amenity || el.tags?.shop;
-
-      if (aeroway === 'aerodrome') {
-        const name = el.tags?.iata ? `Аэропорт ${el.tags.iata}` : (el.tags?.name || 'Аэропорт');
-        if (!airport || dist < airport.dist) airport = { dist, name };
-        continue;
-      }
-      if (highway) { if (!road || dist < road.dist) road = { dist }; continue; }
-
-      const type = POI_TYPES[amenity];
-      if (!type) continue;
-      const key = `${amenity}-${Math.round(dist / 100)}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      mapPOIs.push({ lat: elLat, lng: elLon, label: `${type.label} · ${fmtDist(dist)}`, dot: type.dot });
-      if (amenity === 'school' && (!school || dist < school.dist)) school = { dist };
-      if ((amenity === 'hospital' || amenity === 'clinic') && (!clinic || dist < clinic.dist)) {
-        clinic = { dist, label: amenity === 'hospital' ? 'Больница' : 'Поликлиника' };
-      }
-    }
-    mapPOIs.sort((a, b) => haversine(lat, lng, a.lat, a.lng) - haversine(lat, lng, b.lat, b.lng));
-
-    const travel: PdpTravel[] = [];
-    if (airport) travel.push({ label: airport.name, value: fmtMin(airport.dist) });
-    if (school) travel.push({ label: 'Школа', value: fmtDist(school.dist) });
-    if (clinic) travel.push({ label: clinic.label, value: fmtDist(clinic.dist) });
-    if (road) travel.push({ label: 'Трасса', value: fmtDist(road.dist) });
-
-    return { mapPOIs: mapPOIs.slice(0, 8), travel };
-  } catch { return { mapPOIs: [], travel: [] }; }
-}
 
 /* ─── Форматтеры ──────────────────────────────────────────────────────────── */
 function mlnPrice(n: number): string {
@@ -170,7 +92,9 @@ export default async function ListingPage({ params }: Props) {
 
   /* Локация */
   const hasMap = !!(listing.lat && listing.lng);
-  const loc = hasMap ? await fetchLocationData(listing.lat!, listing.lng!) : { mapPOIs: [], travel: [] };
+  // POI больше НЕ ждём на сервере: Overpass отвечает 7–9 с и часто падает, из-за
+  // чего TTFB карточки был 10–14 с. Клиент догрузит их сам через /api/poi.
+  const loc = { mapPOIs: [], travel: [] };
 
   const utilities = [
     { key: 'el',    label: 'Электричество', on: !!listing.hasElectricity },

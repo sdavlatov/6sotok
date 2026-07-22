@@ -1,6 +1,8 @@
-import { getPayload } from 'payload'
+import { getPayload, type Where } from 'payload'
+import { unstable_cache } from 'next/cache'
 import config from '@payload-config'
 import type { Listing } from '@/types/listing'
+import { LISTINGS_TAG } from './cache-tags'
 
 interface PayloadMedia {
   url?: string
@@ -153,78 +155,161 @@ async function payload() {
   return getPayload({ config })
 }
 
-export async function getListings(params: Record<string, string> = {}): Promise<Listing[]> {
-  try {
-    const limit = parseInt(params.limit ?? '100')
+/**
+ * Тег кеша объявлений. Все чтения ниже помечены им, а хук afterChange/afterDelete
+ * в коллекции Listings дёргает revalidateTag(LISTINGS_TAG) — поэтому новое или
+ * отредактированное объявление появляется на сайте сразу, не дожидаясь TTL.
+ */
+export { LISTINGS_TAG }
+
+/** TTL как страховка на случай правок мимо Payload (SQL-правка в Neon и т.п.). */
+const LISTINGS_TTL = 300
+
+const LAND_WHERE: Where = {
+  and: [
+    { status: { equals: 'published' } },
+    { or: [
+      { listingCategory: { equals: 'land' } },
+      { listingCategory: { exists: false } },
+    ]},
+  ],
+}
+
+const BUSINESS_WHERE: Where = {
+  and: [
+    { status: { equals: 'published' } },
+    { listingCategory: { equals: 'business' } },
+  ],
+}
+
+export const getListings = unstable_cache(
+  async (params: Record<string, string> = {}): Promise<Listing[]> => {
+    try {
+      const limit = parseInt(params.limit ?? '100')
+      const p = await payload()
+      const result = await p.find({
+        collection: 'listings',
+        where: LAND_WHERE,
+        limit,
+        depth: 1,
+      })
+      return (result.docs as unknown as PayloadListing[]).map(mapListing)
+    } catch {
+      return []
+    }
+  },
+  ['listings-land'],
+  { tags: [LISTINGS_TAG], revalidate: LISTINGS_TTL },
+)
+
+/** Счётчики для главной — без выгрузки самих документов. */
+export const getListingCounts = unstable_cache(
+  async (): Promise<{ land: number; business: number }> => {
+    try {
+      const p = await payload()
+      const [land, business] = await Promise.all([
+        p.count({ collection: 'listings', where: LAND_WHERE }),
+        p.count({ collection: 'listings', where: BUSINESS_WHERE }),
+      ])
+      return { land: land.totalDocs, business: business.totalDocs }
+    } catch {
+      return { land: 0, business: 0 }
+    }
+  },
+  ['listings-counts'],
+  { tags: [LISTINGS_TAG], revalidate: LISTINGS_TTL },
+)
+
+/** Уникальные локации (для счётчика «городов» на главной) — только поле location. */
+export const getListingLocations = unstable_cache(
+  async (): Promise<string[]> => {
+    try {
+      const p = await payload()
+      const result = await p.find({
+        collection: 'listings',
+        where: { status: { equals: 'published' } },
+        limit: 1000,
+        depth: 0,
+        select: { location: true },
+      })
+      const set = new Set<string>()
+      for (const d of result.docs as unknown as { location?: string }[]) {
+        if (d.location) set.add(d.location)
+      }
+      return [...set]
+    } catch {
+      return []
+    }
+  },
+  ['listings-locations'],
+  { tags: [LISTINGS_TAG], revalidate: LISTINGS_TTL },
+)
+
+/**
+ * Списочные страницы (каталог, витрина бизнеса) показывают карточки, но не
+ * описания — а описание самое тяжёлое поле объявления (до 1500–2000 знаков) и
+ * уезжало в RSC-пейлоад впустую. Карточка объявления и /business/[slug] берут
+ * данные через getListingById/getListingBySlug и описание получают полностью.
+ */
+export function stripDescription(listings: Listing[]): Listing[] {
+  return listings.map(l => (l.description === undefined ? l : { ...l, description: undefined }))
+}
+
+export const getBusinessListings = unstable_cache(
+  async (): Promise<Listing[]> => {
+    try {
+      const p = await payload()
+      const result = await p.find({
+        collection: 'listings',
+        where: BUSINESS_WHERE,
+        limit: 200,
+        depth: 1,
+      })
+      return (result.docs as unknown as PayloadListing[]).map(mapListing)
+    } catch {
+      return []
+    }
+  },
+  ['listings-business'],
+  { tags: [LISTINGS_TAG], revalidate: LISTINGS_TTL },
+)
+
+export const getListingById = unstable_cache(
+  async (id: string): Promise<Listing | null> => {
+    try {
+      const p = await payload()
+      const doc = await p.findByID({
+        collection: 'listings',
+        id,
+        depth: 1,
+      })
+      if (!doc?.id) return null
+      return mapListing(doc as unknown as PayloadListing)
+    } catch {
+      return null
+    }
+  },
+  ['listing-by-id'],
+  { tags: [LISTINGS_TAG], revalidate: LISTINGS_TTL },
+)
+
+export const getListingBySlug = unstable_cache(
+  async (slug: string): Promise<Listing | null> => {
     const p = await payload()
     const result = await p.find({
       collection: 'listings',
       where: {
         and: [
+          { slug: { equals: slug } },
           { status: { equals: 'published' } },
-          { or: [
-            { listingCategory: { equals: 'land' } },
-            { listingCategory: { exists: false } },
-          ]},
         ],
       },
-      limit,
       depth: 1,
+      limit: 1,
     })
-    return (result.docs as unknown as PayloadListing[]).map(mapListing)
-  } catch {
-    return []
-  }
-}
-
-export async function getBusinessListings(): Promise<Listing[]> {
-  try {
-    const p = await payload()
-    const result = await p.find({
-      collection: 'listings',
-      where: {
-        and: [
-          { status: { equals: 'published' } },
-          { listingCategory: { equals: 'business' } },
-        ],
-      },
-      limit: 200,
-      depth: 1,
-    })
-    return (result.docs as unknown as PayloadListing[]).map(mapListing)
-  } catch {
-    return []
-  }
-}
-
-export async function getListingById(id: string): Promise<Listing | null> {
-  try {
-    const p = await payload()
-    const doc = await p.findByID({
-      collection: 'listings',
-      id,
-      depth: 1,
-    })
-    if (!doc?.id) return null
-    return mapListing(doc as unknown as PayloadListing)
-  } catch {
-    return null
-  }
-}
-
-export async function getListingBySlug(slug: string): Promise<Listing | null> {
-  const p = await payload()
-  const result = await p.find({
-    collection: 'listings',
-    where: {
-      and: [
-        { slug: { equals: slug } },
-        { status: { equals: 'published' } },
-      ],
-    },
-    depth: 1,
-    limit: 1,
-  })
-  if (!result.docs?.length) return null
-  return mapListing(result.docs[0] as unknown as PayloadListing)
-}
+    if (!result.docs?.length) return null
+    return mapListing(result.docs[0] as unknown as PayloadListing)
+  },
+  ['listing-by-slug'],
+  { tags: [LISTINGS_TAG], revalidate: LISTINGS_TTL },
+)

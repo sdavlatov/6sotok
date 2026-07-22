@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import { CatalogClient } from './catalog-client';
-import { getListings } from '@/lib/api';
+import { getListings, stripDescription } from '@/lib/api';
 import { PMAX, AMAX } from './catalog-utils';
 
+// Страница читает searchParams, поэтому рендерится динамически в любом случае.
+// Дорогая часть — запрос к БД — закеширована в lib/api.ts (тег 'listings').
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
@@ -30,7 +32,7 @@ export default async function CatalogPage({
   }>;
 }) {
   const params = await searchParams;
-  const listings = await getListings();
+  const listings = stripDescription(await getListings());
 
   // параметры глубоких ссылок (главная, поиск) → единая модель фильтров
   const utils: string[] = [];

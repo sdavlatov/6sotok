@@ -20,26 +20,19 @@ async function loadRate(): Promise<Fx> {
   let cached: Fx | null = null;
   try { cached = JSON.parse(localStorage.getItem(LS_FX) || 'null'); } catch {}
   if (cached && Date.now() - cached.t < 6 * 3600 * 1000) return cached;
-  // 1) Нацбанк РК
+  // Один запрос к своему прокси /api/fx: он сам ходит в Нацбанк РК, при отказе —
+  // в резервный источник, и кеширует результат на час. Прямой запрос из браузера
+  // на nationalbank.kz падал по CORS у каждого посетителя на каждой странице.
   try {
-    const d = new Date();
-    const fdate = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
-    const r = await fetch(`https://nationalbank.kz/rss/get_rates.cfm?fdate=${fdate}`, { mode: 'cors' });
+    const r = await fetch('/api/fx');
     if (r.ok) {
-      const doc = new DOMParser().parseFromString(await r.text(), 'text/xml');
-      for (const it of Array.from(doc.querySelectorAll('item'))) {
-        if ((it.querySelector('title')?.textContent || '').trim().toUpperCase() === 'USD') {
-          const v = parseFloat((it.querySelector('description')?.textContent || '').replace(',', '.'));
-          if (v) { const o: Fx = { usdKzt: v, t: Date.now(), src: 'nbk' }; localStorage.setItem(LS_FX, JSON.stringify(o)); return o; }
-        }
+      const j = await r.json();
+      if (typeof j?.usdKzt === 'number' && j.usdKzt > 0) {
+        const o: Fx = { usdKzt: j.usdKzt, t: Date.now(), src: j.src || 'nbk' };
+        localStorage.setItem(LS_FX, JSON.stringify(o));
+        return o;
       }
     }
-  } catch {}
-  // 2) авто-резерв (CORS-friendly)
-  try {
-    const j = await (await fetch('https://open.er-api.com/v6/latest/USD')).json();
-    const kzt = j && j.rates && j.rates.KZT;
-    if (kzt) { const o: Fx = { usdKzt: Math.round(kzt * 100) / 100, t: Date.now(), src: 'auto' }; localStorage.setItem(LS_FX, JSON.stringify(o)); return o; }
   } catch {}
   return cached || { usdKzt: 525, t: Date.now(), src: 'fallback' };
 }

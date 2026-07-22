@@ -1,10 +1,37 @@
 import type { CollectionConfig } from 'payload'
+import { revalidateTag } from 'next/cache'
+import { LISTINGS_TAG } from '@/lib/cache-tags'
+
+/**
+ * Сбрасывает кеш чтений объявлений (см. lib/api.ts). Вызывается из хуков Payload,
+ * которые могут выполняться и вне запросного контекста Next (скрипты, сиды),
+ * — там revalidateTag кидает, поэтому глушим.
+ */
+function flushListingsCache() {
+  try {
+    // Второй аргумент в Next 16 обязателен. Именованные профили ('max', 'hours'…)
+    // дают stale-while-revalidate: следующий запрос ещё получит старые данные, а
+    // обновление уйдёт в фон. Продавцу, который только что опубликовал объявление,
+    // это выглядит как «ничего не появилось», поэтому expire: 0 — сброс сразу.
+    revalidateTag(LISTINGS_TAG, { expire: 0 })
+  } catch { /* вне контекста запроса — кеш сам истечёт по TTL */ }
+}
+
+/** Изменились только `views` (и служебный updatedAt)? Тогда кеш трогать незачем. */
+function isViewsOnlyChange(prev: Record<string, unknown>, next: Record<string, unknown>): boolean {
+  const keys = new Set([...Object.keys(prev), ...Object.keys(next)])
+  for (const k of keys) {
+    if (k === 'views' || k === 'updatedAt') continue
+    if (JSON.stringify(prev[k]) !== JSON.stringify(next[k])) return false
+  }
+  return true
+}
 
 export const Listings: CollectionConfig = {
   slug: 'listings',
   hooks: {
     afterChange: [
-      async ({ doc, operation, req }) => {
+      async ({ doc, previousDoc, operation, req, context }) => {
         if (operation === 'create' && typeof doc.slug === 'string' && doc.slug.startsWith('listing-')) {
           try {
             await req.payload.update({
@@ -12,11 +39,18 @@ export const Listings: CollectionConfig = {
               id: doc.id,
               data: { slug: String(doc.id) },
               overrideAccess: true,
+              context: { skipCacheFlush: true },
             })
           } catch { /* silent */ }
         }
+        // Счётчик просмотров (api/view) меняет документ на каждом открытии карточки —
+        // сбрасывать из-за этого кеш всего каталога нельзя.
+        if (context?.skipCacheFlush) return
+        if (operation === 'update' && previousDoc && isViewsOnlyChange(previousDoc, doc)) return
+        flushListingsCache()
       },
     ],
+    afterDelete: [() => { flushListingsCache() }],
   },
   admin: {
     useAsTitle: 'title',

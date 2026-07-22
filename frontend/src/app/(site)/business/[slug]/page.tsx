@@ -1,4 +1,5 @@
 import { getListingBySlug, getBusinessListings } from '@/lib/api';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { ContactCard } from '@/components/listings/contact-card';
 import { MobileContactBar } from '@/components/listings/mobile-contact-bar';
@@ -8,7 +9,7 @@ import { Breadcrumbs } from '@/components/layout/breadcrumbs';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 300;
 
 interface Props { params: Promise<{ slug: string }> }
 
@@ -180,7 +181,7 @@ export default async function BusinessListingPage({ params }: Props) {
                 <Link key={l.id} href={`/business/${l.slug}`}
                   className="group bg-white rounded-2xl border border-zinc-200 overflow-hidden hover:shadow-md transition-all">
                   <div className="relative aspect-[4/3] bg-zinc-100 overflow-hidden">
-                    {l.image && <img src={l.image} alt={l.title} className="w-full h-full object-cover" loading="lazy" />}
+                    {l.image && <Image src={l.image} alt={l.title} fill sizes="(max-width: 640px) 50vw, 300px" className="object-cover" />}
                     <span className="absolute top-3 left-3 px-2 py-1 rounded-md bg-amber-500 text-white text-[10px] font-bold uppercase tracking-wider">Бизнес</span>
                   </div>
                   <div className="p-5">

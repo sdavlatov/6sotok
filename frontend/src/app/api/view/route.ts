@@ -13,6 +13,9 @@ export async function POST(req: Request) {
       id,
       data: { views: ((doc as any).views ?? 0) + 1 },
       overrideAccess: true,
+      // Инкремент счётчика просмотров не должен сбрасывать кеш объявлений:
+      // иначе кеш умирал бы от каждого открытия карточки (см. hooks в Listings.ts).
+      context: { skipCacheFlush: true },
     });
     return Response.json({ ok: true });
   } catch {

@@ -39,7 +39,7 @@ export default function FavoritesPage() {
   useEffect(() => {
     if (ids === null) return;
     if (ids.length === 0) { setLoading(false); return; }
-    fetch(`/api/listings?ids=${ids.join(',')}`)
+    fetch(`/api/listings/by-ids?ids=${ids.join(',')}`)
       .then(r => r.json())
       .then((data: Listing[]) => { setListings(data); setLoading(false); })
       .catch(() => setLoading(false));

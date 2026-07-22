@@ -2,7 +2,10 @@
 
 @theme {
   --font-sans: var(--font-inter), sans-serif;
-  --font-mono: var(--font-mono), 'JetBrains Mono', ui-monospace, monospace;
+  /* --font-jetbrains приходит из next/font (site/layout.tsx). Раньше здесь было
+     `var(--font-mono)` — ссылка токена на самого себя, из-за чего var(--font-mono)
+     нигде не резолвился. */
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 
   /* Brand · Emerald */
   --color-primary:       #066F36;
@@ -146,7 +149,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-weight: 600;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--font-mono), 'JetBrains Mono', ui-monospace, monospace;
 }
 
 @utility text-eyebrow {
@@ -154,7 +157,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-weight: 600;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--font-mono), 'JetBrains Mono', ui-monospace, monospace;
   color: var(--brand);
 }
 
@@ -174,7 +177,7 @@ body {
 }
 
 @utility text-mono-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--font-mono), 'JetBrains Mono', ui-monospace, monospace;
   font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.08em;

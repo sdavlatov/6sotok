@@ -5,17 +5,24 @@ import { SiteHeader, SiteFooter } from '@/components/layout/site-chrome'
 import { AuthProvider } from '@/context/auth-context'
 import { CurrencyProvider } from '@/context/currency-context'
 
+// latin-ext даёт ₸ (U+20B8) и прочие валютные глифы — раньше ради них тянули
+// дополнительный CSS с fonts.googleapis.com. Веса — только реально используемые
+// (100/200/300 у Inter и 800 у mono в разметке не встречаются).
 const inter = Inter({
   variable: '--font-inter',
-  subsets: ['latin', 'cyrillic'],
-  weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
+  subsets: ['latin', 'latin-ext', 'cyrillic'],
+  weight: ['400', '500', '600', '700', '800', '900'],
   display: 'swap',
 })
 
+// ВАЖНО: переменная называется --font-jetbrains, а не --font-mono.
+// --font-mono — это токен Tailwind @theme; при совпадении имён в globals.css
+// получалась циклическая ссылка `--font-mono: var(--font-mono)`, переменная не
+// резолвилась, и моно-шрифт приходилось хардкодить по имени семейства.
 const jetbrainsMono = JetBrains_Mono({
-  variable: '--font-mono',
-  subsets: ['latin', 'cyrillic'],
-  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-jetbrains',
+  subsets: ['latin', 'latin-ext', 'cyrillic'],
+  weight: ['400', '500', '600', '700'],
   display: 'swap',
 })
 
@@ -28,14 +35,6 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ru" className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col font-sans selection:bg-primary-soft selection:text-primary-dark" suppressHydrationWarning>
-        {/* Полные Inter + JetBrains Mono: даёт тонкие глифы ₸ / $ / → , которых нет
-            в latin/cyrillic-сабсете next/font (иначе браузер берёт жирный системный) */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
-        />
         <AuthProvider>
           <CurrencyProvider>
             <SiteHeader />

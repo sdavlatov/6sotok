@@ -9,7 +9,7 @@
 /* Моно-подписи макета (цифры, лейблы, №) — JetBrains Mono */
 .cabinet-page .mono,
 .cabinet-page.mono {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--font-mono), 'JetBrains Mono', ui-monospace, monospace;
 }
 
 /* Скрыть скроллбар у горизонтальных лент чипов (мобайл) */

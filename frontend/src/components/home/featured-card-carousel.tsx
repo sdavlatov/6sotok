@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 
 export interface CarouselListing {
@@ -54,9 +55,10 @@ export function FeaturedCardCarousel({ listings }: { listings: CarouselListing[]
           {/* Image */}
           <div className={`relative overflow-hidden ${plotClass}`} style={{ aspectRatio: '5/3' }}>
             {l.image && (
-              <img src={l.image} alt={l.title}
-                className="absolute inset-0 w-full h-full object-cover"
-                loading="eager" />
+              <Image src={l.image} alt={l.title}
+                fill priority
+                sizes="(max-width: 1024px) 100vw, 620px"
+                className="object-cover" />
             )}
             <div className="absolute top-4 left-4 flex items-center gap-1.5">
               <span className="px-2 py-1 rounded-md bg-zinc-900/90 backdrop-blur text-white text-[10.5px] font-bold uppercase tracking-wider">
