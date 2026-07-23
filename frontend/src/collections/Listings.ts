@@ -158,6 +158,7 @@ export const Listings: CollectionConfig = {
         { label: 'Черновик', value: 'draft' },
         { label: 'Опубликовано', value: 'published' },
         { label: 'Продано', value: 'sold' },
+        { label: 'Снято модерацией', value: 'blocked' },
       ],
       admin: {
         position: 'sidebar',
@@ -169,6 +170,34 @@ export const Listings: CollectionConfig = {
       required: true,
       label: 'Цена (₸)',
       min: 0,
+    },
+    // ─── Продвижение (реальные метки, покупаются из ЛК) ──────────────────────
+    {
+      name: 'isFeatured',
+      type: 'checkbox',
+      label: 'Продвижение (Реклама)',
+      defaultValue: false,
+      admin: { position: 'sidebar' },
+    },
+    {
+      name: 'isUrgent',
+      type: 'checkbox',
+      label: 'Метка «Срочно»',
+      defaultValue: false,
+      admin: { position: 'sidebar' },
+    },
+    {
+      name: 'oldPrice',
+      type: 'number',
+      label: 'Старая цена (₸) — для метки «Снижение цены»',
+      min: 0,
+      admin: { position: 'sidebar', description: 'Если задана и больше текущей цены — показывается скидка.' },
+    },
+    {
+      name: 'promoUntil',
+      type: 'date',
+      label: 'Продвижение активно до',
+      admin: { position: 'sidebar' },
     },
     {
       name: 'area',

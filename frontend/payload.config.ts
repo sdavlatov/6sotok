@@ -9,6 +9,7 @@ import path from 'path'
 import { Listings } from './src/collections/Listings'
 import { Media } from './src/collections/Media'
 import { Users } from './src/collections/Users'
+import { Reports } from './src/collections/Reports'
 
 // process.cwd() надёжнее import.meta.url в webpack/Next.js контексте
 const projectDir = process.cwd()
@@ -26,7 +27,7 @@ export default buildConfig({
     fallbackLanguage: 'ru',
   },
 
-  collections: [Listings, Media, Users],
+  collections: [Listings, Media, Users, Reports],
 
   db: postgresAdapter({
     pool: {

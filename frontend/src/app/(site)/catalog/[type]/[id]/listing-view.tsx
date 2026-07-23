@@ -135,6 +135,7 @@ export function ListingView({ d }: { d: PdpData }) {
   const [phoneShown, setPhoneShown] = useState(false);
   const [saved, setSaved] = useState(false);
   const [shareLbl, setShareLbl] = useState('Поделиться');
+  const [reportOpen, setReportOpen] = useState(false);
   const [active, setActive] = useState<string>('s-specs');
   const [doc, setDoc] = useState<null | { badge: string; title: string; meta: string; body: React.ReactNode }>(null);
 
@@ -350,6 +351,9 @@ export function ListingView({ d }: { d: PdpData }) {
             <div className="hidden sm:flex items-center gap-2 shrink-0 pt-1">
               <button className="share-btn" onClick={share}>{IcShare()}<span>{shareLbl}</span></button>
               <button className="share-btn" onClick={() => window.print()}>{IcPrint()}Печать</button>
+              <button className="share-btn" onClick={() => setReportOpen(true)} title="Пожаловаться на объявление">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" /></svg>
+              </button>
             </div>
           </div>
         </section>
@@ -609,6 +613,9 @@ export function ListingView({ d }: { d: PdpData }) {
         <div className="lb-counter">{lb.i + 1} / {lbCount}</div>
       </div>
 
+      {/* ═══ REPORT MODAL ═══ */}
+      {reportOpen && <ReportModal listingId={d.id} onClose={() => setReportOpen(false)} />}
+
       {/* ═══ DOC MODAL ═══ */}
       <div className={`pdp-modal ${doc ? 'open' : ''}`} role="dialog" aria-modal="true">
         <div className="modal-scrim" onClick={() => setDoc(null)} />
@@ -633,6 +640,88 @@ export function ListingView({ d }: { d: PdpData }) {
 }
 
 /* ─── Мелкие подкомпоненты ────────────────────────────────────────────────── */
+const REPORT_REASONS: { v: string; l: string }[] = [
+  { v: 'fraud', l: 'Мошенничество / обман' },
+  { v: 'stale', l: 'Уже продано / неактуально' },
+  { v: 'wrong_info', l: 'Неверная информация' },
+  { v: 'duplicate', l: 'Дубликат' },
+  { v: 'spam', l: 'Спам / реклама' },
+  { v: 'other', l: 'Другое' },
+];
+
+function ReportModal({ listingId, onClose }: { listingId: string; onClose: () => void }) {
+  const [reason, setReason] = useState('');
+  const [comment, setComment] = useState('');
+  const [state, setState] = useState<'form' | 'sending' | 'done'>('form');
+
+  const submit = async () => {
+    if (!reason) return;
+    setState('sending');
+    try {
+      const r = await fetch('/api/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listingId, reason, comment }),
+      });
+      setState(r.ok ? 'done' : 'form');
+      if (!r.ok) setState('form');
+    } catch { setState('form'); }
+  };
+
+  return (
+    <div className="pdp-modal open" role="dialog" aria-modal="true">
+      <div className="modal-scrim" onClick={onClose} />
+      <div className="modal-panel" style={{ maxWidth: 440 }}>
+        <div className="modal-head">
+          <div className="min-w-0">
+            <div className="text-[15px] font-bold text-zinc-900 leading-tight">Пожаловаться на объявление</div>
+            <div className="text-[12px] text-zinc-500 mt-0.5">Модераторы проверят и при необходимости снимут его.</div>
+          </div>
+          <button onClick={onClose} className="ml-auto h-8 w-8 rounded-lg hover:bg-zinc-100 flex items-center justify-center text-zinc-500" aria-label="Закрыть">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+        {state === 'done' ? (
+          <div className="p-5 text-center">
+            <div className="mx-auto mb-3 h-11 w-11 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+            </div>
+            <div className="text-[14px] font-semibold text-zinc-900">Жалоба отправлена</div>
+            <div className="text-[12.5px] text-zinc-500 mt-1">Спасибо, мы разберёмся.</div>
+            <button onClick={onClose} className="mt-4 h-10 px-5 rounded-xl bg-zinc-900 text-white text-[13.5px] font-semibold">Закрыть</button>
+          </div>
+        ) : (
+          <div className="p-5 space-y-3">
+            <div className="space-y-1.5">
+              {REPORT_REASONS.map(r => (
+                <label key={r.v} className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border cursor-pointer transition-colors ${reason === r.v ? 'border-brand-600 bg-brand-50' : 'border-zinc-200 hover:bg-zinc-50'}`}>
+                  <input type="radio" name="reason" value={r.v} checked={reason === r.v} onChange={() => setReason(r.v)} className="accent-brand-600" />
+                  <span className="text-[13.5px] text-zinc-800">{r.l}</span>
+                </label>
+              ))}
+            </div>
+            <textarea
+              value={comment}
+              onChange={e => setComment(e.target.value)}
+              maxLength={1000}
+              rows={3}
+              placeholder="Комментарий (необязательно)"
+              className="w-full px-3.5 py-2.5 bg-white border border-zinc-200 rounded-xl text-[13.5px] placeholder:text-zinc-400 focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/10 resize-none"
+            />
+            <button
+              onClick={submit}
+              disabled={!reason || state === 'sending'}
+              className="w-full h-11 rounded-xl bg-zinc-900 text-white text-[14px] font-semibold disabled:opacity-50"
+            >
+              {state === 'sending' ? 'Отправка…' : 'Отправить жалобу'}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Fact({ label, value, unit, accent }: { label: string; value: string; unit: string; accent?: boolean }) {
   return (
     <div>

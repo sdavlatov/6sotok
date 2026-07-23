@@ -123,9 +123,12 @@ export function CatalogClient({ allListings, initialFilters }: CatalogClientProp
     [landListings, applied],
   );
 
-  // рекламное объявление (MOCK — платное продвижение): всегда топ-1 списка + пин со звездой на карте
+  // рекламное объявление (реальное платное продвижение isFeatured): топ-1 списка
+  // + пин со звездой на карте. Учитываем срок действия промо.
   const promotedId = useMemo(() => {
-    const ad = results.find(l => hashId(String(l.id)) % 9 === 0);
+    const active = (l: typeof results[number]) =>
+      l.isFeatured && (!l.promoUntil || new Date(l.promoUntil).getTime() > Date.now());
+    const ad = results.find(active);
     return ad ? String(ad.id) : null;
   }, [results]);
   const orderedResults = useMemo(() => {

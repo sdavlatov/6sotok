@@ -45,6 +45,10 @@ interface PayloadListing {
   dealType?: string
   views?: number
   locationType?: string[]
+  isFeatured?: boolean
+  isUrgent?: boolean
+  oldPrice?: number
+  promoUntil?: string
   listingCategory?: string
   businessType?: string
   buildingArea?: number
@@ -104,6 +108,10 @@ function mapListing(p: PayloadListing): Listing {
     createdAt: p.createdAt,
     views: p.views ?? 0,
     locationType: p.locationType,
+    isFeatured: p.isFeatured ?? false,
+    isUrgent: p.isUrgent ?? false,
+    oldPrice: p.oldPrice,
+    promoUntil: p.promoUntil,
     dealType: (p.dealType as Listing['dealType']) ?? 'sale',
     listingCategory: (p.listingCategory as Listing['listingCategory']) ?? 'land',
     businessType: p.businessType as Listing['businessType'],

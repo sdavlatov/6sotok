@@ -63,6 +63,13 @@ export interface Listing {
   dealType?: DealType;
   views?: number;
   locationType?: string[];
+
+  // Продвижение (реальные метки, покупаются из ЛК)
+  isFeatured?: boolean;
+  isUrgent?: boolean;
+  oldPrice?: number;
+  promoUntil?: string;
+
   listingCategory?: ListingCategory;
   businessType?: BusinessType;
   buildingArea?: number;

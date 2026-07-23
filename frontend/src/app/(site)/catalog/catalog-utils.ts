@@ -239,10 +239,14 @@ export interface CardMeta {
 export function cardMeta(l: Listing): CardMeta {
   const h = hashId(String(l.id));
   const ago = fmtAgo(l.createdAt);
-  // Скидка и «Срочно» больше НЕ выдумываются из хеша id: это боевой каталог,
-  // фабриковать −12%/«Срочно» всем подряд нельзя. Появятся, когда будет реальное
-  // поле промо у объявления (продвижение из ЛК). Высота над морем тоже недоступна.
-  const drop = null;
+  // Промо — из реальных полей объявления (покупаются в ЛК), не из хеша id.
+  // promoUntil в прошлом → метки погашены.
+  const promoActive = !l.promoUntil || new Date(l.promoUntil).getTime() > Date.now();
+  const urgent = promoActive && !!l.isUrgent;
+  // «Снижение цены»: старая цена задана и выше текущей → показываем скидку.
+  const drop = promoActive && l.oldPrice && l.oldPrice > l.price
+    ? Math.round((1 - l.price / l.oldPrice) * 100)
+    : null;
   const tags: { l: string; brand?: boolean }[] = [];
   // коммуникации — отдельными тегами (как в макете), без схлопывания
   if (l.hasElectricity) tags.push({ l: 'Свет' });
@@ -260,8 +264,8 @@ export function cardMeta(l: Listing): CardMeta {
     altM: null,
     cadVerified: !!l.cadastralNumber,
     drop,
-    oldPrice: null,
-    urgent: false,
+    oldPrice: drop && l.oldPrice ? fmtPrice(l.oldPrice) : null,
+    urgent,
     ready: !!(l.hasElectricity && l.hasWater && l.hasStateAct),
     imgIdx: (h % 6) + 1,
     tags: tags.slice(0, 5),
