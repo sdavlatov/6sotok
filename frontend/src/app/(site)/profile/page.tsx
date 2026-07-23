@@ -5,7 +5,7 @@
    Боевое: auth-guard, реальные объявления (Мои объявления), настройки, выход.
    Демо (нет бэкенда): продвижение, услуги, заявки, баланс, аналитика — как в макете. */
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Image from 'next/image';
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/auth-context'
@@ -104,6 +104,15 @@ const Toggle = ({ on, onClick }: { on: boolean; onClick?: () => void }) => (
   <button onClick={onClick} style={{ position: 'relative', width: 40, height: 24, borderRadius: 99, border: 'none', background: on ? 'var(--brand)' : '#d4d4d8', cursor: 'pointer', flexShrink: 0, transition: 'background .18s', padding: 0 }}>
     <span style={{ position: 'absolute', top: 3, left: on ? 19 : 3, width: 18, height: 18, borderRadius: 99, background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,.28)', transition: 'left .18s' }} />
   </button>
+)
+
+/* ── аватар пользователя: реальная картинка или инициалы ── */
+const Ava = ({ url, initials, size = 44, fontSize = 16 }: { url?: string; initials: string; size?: number; fontSize?: number }) => (
+  <span style={{ width: size, height: size, borderRadius: 99, background: 'var(--brand-ink)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize, fontWeight: 800, overflow: 'hidden', flexShrink: 0 }}>
+    {url
+      ? <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      : initials}
+  </span>
 )
 
 /* ── plot thumbnail (map-ish gradient block, либо реальное фото) ── */
@@ -221,9 +230,10 @@ interface Store {
   addToCart: (i: CartItem) => void; removeFromCart: (k: string) => void
   topup: (a: number) => void; checkout: () => void
   listings: Row[]; counts: Record<string, number>; listingsLoading: boolean
-  user: { name: string; initials: string; phone?: string; email: string; city?: string; isAgency?: boolean; since: string }
+  user: { name: string; initials: string; phone?: string; email: string; city?: string; isAgency?: boolean; since: string; avatarUrl?: string }
   go: (href: string) => void; signOut: () => void
   updateUser: (f: { name?: string; phone?: string }) => Promise<void>
+  updateAvatar: (file: File) => Promise<void>
 }
 
 /* =====================================================================
@@ -568,6 +578,16 @@ function SettingsDesk({ store }: { store: Store }) {
   const [phone, setPhone] = useState(store.user.phone || '')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [avatarBusy, setAvatarBusy] = useState(false)
+  const onPickAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (!file.type.startsWith('image/')) return
+    setAvatarBusy(true)
+    try { await store.updateAvatar(file) } catch { /* тихо */ } finally { setAvatarBusy(false) }
+  }
   const save = async () => {
     setSaving(true); setSaved(false)
     try { await store.updateUser({ name, phone: phone || undefined }); setSaved(true); setTimeout(() => setSaved(false), 2000) }
@@ -586,8 +606,18 @@ function SettingsDesk({ store }: { store: Store }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
-            <span style={{ width: 56, height: 56, borderRadius: 99, background: 'var(--brand-ink)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 800 }}>{store.user.initials}</span>
-            <div><div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-.02em' }}>{store.user.name}</div><div style={{ fontSize: 12.5, color: 'var(--ink-400)' }}>{store.user.since}</div></div>
+            <button type="button" onClick={() => fileRef.current?.click()} title="Сменить фото"
+              style={{ position: 'relative', border: 'none', background: 'none', padding: 0, cursor: 'pointer', borderRadius: 99, opacity: avatarBusy ? 0.6 : 1 }}>
+              <Ava url={store.user.avatarUrl} initials={store.user.initials} size={56} fontSize={20} />
+              <span style={{ position: 'absolute', right: -2, bottom: -2, width: 22, height: 22, borderRadius: 99, background: 'var(--brand)', border: '2px solid #fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                <Ic n="edit" s={11} />
+              </span>
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" onChange={onPickAvatar} style={{ display: 'none' }} />
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-.02em' }}>{store.user.name}</div>
+              <div style={{ fontSize: 12.5, color: 'var(--ink-400)' }}>{avatarBusy ? 'Загрузка фото…' : 'Нажмите на фото, чтобы сменить'}</div>
+            </div>
           </div>
           {field('Имя', name, setName)}
           {field('Телефон', phone, setPhone, '+7 701 234 56 78')}
@@ -677,7 +707,7 @@ function DeskCabinet({ store }: { store: Store }) {
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 24, maxWidth: 1440, margin: '0 auto', padding: '24px 24px 72px' }}>
       <aside style={{ width: 262, position: 'sticky', top: 84, background: '#fff', border: '1px solid var(--line)', borderRadius: 16, display: 'flex', flexDirection: 'column', flexShrink: 0, overflow: 'hidden' }}>
         <div style={{ padding: '16px 16px 12px', display: 'flex', alignItems: 'center', gap: 11 }}>
-          <span style={{ width: 38, height: 38, borderRadius: 99, background: 'var(--brand-ink)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800 }}>{store.user.initials}</span>
+          <Ava url={store.user.avatarUrl} initials={store.user.initials} size={38} fontSize={13} />
           <div><div style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: '-.02em' }}>{store.user.name}</div><div style={{ fontSize: 11, color: 'var(--ink-400)' }}>{store.user.isAgency ? 'Агентство' : 'Частник'}{store.user.city ? ' · ' + store.user.city : ''}</div></div>
         </div>
         <div style={{ padding: '4px 12px 8px' }}>
@@ -924,7 +954,7 @@ function MSettings({ store }: { store: Store }) {
       <MHead title="Настройки профиля" />
       <MC style={{ marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <span style={{ width: 50, height: 50, borderRadius: 99, background: 'var(--brand-ink)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 800 }}>{store.user.initials}</span>
+          <Ava url={store.user.avatarUrl} initials={store.user.initials} size={50} fontSize={18} />
           <div><div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-.02em' }}>{store.user.name}</div><div style={{ fontSize: 11.5, color: 'var(--ink-400)' }}>{store.user.since}</div></div>
         </div>
         {([['Телефон', store.user.phone || '—'], ['Email', store.user.email], ['Город', store.user.city || '—']] as [string, string][]).map(([l, v]) => (
@@ -993,7 +1023,7 @@ function MobileCabinet({ store }: { store: Store }) {
     <div style={{ background: 'var(--paper)', minHeight: '100vh' }}>
       <div style={{ background: '#fff', borderBottom: '1px solid var(--line)' }}>
         <div style={{ height: 52, display: 'flex', alignItems: 'center', padding: '0 16px', gap: 10 }}>
-          <span style={{ width: 30, height: 30, borderRadius: 99, background: 'var(--brand-ink)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}>{store.user.initials}</span>
+          <Ava url={store.user.avatarUrl} initials={store.user.initials} size={30} fontSize={11} />
           <span style={{ fontWeight: 900, fontSize: 15.5, letterSpacing: '-.04em', flex: 1 }}>Кабинет</span>
           <button onClick={() => store.setTab('balance')} style={{ height: 30, padding: '0 10px', border: '1px solid var(--line)', borderRadius: 99, background: 'var(--paper)', display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}><Ic n="wallet" s={14} style={{ color: 'var(--brand)' }} /><span className="mono" style={{ fontSize: 12, fontWeight: 700 }}>{fmt(store.balance)} ₸</span></button>
           <button onClick={() => store.setCartOpen(true)} style={{ position: 'relative', border: '1px solid var(--line)', background: '#fff', width: 34, height: 34, borderRadius: 9, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><Ic n="cart" s={16} />{store.cart.length > 0 && <span className="mono" style={{ position: 'absolute', top: -6, right: -6, minWidth: 17, height: 17, padding: '0 4px', borderRadius: 99, background: 'var(--brand)', color: '#fff', fontSize: 10, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{store.cart.length}</span>}</button>
@@ -1063,7 +1093,7 @@ function useMobile() {
 }
 
 export default function ProfilePage() {
-  const { user, loading, signOut, updateUser } = useAuth()
+  const { user, loading, signOut, updateUser, updateAvatar } = useAuth()
   const router = useRouter()
   const mob = useMobile()
 
@@ -1125,10 +1155,11 @@ export default function ProfilePage() {
     tab, setTab, cart, cartOpen, setCartOpen, balance, txns,
     addToCart, removeFromCart, topup, checkout,
     listings, counts, listingsLoading,
-    user: { name: user.name, initials, phone: user.phone, email: user.email, city: user.city, isAgency: user.isAgency, since: 'на 6sotok' },
+    user: { name: user.name, initials, phone: user.phone, email: user.email, city: user.city, isAgency: user.isAgency, since: 'на 6sotok', avatarUrl: user.avatar },
     go: (href: string) => router.push(href),
     signOut,
     updateUser,
+    updateAvatar,
   }
 
   return (
