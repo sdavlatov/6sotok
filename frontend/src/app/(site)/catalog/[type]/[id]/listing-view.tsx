@@ -56,6 +56,7 @@ export interface PdpData {
   description?: string;
 
   images: string[];           // реальные фото (может быть пусто)
+  videos: string[];           // видео объявления (mp4/mov/webm)
   videoDuration?: string;
 
   hasMap: boolean;
@@ -136,9 +137,15 @@ export function ListingView({ d }: { d: PdpData }) {
   const [active, setActive] = useState<string>('s-specs');
   const [doc, setDoc] = useState<null | { badge: string; title: string; meta: string; body: React.ReactNode }>(null);
 
-  const hasPhotos = d.images.length > 0;
-  const lbCount = hasPhotos ? d.images.length : 5;
-  const extra = hasPhotos ? Math.max(0, d.images.length - 5) : 0;
+  // Медиа объявления = фото + видео единым списком (видео идут после фото).
+  // Раньше видео вообще не доходило до карточки — рендерились только d.images.
+  const media = [
+    ...d.images.map(url => ({ url, video: false })),
+    ...d.videos.map(url => ({ url, video: true })),
+  ];
+  const hasPhotos = media.length > 0;
+  const lbCount = hasPhotos ? media.length : 5;
+  const extra = hasPhotos ? Math.max(0, media.length - 5) : 0;
   const cleanPhone = d.seller?.phone?.replace(/\D/g, '') ?? '';
   const priceP = mlnStr(d.price, 1);
   const perP = mlnStr(d.pricePerSotka, 2);
@@ -300,7 +307,9 @@ export function ListingView({ d }: { d: PdpData }) {
         {/* ═══ GALLERY ═══ */}
         <section className="grid grid-cols-4 grid-rows-2 gap-2 h-[280px] sm:h-[460px] rounded-2xl sm:rounded-3xl overflow-hidden mb-6">
           {[0, 1, 2, 3, 4].map(i => {
-            const url = hasPhotos ? d.images[i] : undefined;
+            const item = hasPhotos ? media[i] : undefined;
+            const url = item?.url;
+            const isVid = !!item?.video;
             const cls = `plot-img-${(i % 5) + 1}`;
             const isFirst = i === 0;
             return (
@@ -309,21 +318,16 @@ export function ListingView({ d }: { d: PdpData }) {
                 onClick={() => setLb({ open: true, i: Math.min(i, lbCount - 1) })}
                 className={`gallery-tile relative overflow-hidden cursor-zoom-in ${isFirst ? 'col-span-4 sm:col-span-2 row-span-2' : 'hidden sm:block'} ${url ? '' : `${cls} noise`}`}
               >
-                {url && <Image src={url} alt={d.title} fill priority={isFirst} sizes={isFirst ? '(max-width: 640px) 100vw, 620px' : '310px'} className="object-cover" />}
-                {isFirst && (
-                  <>
-                    {d.urgent && (
-                      <span className="absolute top-3 left-3 z-10 chip-urgent">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2.2 5.6 12.6a.6.6 0 0 0 .48.96H10l-1.4 7.9a.4.4 0 0 0 .72.3l8-10.5a.6.6 0 0 0-.48-.96H12.7l1.5-7.6a.4.4 0 0 0-.7-.5z" /></svg>
-                        Срочно
-                      </span>
-                    )}
-                    {d.videoDuration && (
-                      <span className="absolute bottom-3 left-3 z-10 px-3 h-9 rounded-lg bg-black/70 backdrop-blur text-white text-[12.5px] font-semibold flex items-center gap-2">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg> Видеотур · {d.videoDuration}
-                      </span>
-                    )}
-                  </>
+                {url && (isVid
+                  ? <video src={url} muted playsInline preload="metadata" className="absolute inset-0 w-full h-full object-cover" />
+                  : <Image src={url} alt={d.title} fill priority={isFirst} sizes={isFirst ? '(max-width: 640px) 100vw, 620px' : '310px'} className="object-cover" />
+                )}
+                {isVid && (
+                  <span className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+                    <span className="w-12 h-12 rounded-full bg-black/55 backdrop-blur flex items-center justify-center">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z" /></svg>
+                    </span>
+                  </span>
                 )}
                 {i === 4 && extra > 0 && (
                   <span className="absolute inset-0 bg-black/55 backdrop-blur-sm text-white flex flex-col items-center justify-center gap-0.5 z-10">
@@ -595,7 +599,9 @@ export function ListingView({ d }: { d: PdpData }) {
         <button className="lb-ctrl lb-prev" onClick={() => setLb(s => ({ ...s, i: (s.i - 1 + lbCount) % lbCount }))} aria-label="Назад"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg></button>
         <div className="lb-stage">
           {hasPhotos
-            ? <img src={d.images[lb.i]} alt={d.title} />
+            ? (media[lb.i]?.video
+                ? <video src={media[lb.i].url} controls autoPlay playsInline className="max-h-full max-w-full" />
+                : <img src={media[lb.i]?.url} alt={d.title} />)
             : <div className={`w-full h-full noise plot-img-${(lb.i % 5) + 1}`} />}
         </div>
         <button className="lb-ctrl lb-next" onClick={() => setLb(s => ({ ...s, i: (s.i + 1) % lbCount }))} aria-label="Вперёд"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg></button>

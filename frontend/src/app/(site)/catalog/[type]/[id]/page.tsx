@@ -137,6 +137,7 @@ export default async function ListingPage({ params }: Props) {
     description: listing.description,
 
     images: listing.images?.length ? listing.images : (listing.image ? [listing.image] : []),
+    videos: listing.videos ?? [],
     videoDuration: undefined,
 
     hasMap,

@@ -727,7 +727,7 @@ function MobileDetailSheet({ listing: l, visible, fav, onFav, onOpen, onClose }:
             </div>
             <div className="py-2.5 pl-3 border-l border-zinc-100">
               <div className="font-mono text-[9px] text-zinc-400 uppercase tracking-[0.06em] font-bold">Высота</div>
-              <div className="mt-0.5 text-[13px] font-extrabold" style={{ letterSpacing: '-.03em' }}>{meta.altM} м</div>
+              <div className="mt-0.5 text-[13px] font-extrabold" style={{ letterSpacing: '-.03em' }}>{meta.altM != null ? `${meta.altM} м` : '—'}</div>
             </div>
             <div className="py-2.5 pl-3 border-l border-zinc-100">
               <div className="font-mono text-[9px] text-zinc-400 uppercase tracking-[0.06em] font-bold">Кадастр</div>

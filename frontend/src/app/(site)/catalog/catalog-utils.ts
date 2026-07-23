@@ -226,7 +226,7 @@ export interface CardMeta {
   fresh: boolean;          // «2 ч» зелёным
   photos: number;
   distKm: number | null;   // до Алматы, реальный расчёт по координатам
-  altM: number;            // MOCK: высота над уровнем моря
+  altM: number | null;     // высота над морем — данных нет, всегда null
   cadVerified: boolean;    // по наличию кадастрового номера
   drop: number | null;     // MOCK: снижение цены за месяц, %
   oldPrice: string | null; // MOCK
@@ -239,7 +239,10 @@ export interface CardMeta {
 export function cardMeta(l: Listing): CardMeta {
   const h = hashId(String(l.id));
   const ago = fmtAgo(l.createdAt);
-  const drop = h % 5 === 0 ? (h % 2 === 0 ? 12 : 8) : null;
+  // Скидка и «Срочно» больше НЕ выдумываются из хеша id: это боевой каталог,
+  // фабриковать −12%/«Срочно» всем подряд нельзя. Появятся, когда будет реальное
+  // поле промо у объявления (продвижение из ЛК). Высота над морем тоже недоступна.
+  const drop = null;
   const tags: { l: string; brand?: boolean }[] = [];
   // коммуникации — отдельными тегами (как в макете), без схлопывания
   if (l.hasElectricity) tags.push({ l: 'Свет' });
@@ -254,11 +257,11 @@ export function cardMeta(l: Listing): CardMeta {
     fresh: /ч$|только что/.test(ago),
     photos: l.images?.length || (l.image ? 1 : 0),
     distKm: l.lat && l.lng ? Math.round(haversineKm([l.lat, l.lng], ALMATY)) : null,
-    altM: 600 + (h % 60) * 10,
+    altM: null,
     cadVerified: !!l.cadastralNumber,
     drop,
-    oldPrice: drop ? fmtPrice(Math.round(l.price / (1 - drop / 100))) : null,
-    urgent: h % 7 === 0,
+    oldPrice: null,
+    urgent: false,
     ready: !!(l.hasElectricity && l.hasWater && l.hasStateAct),
     imgIdx: (h % 6) + 1,
     tags: tags.slice(0, 5),
