@@ -35,6 +35,12 @@ function humanError(raw: string): string {
     return 'Неверный e-mail или пароль. Проверьте данные или войдите через Google.'
   if (s.includes('already registered') || s.includes('unique') || s.includes('уже зарегистрирован') || s.includes('уникальн'))
     return 'Аккаунт с таким e-mail уже есть — попробуйте войти.'
+  // Payload на дубликат email в auth-коллекции отдаёт generic «field is invalid: email»
+  // (формат мы валидируем на клиенте до отправки, так что это именно занятый email)
+  if (s.includes('field is invalid: email') || s.includes('invalid: email') || s.includes('поле недействительно') && s.includes('email'))
+    return 'Аккаунт с таким e-mail уже есть — войдите или восстановите доступ.'
+  if (s.includes('verify your email') || s.includes('подтвердите свою электронную') || s.includes('подтвердите email'))
+    return 'Подтвердите e-mail — мы отправляли письмо со ссылкой. Проверьте почту и «Спам».'
   if (s.includes('failed to fetch') || s.includes('network'))
     return 'Нет соединения. Проверьте интернет и попробуйте ещё раз.'
   return raw
