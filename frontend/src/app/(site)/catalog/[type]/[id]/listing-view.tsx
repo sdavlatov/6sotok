@@ -62,6 +62,7 @@ export interface PdpData {
   hasMap: boolean;
   lat?: number;
   lng?: number;
+  boundary?: [number, number][];  // реальный контур участка
   mapPOIs: MapPOI[];
   travel: PdpTravel[];
 
@@ -500,7 +501,7 @@ export function ListingView({ d }: { d: PdpData }) {
                   </div>
                 )}
                 <div className="relative h-[300px] sm:h-[380px] rounded-2xl overflow-hidden border border-zinc-200 isolate z-0">
-                  <ListingMap lat={d.lat!} lng={d.lng!} title={d.title} pois={poi.mapPOIs} />
+                  <ListingMap lat={d.lat!} lng={d.lng!} title={d.title} pois={poi.mapPOIs} boundary={d.boundary} />
                 </div>
               </section>
             )}

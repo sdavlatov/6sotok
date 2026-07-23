@@ -20,6 +20,19 @@ function haversine(lat1: number, lng1: number, lat2: number, lng2: number) {
 }
 function fmtDist(m: number) { return m < 1000 ? `${Math.round(m)} м` : `${(m / 1000).toFixed(1)} км`; }
 
+/** plotBoundary хранится как JSON `[{lat,lng}, …]` → `[[lat,lng], …]` для Leaflet. */
+function parseBoundary(raw?: string): [number, number][] | undefined {
+  if (!raw) return undefined;
+  try {
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return undefined;
+    const ring = arr
+      .map((p: { lat?: number; lng?: number }) => [p.lat, p.lng] as [number, number])
+      .filter(([la, ln]) => Number.isFinite(la) && Number.isFinite(ln));
+    return ring.length >= 3 ? ring : undefined;
+  } catch { return undefined; }
+}
+
 /* ─── Форматтеры ──────────────────────────────────────────────────────────── */
 function mlnPrice(n: number): string {
   const m = n / 1_000_000;
@@ -143,6 +156,7 @@ export default async function ListingPage({ params }: Props) {
     hasMap,
     lat: listing.lat,
     lng: listing.lng,
+    boundary: parseBoundary(listing.plotBoundary),
     mapPOIs: loc.mapPOIs,
     travel: loc.travel,
 

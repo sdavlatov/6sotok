@@ -14,6 +14,8 @@ interface ListingMapProps {
   lng: number;
   title: string;
   pois?: MapPOI[];
+  /** Реальный контур участка (нарисованный продавцом). [[lat,lng], …]. */
+  boundary?: [number, number][];
 }
 
 const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
@@ -49,7 +51,7 @@ function loadLeaflet(): Promise<void> {
   });
 }
 
-export function ListingMap({ lat, lng, title, pois = [] }: ListingMapProps) {
+export function ListingMap({ lat, lng, title, pois = [], boundary }: ListingMapProps) {
   const ref     = useRef<HTMLDivElement>(null);
   const mapRef  = useRef<any>(null);
   const tileRef = useRef<any>(null);
@@ -109,16 +111,23 @@ export function ListingMap({ lat, lng, title, pois = [] }: ListingMapProps) {
       });
       L.marker([lat, lng], { icon }).addTo(map);
 
-      L.polygon(makePlotPolygon(lat, lng), {
+      // Реальный контур участка, если продавец его нарисовал; иначе — условный
+      // квадрат вокруг точки (данных о форме нет).
+      const ring = (boundary && boundary.length >= 3) ? boundary : makePlotPolygon(lat, lng);
+      const poly = L.polygon(ring, {
         color: '#2CA64E', weight: 2.5, dashArray: '6 4',
         fillColor: '#2CA64E', fillOpacity: 0.10,
       }).addTo(map);
+      // По реальному контуру подгоняем зум, чтобы участок был виден целиком.
+      if (boundary && boundary.length >= 3) {
+        map.fitBounds(poly.getBounds(), { padding: [40, 40], maxZoom: 17 });
+      }
 
       mapRef.current = map;
     });
 
     return () => { wheelCleanup?.(); if (map) map.remove(); };
-  }, [lat, lng]);
+  }, [lat, lng, boundary]);
 
   /* ── Switch tiles ── */
   useEffect(() => {
