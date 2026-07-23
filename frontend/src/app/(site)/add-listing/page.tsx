@@ -11,7 +11,7 @@ import { MapEditor, type LatLng } from './map-editor';
 import './submit.css';
 
 /* ───────────────────────── утилиты ───────────────────────── */
-const fmtPrice = (v: string) => {
+export const fmtPrice = (v: string) => {
   const d = v.replace(/\D/g, '');
   return d ? d.replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : '';
 };
@@ -303,15 +303,65 @@ function DocUploader() {
 }
 
 /* ───────────────────────── главный компонент ───────────────────────── */
+export type LandForm = {
+  dealType: 'sale' | 'rent';
+  landType: string; area: string; price: string; priceUsd: boolean; mortgage: boolean;
+  location: string; address: string; cadastralNumber: string;
+  hasStateAct: boolean; hasElectricity: boolean; hasWater: boolean; hasGas: boolean;
+  hasSewer: boolean; hasRoadAccess: boolean; isDivisible: boolean; noEncumbrances: boolean;
+  canChangePurpose: boolean; description: string;
+  name: string; phone: string; wantCall: boolean; wantWhatsApp: boolean;
+};
+export type BizForm = {
+  category: string; name: string; age: string; legalForm: string; employees: string;
+  location: string; address: string; buildingArea: string; rent: string; floor: string;
+  revenue: string; profit: string; price: string; hideUntilNda: boolean;
+  aEquip: boolean; aOnline: boolean; aTeam: boolean; aBrand: boolean; aLease: boolean; aSuppliers: boolean;
+  description: string; name2: string; phone: string; wantCall: boolean; wantWhatsApp: boolean;
+};
+export type ExistingImage = { id: string; url: string; video?: boolean };
+
+export interface ListingWizardInit {
+  entity: 'land' | 'business';
+  fd?: Partial<LandForm>;
+  bd?: Partial<BizForm>;
+  boundary?: LatLng[] | null;
+  marker?: LatLng | null;
+  images?: ExistingImage[];
+}
+
+const LAND_DEFAULTS: LandForm = {
+  dealType: 'sale',
+  landType: '', area: '', price: '', priceUsd: false, mortgage: false,
+  location: '', address: '', cadastralNumber: '',
+  hasStateAct: false, hasElectricity: false, hasWater: false, hasGas: false,
+  hasSewer: false, hasRoadAccess: false, isDivisible: false, noEncumbrances: false,
+  canChangePurpose: false, description: '',
+  name: '', phone: '', wantCall: true, wantWhatsApp: true,
+};
+const BIZ_DEFAULTS: BizForm = {
+  category: '', name: '', age: '', legalForm: '', employees: '',
+  location: '', address: '', buildingArea: '', rent: '', floor: '',
+  revenue: '', profit: '', price: '', hideUntilNda: true,
+  aEquip: false, aOnline: false, aTeam: false, aBrand: false, aLease: false, aSuppliers: false,
+  description: '', name2: '', phone: '', wantCall: true, wantWhatsApp: true,
+};
+
 export default function AddListingPage() {
+  return <ListingWizard mode="create" />;
+}
+
+export function ListingWizard({ mode = 'create', listingId, init }: { mode?: 'create' | 'edit'; listingId?: string; init?: ListingWizardInit }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const isEdit = mode === 'edit';
+  const nextParam = isEdit && listingId ? `/edit-listing/${listingId}` : '/add-listing';
 
   useEffect(() => {
-    if (!loading && !user) router.replace('/login?next=/add-listing');
-  }, [loading, user, router]);
+    if (!loading && !user) router.replace(`/login?next=${nextParam}`);
+  }, [loading, user, router, nextParam]);
 
-  const [entity, setEntity] = useState<'land' | 'business' | null>(null);
+  const [entity, setEntity] = useState<'land' | 'business' | null>(init?.entity ?? null);
   const [step, setStep] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -320,34 +370,18 @@ export default function AddListingPage() {
 
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<ExistingImage[]>(init?.images ?? []);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
-  const [markerPos, setMarkerPos] = useState<LatLng | null>(null);
-  const [boundary, setBoundary] = useState<LatLng[] | null>(null);
+  const [markerPos, setMarkerPos] = useState<LatLng | null>(init?.marker ?? null);
+  const [boundary, setBoundary] = useState<LatLng[] | null>(init?.boundary ?? null);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Данные участка
-  const [fd, setFd] = useState({
-    dealType: 'sale' as 'sale' | 'rent',
-    landType: '', area: '', price: '', priceUsd: false, mortgage: false,
-    location: '', address: '', cadastralNumber: '',
-    hasStateAct: false, hasElectricity: false, hasWater: false, hasGas: false,
-    hasSewer: false, hasRoadAccess: false, isDivisible: false, noEncumbrances: false,
-    canChangePurpose: false,
-    description: '',
-    name: '', phone: '', wantCall: true, wantWhatsApp: true,
-  });
+  const [fd, setFd] = useState<LandForm>({ ...LAND_DEFAULTS, ...(init?.fd ?? {}) });
   // Данные бизнеса
-  const [bd, setBd] = useState({
-    category: '', name: '', age: '', legalForm: '', employees: '',
-    location: '', address: '', buildingArea: '', rent: '', floor: '',
-    revenue: '', profit: '', price: '',
-    hideUntilNda: true,
-    aEquip: false, aOnline: false, aTeam: false, aBrand: false, aLease: false, aSuppliers: false,
-    description: '',
-    name2: '', phone: '', wantCall: true, wantWhatsApp: true,
-  });
+  const [bd, setBd] = useState<BizForm>({ ...BIZ_DEFAULTS, ...(init?.bd ?? {}) });
 
   useEffect(() => {
     if (user) {
@@ -397,6 +431,7 @@ export default function AddListingPage() {
     setPhotos(p => p.filter((_, j) => j !== i));
     setPhotoPreviews(p => { URL.revokeObjectURL(p[i]); return p.filter((_, j) => j !== i); });
   };
+  const removeExisting = (i: number) => setExistingImages(p => p.filter((_, j) => j !== i));
   const movePhoto = (from: number, to: number) => {
     if (from === to) return;
     const re = <T,>(arr: T[]) => { const n = [...arr]; const [it] = n.splice(from, 1); n.splice(to, 0, it); return n; };
@@ -487,13 +522,13 @@ export default function AddListingPage() {
       if (!fd.area || Number(fd.area) <= 0) e.area = 'Укажите площадь';
       if (rawPrice(fd.price) <= 0) e.price = 'Укажите цену';
       if (!fd.phone.trim()) e.phone = 'Укажите телефон';
-      if (photos.length === 0) e.photos = 'Добавьте хотя бы одно фото';
+      if (photos.length + existingImages.length === 0) e.photos = 'Добавьте хотя бы одно фото';
     } else {
       if (!bd.category) e.category = 'Выберите категорию';
       if (!bd.name.trim()) e.name = 'Укажите название';
       if (rawPrice(bd.price) <= 0) e.price = 'Укажите цену';
       if (!bd.phone.trim()) e.phone = 'Укажите телефон';
-      if (photos.length === 0) e.photos = 'Добавьте хотя бы одно фото';
+      if (photos.length + existingImages.length === 0) e.photos = 'Добавьте хотя бы одно фото';
     }
     if (Object.keys(e).length) {
       setErrors(e);
@@ -511,7 +546,9 @@ export default function AddListingPage() {
     }
     setIsSubmitting(true);
     try {
-      const images = (await uploadPhotos()).map(id => ({ image: id }));
+      // существующие (при редактировании) + заново загруженные, в текущем порядке
+      const newIds = await uploadPhotos();
+      const images = [...existingImages.map(im => im.id), ...newIds].map(id => ({ image: id }));
       let body: Record<string, unknown>;
       if (entity === 'land') {
         body = {
@@ -566,11 +603,13 @@ export default function AddListingPage() {
         sellerPhone: entity === 'land' ? fd.phone : bd.phone,
         sellerHasWhatsApp: entity === 'land' ? fd.wantWhatsApp : bd.wantWhatsApp,
         sellerIsAgency: user?.isAgency ?? false,
-        status,
+        // при редактировании статус не меняем (иначе «Сохранить» могло бы снять
+        // объявление с публикации); задаём его только при создании
+        ...(isEdit ? {} : { status }),
         images,
       };
-      const r = await fetch('/api/listings', {
-        method: 'POST',
+      const r = await fetch(isEdit ? `/api/listings/${listingId}` : '/api/listings', {
+        method: isEdit ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ ...body, ...common }),
@@ -579,7 +618,7 @@ export default function AddListingPage() {
         const err = await r.json().catch(() => ({}));
         throw new Error(err?.errors?.[0]?.message ?? 'Ошибка сервера');
       }
-      pushDataLayer('add_listing_submit_success', { entity, status });
+      pushDataLayer(isEdit ? 'edit_listing_submit_success' : 'add_listing_submit_success', { entity, status });
       setIsSubmitted(true);
       let c = 5;
       const timer = setInterval(() => {
@@ -618,8 +657,8 @@ export default function AddListingPage() {
           <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-[var(--brand)]">
             <Check className="size-7 text-white" strokeWidth={3} />
           </div>
-          <h2 className="text-lg font-black tracking-tight text-ink-900">Отправлено на модерацию</h2>
-          <p className="mt-1.5 text-[13px] text-ink-500">Публикация бесплатна. Объявление пройдёт проверку — обычно до 15 минут.</p>
+          <h2 className="text-lg font-black tracking-tight text-ink-900">{isEdit ? 'Изменения сохранены' : 'Отправлено на модерацию'}</h2>
+          <p className="mt-1.5 text-[13px] text-ink-500">{isEdit ? 'Объявление обновлено. Изменения уже применены.' : 'Публикация бесплатна. Объявление пройдёт проверку — обычно до 15 минут.'}</p>
           <p className="mono mt-3 text-[11px] text-ink-400">Переход в кабинет через {countdown} сек…</p>
           <button onClick={() => router.push('/profile')} className="mt-3 text-[13px] font-bold text-[var(--brand)] hover:underline">Перейти сейчас →</button>
         </div>
@@ -636,7 +675,9 @@ export default function AddListingPage() {
           <div className="flex items-center gap-1.5 text-[12.5px] text-ink-500">
             <Link href="/profile" className="hover:text-ink-900">Кабинет</Link>
             <span className="text-ink-300">/</span>
-            <button onClick={() => setEntity(null)} className="hover:text-ink-900">Новое объявление</button>
+            {isEdit
+              ? <span className="hover:text-ink-900">Редактирование</span>
+              : <button onClick={() => setEntity(null)} className="hover:text-ink-900">Новое объявление</button>}
             <span className="text-ink-300">/</span>
             <span className="font-semibold text-ink-900">{entity === 'business' ? 'Готовый бизнес' : 'Участок'}</span>
           </div>
@@ -644,13 +685,15 @@ export default function AddListingPage() {
             <div>
               <Tag>{String(step + 1).padStart(2, '0')} · {steps[step].t.toLowerCase()}</Tag>
               <h1 className="mt-1.5 text-2xl font-black leading-none tracking-[-0.05em] text-[var(--brand-ink)] sm:text-3xl">
-                Подача объявления — <span className="text-ink-300">{entity === 'business' ? 'бизнес' : 'участок'}</span>
+                {isEdit ? 'Редактирование' : 'Подача объявления'} — <span className="text-ink-300">{entity === 'business' ? 'бизнес' : 'участок'}</span>
               </h1>
             </div>
-            <button onClick={() => submit('draft')} disabled={isSubmitting}
-              className="hidden shrink-0 rounded-xl border border-[var(--line)] bg-white px-4 py-2.5 text-[13px] font-bold text-ink-700 transition-colors hover:bg-[var(--paper-2)] disabled:opacity-50 sm:block">
-              Сохранить черновик
-            </button>
+            {!isEdit && (
+              <button onClick={() => submit('draft')} disabled={isSubmitting}
+                className="hidden shrink-0 rounded-xl border border-[var(--line)] bg-white px-4 py-2.5 text-[13px] font-bold text-ink-700 transition-colors hover:bg-[var(--paper-2)] disabled:opacity-50 sm:block">
+                Сохранить черновик
+              </button>
+            )}
           </div>
         </div>
 
@@ -720,7 +763,7 @@ export default function AddListingPage() {
             <span className="hidden text-[12px] text-ink-500 sm:block">Публикация — бесплатно</span>
             <button onClick={goNext} disabled={isSubmitting}
               className={`inline-flex h-12 items-center gap-2 rounded-xl px-5 text-[14px] font-bold text-white transition-all disabled:opacity-60 ${isLast ? 'bg-[var(--brand)] shadow-[0_10px_30px_-12px_rgba(6,111,54,0.6)] hover:bg-[var(--brand-700)]' : 'bg-ink-900 hover:bg-black'}`}>
-              {isSubmitting ? 'Отправка…' : isLast ? 'Опубликовать бесплатно' : `Дальше — ${steps[step + 1].t.split(' ')[0]}`}
+              {isSubmitting ? 'Отправка…' : isLast ? (isEdit ? 'Сохранить изменения' : 'Опубликовать бесплатно') : `Дальше — ${steps[step + 1].t.split(' ')[0]}`}
               {!isSubmitting && <ChevronRight className="size-4" />}
             </button>
           </div>
@@ -945,6 +988,24 @@ export default function AddListingPage() {
           </p>
         </div>
 
+        {existingImages.length > 0 && (
+          <div>
+            <Lab>уже загружены</Lab>
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {existingImages.map((im, i) => (
+                <div key={im.id} className={`group relative aspect-[4/3] overflow-hidden rounded-xl bg-[var(--paper-2)] ${i === 0 && photoPreviews.length === 0 ? 'border-2 border-[var(--brand)]' : 'border border-[var(--line)]'}`}>
+                  {i === 0 && photoPreviews.length === 0 && <span className="absolute left-1.5 top-1.5 z-10 rounded bg-[var(--brand)] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">Обложка</span>}
+                  {im.video
+                    ? <video src={im.url} className="h-full w-full object-cover" muted playsInline />
+                    : <img src={im.url} alt="" className="h-full w-full object-cover" />}
+                  <button type="button" onClick={() => removeExisting(i)}
+                    className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100">✕</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {photoPreviews.length > 0 && (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {photoPreviews.map((src, i) => {
@@ -968,10 +1029,10 @@ export default function AddListingPage() {
           </div>
         )}
 
-        <label className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-[1.5px] border-dashed transition-colors ${errors.photos ? 'border-ink-400 bg-[var(--paper-2)]' : 'border-ink-300 bg-[var(--paper-2)] hover:border-[var(--brand)]'} ${photoPreviews.length ? 'h-20' : 'h-36'}`}>
+        <label className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-[1.5px] border-dashed transition-colors ${errors.photos ? 'border-ink-400 bg-[var(--paper-2)]' : 'border-ink-300 bg-[var(--paper-2)] hover:border-[var(--brand)]'} ${photoPreviews.length || existingImages.length ? 'h-20' : 'h-36'}`}>
           <Upload className="mb-1.5 size-5 text-ink-400" />
-          <span className="text-[13px] font-semibold text-ink-600">{photos.length ? 'Добавить ещё' : 'Загрузить фото или видео'}</span>
-          {!photos.length && <span className="mt-0.5 text-[11px] text-ink-400">JPG · PNG · MP4 · MOV · до 200 МБ</span>}
+          <span className="text-[13px] font-semibold text-ink-600">{photos.length || existingImages.length ? 'Добавить ещё' : 'Загрузить фото или видео'}</span>
+          {!(photos.length || existingImages.length) && <span className="mt-0.5 text-[11px] text-ink-400">JPG · PNG · MP4 · MOV · до 200 МБ</span>}
           <input ref={fileRef} type="file" className="hidden" multiple
             accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" onChange={handlePhotos} />
         </label>
@@ -1048,7 +1109,7 @@ export default function AddListingPage() {
         <Lab>превью карточки</Lab>
         <div className="mt-2 overflow-hidden rounded-2xl border border-[var(--line)] bg-white">
           <div className="ph-plot noise relative aspect-[5/3]">
-            {photoPreviews[0] && <img src={photoPreviews[0]} alt="" className="absolute inset-0 h-full w-full object-cover" />}
+            {(photoPreviews[0] || existingImages[0]?.url) && <img src={photoPreviews[0] || existingImages[0]?.url} alt="" className="absolute inset-0 h-full w-full object-cover" />}
             <span className="absolute left-2.5 top-2.5 rounded bg-[var(--brand-ink)] px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-white">Черновик</span>
             <span className="absolute right-2.5 top-2.5 flex size-6 items-center justify-center rounded-lg border border-black/5 bg-white/90 text-ink-500"><Bookmark className="size-3.5" /></span>
           </div>
@@ -1074,7 +1135,7 @@ export default function AddListingPage() {
         <Lab>превью карточки</Lab>
         <div className="mt-2 overflow-hidden rounded-2xl border border-[var(--line)] bg-white">
           <div className="ph-biz noise relative aspect-[5/3]">
-            {photoPreviews[0] && <img src={photoPreviews[0]} alt="" className="absolute inset-0 h-full w-full object-cover" />}
+            {(photoPreviews[0] || existingImages[0]?.url) && <img src={photoPreviews[0] || existingImages[0]?.url} alt="" className="absolute inset-0 h-full w-full object-cover" />}
             <span className="absolute left-2.5 top-2.5 rounded bg-[var(--brand-ink)] px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-white">Бизнес</span>
             {bizMultiple > 0 && <span className="mono absolute right-2.5 top-2.5 rounded bg-white px-1.5 py-0.5 text-[9.5px] font-bold text-ink-900">× {bizMultiple.toFixed(1)}</span>}
           </div>
