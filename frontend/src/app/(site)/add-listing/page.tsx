@@ -432,6 +432,12 @@ export function ListingWizard({ mode = 'create', listingId, init }: { mode?: 'cr
     setPhotoPreviews(p => { URL.revokeObjectURL(p[i]); return p.filter((_, j) => j !== i); });
   };
   const removeExisting = (i: number) => setExistingImages(p => p.filter((_, j) => j !== i));
+  const [dragIndexE, setDragIndexE] = useState<number | null>(null);
+  const [dragOverE, setDragOverE] = useState<number | null>(null);
+  const moveExisting = (from: number, to: number) => {
+    if (from === to) return;
+    setExistingImages(arr => { const n = [...arr]; const [it] = n.splice(from, 1); n.splice(to, 0, it); return n; });
+  };
   const movePhoto = (from: number, to: number) => {
     if (from === to) return;
     const re = <T,>(arr: T[]) => { const n = [...arr]; const [it] = n.splice(from, 1); n.splice(to, 0, it); return n; };
@@ -990,10 +996,15 @@ export function ListingWizard({ mode = 'create', listingId, init }: { mode?: 'cr
 
         {existingImages.length > 0 && (
           <div>
-            <Lab>уже загружены</Lab>
+            <Lab>уже загружены · перетащите для порядка</Lab>
             <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
               {existingImages.map((im, i) => (
-                <div key={im.id} className={`group relative aspect-[4/3] overflow-hidden rounded-xl bg-[var(--paper-2)] ${i === 0 && photoPreviews.length === 0 ? 'border-2 border-[var(--brand)]' : 'border border-[var(--line)]'}`}>
+                <div key={im.id} draggable
+                  onDragStart={() => setDragIndexE(i)}
+                  onDragOver={e => { e.preventDefault(); setDragOverE(i); }}
+                  onDrop={e => { e.preventDefault(); if (dragIndexE !== null) moveExisting(dragIndexE, i); setDragIndexE(null); setDragOverE(null); }}
+                  onDragEnd={() => { setDragIndexE(null); setDragOverE(null); }}
+                  className={`group relative aspect-[4/3] cursor-grab overflow-hidden rounded-xl bg-[var(--paper-2)] transition-all ${dragOverE === i && dragIndexE !== i ? 'ring-2 ring-[var(--brand)]' : ''} ${dragIndexE === i ? 'opacity-40' : ''} ${i === 0 && photoPreviews.length === 0 ? 'border-2 border-[var(--brand)]' : 'border border-[var(--line)]'}`}>
                   {i === 0 && photoPreviews.length === 0 && <span className="absolute left-1.5 top-1.5 z-10 rounded bg-[var(--brand)] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">Обложка</span>}
                   {im.video
                     ? <video src={im.url} className="h-full w-full object-cover" muted playsInline />
