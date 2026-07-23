@@ -69,9 +69,9 @@ const BTN_V: Record<string, React.CSSProperties> = {
   soft: { background: 'var(--paper-2)', color: 'var(--ink-900)' },
   ink: { background: 'var(--brand-ink)', color: '#fff' },
 }
-const Btn = ({ variant = 'ghost', icon, children, size, style, onClick }: { variant?: string; icon?: string; children?: React.ReactNode; size?: 'sm' | 'lg'; style?: React.CSSProperties; onClick?: () => void }) => {
+const Btn = ({ variant = 'ghost', icon, children, size, style, onClick, disabled }: { variant?: string; icon?: string; children?: React.ReactNode; size?: 'sm' | 'lg'; style?: React.CSSProperties; onClick?: () => void; disabled?: boolean }) => {
   const sz: React.CSSProperties = size === 'sm' ? { height: 32, padding: '0 12px', fontSize: 12.5, borderRadius: 9 } : size === 'lg' ? { height: 46, padding: '0 22px', fontSize: 15 } : {}
-  return <button onClick={onClick} style={{ ...btnBase, ...BTN_V[variant], ...sz, ...style }}>{icon && <Ic n={icon} s={size === 'sm' ? 15 : 17} />}{children}</button>
+  return <button onClick={onClick} disabled={disabled} style={{ ...btnBase, ...BTN_V[variant], ...sz, ...(disabled ? { opacity: 0.5, cursor: 'not-allowed' } : {}), ...style }}>{icon && <Ic n={icon} s={size === 'sm' ? 15 : 17} />}{children}</button>
 }
 
 /* ── eyebrow tag (mono) ── */
@@ -234,6 +234,8 @@ interface Store {
   go: (href: string) => void; signOut: () => void
   updateUser: (f: { name?: string; phone?: string }) => Promise<void>
   updateAvatar: (file: File) => Promise<void>
+  /** Применяет промо к объявлению (PATCH промо-полей) и списывает цену с баланса. */
+  applyPromo: (listingId: string, patch: Record<string, unknown>, price: number, label: string) => Promise<void>
 }
 
 /* =====================================================================
@@ -343,36 +345,107 @@ function ListingsDesk({ store }: { store: Store }) {
 }
 
 /* ── 2 · ПРОДВИЖЕНИЕ ── */
+const WEEK_MS = 7 * 24 * 3600 * 1000
+
 function PromoteDesk({ store }: { store: Store }) {
+  const [apply, setApply] = useState<typeof BOOSTS[number] | null>(null)
   return (
     <>
       <Head eyebrow="02 · продвижение" title="Продвижение объявлений"
         sub="Платные метки для ваших объявлений — те же, что видны на карточках в каталоге. Оплата с баланса кабинета." />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
-        {BOOSTS.map(b => {
-          const inCart = store.cart.some(c => c.key === 'boost-' + b.key)
-          return (
-            <Card key={b.key} pad={16} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--paper-2)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--brand-ink)' }}><Ic n={b.icon} s={19} /></span>
-                {b.chip === 'urgent' ? <Badge tone="ink" icon="bolt">Срочно</Badge> : b.chip === 'ad' ? <Badge tone="mute" icon="sparkle">Реклама</Badge> : <Badge tone="mute">Скидка</Badge>}
-              </div>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-.02em' }}>{b.name}</div>
-                <div style={{ fontSize: 12, color: 'var(--ink-500)', marginTop: 4, lineHeight: 1.4 }}>{b.desc}</div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: 4 }}>
-                <span style={{ fontSize: 15 }}><KZT v={b.price} /><span style={{ fontSize: 11.5, color: 'var(--ink-400)', fontWeight: 500 }} className="mono"> {b.unit}</span></span>
-                <Btn size="sm" variant={inCart ? 'soft' : 'ghost'} icon={inCart ? 'check' : 'plus'}
-                  onClick={() => !inCart && store.addToCart({ key: 'boost-' + b.key, name: b.name, price: b.price, unit: b.unit })}>
-                  {inCart ? 'В корзине' : 'В корзину'}
-                </Btn>
-              </div>
-            </Card>
-          )
-        })}
+        {BOOSTS.map(b => (
+          <Card key={b.key} pad={16} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--paper-2)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--brand-ink)' }}><Ic n={b.icon} s={19} /></span>
+              {b.chip === 'urgent' ? <Badge tone="ink" icon="bolt">Срочно</Badge> : b.chip === 'ad' ? <Badge tone="mute" icon="sparkle">Реклама</Badge> : <Badge tone="mute">Скидка</Badge>}
+            </div>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-.02em' }}>{b.name}</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-500)', marginTop: 4, lineHeight: 1.4 }}>{b.desc}</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: 4 }}>
+              <span style={{ fontSize: 15 }}><KZT v={b.price} /><span style={{ fontSize: 11.5, color: 'var(--ink-400)', fontWeight: 500 }} className="mono"> {b.unit}</span></span>
+              <Btn size="sm" variant="brand" icon="rocket" onClick={() => setApply(b)}>Применить</Btn>
+            </div>
+          </Card>
+        ))}
       </div>
+      {apply && <PromoApply store={store} boost={apply} onClose={() => setApply(null)} />}
     </>
+  )
+}
+
+/** Выбор объявления + применение промо-метки к нему. */
+function PromoApply({ store, boost, onClose }: { store: Store; boost: typeof BOOSTS[number]; onClose: () => void }) {
+  const eligible = store.listings.filter(l => l.status === 'active' || l.status === 'moderation')
+  const [pick, setPick] = useState<string>('')
+  const [newPrice, setNewPrice] = useState<string>('')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const chosen = eligible.find(l => l.id === pick)
+  const isDrop = boost.chip === 'drop'
+
+  const confirm = async () => {
+    if (!chosen) { setErr('Выберите объявление'); return }
+    let patch: Record<string, unknown>
+    if (isDrop) {
+      const np = Number(newPrice.replace(/\s/g, ''))
+      if (!Number.isFinite(np) || np <= 0 || np >= chosen.price) { setErr('Новая цена должна быть меньше текущей'); return }
+      patch = { oldPrice: chosen.price, price: np }
+    } else if (boost.chip === 'ad') {
+      patch = { isFeatured: true, promoUntil: new Date(Date.now() + WEEK_MS).toISOString() }
+    } else {
+      patch = { isUrgent: true, promoUntil: new Date(Date.now() + WEEK_MS).toISOString() }
+    }
+    setBusy(true); setErr('')
+    try { await store.applyPromo(chosen.id, patch, boost.price, boost.name); onClose() }
+    catch { setErr('Не удалось применить'); setBusy(false) }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(9,9,11,.5)' }} />
+      <div style={{ position: 'relative', width: '100%', maxWidth: 460, background: '#fff', borderRadius: 18, padding: 20, boxShadow: '0 30px 80px -20px rgba(2,26,14,.5)' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 14 }}>
+          <span style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--paper-2)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--brand-ink)', flexShrink: 0 }}><Ic n={boost.icon} s={20} /></span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 15.5, fontWeight: 800, letterSpacing: '-.02em' }}>{boost.name}</div>
+            <div style={{ fontSize: 12, color: 'var(--ink-500)' }}>Выберите объявление · <KZT v={boost.price} /> с баланса</div>
+          </div>
+          <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--ink-400)' }}><Ic n="x" s={18} /></button>
+        </div>
+        {eligible.length === 0 ? (
+          <div style={{ fontSize: 13, color: 'var(--ink-500)', padding: '18px 0', textAlign: 'center' }}>Нет активных объявлений для продвижения.</div>
+        ) : (
+          <>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7, maxHeight: 260, overflowY: 'auto' }}>
+              {eligible.map(l => (
+                <button key={l.id} onClick={() => setPick(l.id)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, borderRadius: 12, border: `1px solid ${pick === l.id ? 'var(--brand)' : 'var(--line)'}`, background: pick === l.id ? 'var(--brand-50)' : '#fff', cursor: 'pointer', textAlign: 'left' }}>
+                  <Thumb size={40} r={9} url={l.thumbUrl} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.title}</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--ink-400)' }} className="mono">{fmt(l.price)} ₸</div>
+                  </div>
+                  {pick === l.id && <Ic n="check" s={16} style={{ color: 'var(--brand)' }} />}
+                </button>
+              ))}
+            </div>
+            {isDrop && chosen && (
+              <div style={{ marginTop: 12 }}>
+                <div style={{ fontSize: 12, color: 'var(--ink-500)', marginBottom: 5 }}>Новая цена (меньше {fmt(chosen.price)} ₸)</div>
+                <input value={newPrice} onChange={e => setNewPrice(e.target.value)} inputMode="numeric" placeholder="напр. 30 000 000"
+                  style={{ height: 42, width: '100%', border: '1px solid var(--line)', borderRadius: 10, padding: '0 12px', fontSize: 14, fontFamily: 'inherit', outline: 'none' }} />
+              </div>
+            )}
+            {err && <div style={{ fontSize: 12, color: 'var(--ink-900)', marginTop: 10 }}>{err}</div>}
+            <Btn variant="brand" icon="check" style={{ width: '100%', marginTop: 14 }} onClick={confirm}
+              disabled={busy || !pick}>{busy ? 'Применяем…' : `Применить · ${fmt(boost.price)} ₸`}</Btn>
+          </>
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -814,21 +887,20 @@ function MListings({ store }: { store: Store }) {
 }
 
 function MPromote({ store }: { store: Store }) {
+  const [apply, setApply] = useState<typeof BOOSTS[number] | null>(null)
   return (
     <>
       <MHead title="Продвижение" sub="Платные метки для объявлений — те же, что на карточках. Оплата с баланса." />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {BOOSTS.map(b => {
-          const inCart = store.cart.some(c => c.key === 'boost-' + b.key)
-          return (
-            <MC key={b.key} pad={13} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--paper-2)', color: 'var(--brand-ink)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Ic n={b.icon} s={19} /></span>
-              <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 700, letterSpacing: '-.02em' }}>{b.name}</div><div style={{ fontSize: 13, marginTop: 2 }}><KZT v={b.price} /><span className="mono" style={{ fontSize: 11, color: 'var(--ink-400)' }}> {b.unit}</span></div></div>
-              <Btn size="sm" variant={inCart ? 'soft' : 'ghost'} icon={inCart ? 'check' : 'plus'} onClick={() => !inCart && store.addToCart({ key: 'boost-' + b.key, name: b.name, price: b.price, unit: b.unit })}>{inCart ? 'В корзине' : 'В корзину'}</Btn>
-            </MC>
-          )
-        })}
+        {BOOSTS.map(b => (
+          <MC key={b.key} pad={13} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--paper-2)', color: 'var(--brand-ink)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Ic n={b.icon} s={19} /></span>
+            <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 700, letterSpacing: '-.02em' }}>{b.name}</div><div style={{ fontSize: 13, marginTop: 2 }}><KZT v={b.price} /><span className="mono" style={{ fontSize: 11, color: 'var(--ink-400)' }}> {b.unit}</span></div></div>
+            <Btn size="sm" variant="brand" icon="rocket" onClick={() => setApply(b)}>Применить</Btn>
+          </MC>
+        ))}
       </div>
+      {apply && <PromoApply store={store} boost={apply} onClose={() => setApply(null)} />}
     </>
   )
 }
@@ -1054,6 +1126,7 @@ interface ApiListing {
   id: string | number; title?: string; price?: number; area?: number; buildingArea?: number
   location?: string; status?: string; views?: number; listingCategory?: string
   businessType?: string; landType?: string; images?: { image?: { url?: string } }[]
+  isFeatured?: boolean; isUrgent?: boolean; oldPrice?: number; promoUntil?: string
 }
 
 function mapRow(l: ApiListing): Row {
@@ -1074,7 +1147,16 @@ function mapRow(l: ApiListing): Row {
     views: l.views || 0,
     calls: 0,
     saves: 0,
-    promo: [],
+    // реальные промо-метки объявления (учёт срока действия)
+    promo: (() => {
+      const active = !l.promoUntil || new Date(l.promoUntil).getTime() > Date.now()
+      const p: string[] = []
+      if (active && l.isFeatured) p.push('ad')
+      if (active && l.isUrgent) p.push('urgent')
+      if (active && l.oldPrice && l.oldPrice > price) p.push('drop')
+      return p
+    })(),
+    oldPrice: (!l.promoUntil || new Date(l.promoUntil).getTime() > Date.now()) && l.oldPrice && l.oldPrice > price ? l.oldPrice : undefined,
     days: 0,
     sold: l.status === 'sold',
     editHref: isBusiness ? `/edit-business/${l.id}` : `/edit-listing/${l.id}`,
@@ -1111,15 +1193,20 @@ export default function ProfilePage() {
     if (!loading && !user) router.replace('/login?next=/profile')
   }, [user, loading, router])
 
+  const reloadListings = React.useCallback(async () => {
+    if (!user) return
+    try {
+      const r = await fetch(`/api/listings?where[seller][equals]=${user.id}&depth=1&limit=50`, { credentials: 'include' })
+      const data = await r.json()
+      setListings(((data.docs ?? []) as ApiListing[]).map(mapRow))
+    } catch { /* тихо */ }
+  }, [user])
+
   useEffect(() => {
     if (!user) return
     setListingsLoading(true)
-    fetch(`/api/listings?where[seller][equals]=${user.id}&depth=1&limit=50`, { credentials: 'include' })
-      .then(r => r.json())
-      .then(data => setListings(((data.docs ?? []) as ApiListing[]).map(mapRow)))
-      .catch(() => {})
-      .finally(() => setListingsLoading(false))
-  }, [user])
+    reloadListings().finally(() => setListingsLoading(false))
+  }, [user, reloadListings])
 
   if (loading || !user) {
     return (
@@ -1151,6 +1238,22 @@ export default function ProfilePage() {
     setCart([]); setCartOpen(false); notify('Оплачено ' + fmt(total) + ' ₸ · заявки созданы'); setTab('orders')
   }
 
+  const applyPromo = async (listingId: string, patch: Record<string, unknown>, price: number, label: string) => {
+    // реально применяем метку к объявлению (владелец правит своё)
+    const r = await fetch(`/api/listings/${listingId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(patch),
+    })
+    if (!r.ok) { notify('Не удалось применить — попробуйте ещё раз'); throw new Error('patch failed') }
+    // баланс демо: списываем цену метки
+    setBalance(b => b - price)
+    setTxns(t => [{ t: 'out', label, date: 'сейчас', v: price }, ...t])
+    await reloadListings()
+    notify(`${label} · применено к объявлению`)
+  }
+
   const store: Store = {
     tab, setTab, cart, cartOpen, setCartOpen, balance, txns,
     addToCart, removeFromCart, topup, checkout,
@@ -1160,6 +1263,7 @@ export default function ProfilePage() {
     signOut,
     updateUser,
     updateAvatar,
+    applyPromo,
   }
 
   return (
