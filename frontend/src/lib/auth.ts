@@ -44,7 +44,7 @@ export async function register(payload: {
   phone?: string
   city?: string
   accountType?: AccountType
-}): Promise<void> {
+}): Promise<{ verified: boolean }> {
   const body = {
     ...payload,
     isAgency: payload.accountType === 'agent',
@@ -57,6 +57,8 @@ export async function register(payload: {
   })
   const data = await res.json()
   if (!res.ok) throw new Error(data.errors?.[0]?.message || 'Ошибка регистрации')
+  // При включённой верификации новый юзер создаётся неподтверждённым
+  return { verified: !!data?.doc?._verified }
 }
 
 export async function logout(): Promise<void> {

@@ -8,7 +8,7 @@ interface AuthContextType {
   user: User | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (data: { name: string; email: string; password: string; phone?: string; city?: string; accountType?: AccountType }) => Promise<void>
+  signUp: (data: { name: string; email: string; password: string; phone?: string; city?: string; accountType?: AccountType }) => Promise<{ needsVerification: boolean }>
   signOut: () => Promise<void>
   refreshUser: () => Promise<void>
   updateUser: (fields: UserPatch) => Promise<void>
@@ -36,9 +36,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signUp = async (data: { name: string; email: string; password: string; phone?: string; city?: string; accountType?: AccountType }) => {
-    await register(data)
+    const { verified } = await register(data)
+    if (!verified) {
+      // включена верификация — не логиним, пусть подтвердит email
+      return { needsVerification: true }
+    }
     const u = await login(data.email, data.password)
     setUser(u)
+    return { needsVerification: false }
   }
 
   const signOut = async () => {

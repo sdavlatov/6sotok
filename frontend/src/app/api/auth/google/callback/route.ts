@@ -65,7 +65,9 @@ export async function GET(req: NextRequest) {
       await payload.update({
         collection: 'users',
         id: user.id,
-        data: { password, googleId: profile.sub },
+        // _verified: вход через Google подтверждает email автоматически —
+        // иначе включённая верификация заблокировала бы вход
+        data: { password, googleId: profile.sub, _verified: true },
         overrideAccess: true,
       })
     } else {
@@ -77,6 +79,7 @@ export async function GET(req: NextRequest) {
           name: profile.name || email.split('@')[0],
           googleId: profile.sub,
           role: 'seller',
+          _verified: true,
         },
         overrideAccess: true,
       })

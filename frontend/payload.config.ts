@@ -10,9 +10,21 @@ import { Listings } from './src/collections/Listings'
 import { Media } from './src/collections/Media'
 import { Users } from './src/collections/Users'
 import { Reports } from './src/collections/Reports'
+import { resendAdapter } from './src/lib/email-resend'
 
 // process.cwd() надёжнее import.meta.url в webpack/Next.js контексте
 const projectDir = process.cwd()
+
+// Email через Resend — только если задан ключ. Иначе Payload логирует письма в
+// консоль (dev), а подтверждение email просто не блокирует (см. Users.ts).
+const RESEND_KEY = process.env.RESEND_API_KEY
+const email = RESEND_KEY
+  ? resendAdapter({
+      apiKey: RESEND_KEY,
+      defaultFromAddress: process.env.EMAIL_FROM || 'onboarding@resend.dev',
+      defaultFromName: '6sotok',
+    })
+  : undefined
 
 export default buildConfig({
   admin: {
@@ -46,6 +58,8 @@ export default buildConfig({
   ],
 
   editor: lexicalEditor(),
+
+  ...(email ? { email } : {}),
 
   // Без sharp Payload не выполняет ресайз, хотя в Media.ts заданы imageSizes:
   // в хранилище ложились только оригиналы (мегабайты на фото).

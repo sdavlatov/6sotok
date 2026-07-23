@@ -289,28 +289,48 @@ function RegisterForm({ go, next }: { go: (m: Mode) => void; next: string }) {
   const [agree, setAgree] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [sentTo, setSentTo] = useState<string | null>(null)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
-    if (!agree) {
-      setError('Подтвердите согласие с офертой и обработкой персональных данных')
-      return
-    }
+    // валидация полей «как положено»
+    const nm = name.trim()
+    const ph = normalizePhone(phone) || ''
+    if (nm.length < 2) { setError('Укажите имя и фамилию'); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError('Введите корректный e-mail'); return }
+    if (!/^\+7\d{10}$/.test(ph)) { setError('Введите телефон в формате +7 XXX XXX XX XX'); return }
+    if (pw.length < 8) { setError('Пароль должен быть не короче 8 символов'); return }
+    if (!/[A-Za-zА-Яа-я]/.test(pw) || !/\d/.test(pw)) { setError('Пароль должен содержать буквы и цифры'); return }
+    if (!agree) { setError('Подтвердите согласие с офертой и обработкой персональных данных'); return }
     setLoading(true)
     try {
-      await signUp({
-        name: name.trim(),
-        email,
+      const { needsVerification } = await signUp({
+        name: nm,
+        email: email.trim(),
         password: pw,
-        phone: normalizePhone(phone),
+        phone: ph,
         accountType: role,
       })
+      if (needsVerification) { setSentTo(email.trim()); setLoading(false); return }
       router.push(next)
     } catch (err) {
       setError(humanError(err instanceof Error ? err.message : 'Не получилось создать аккаунт. Попробуйте ещё раз.'))
       setLoading(false)
     }
+  }
+
+  if (sentTo) {
+    return (
+      <div>
+        <h1>Подтвердите e-mail</h1>
+        <p className="sub">Мы отправили письмо на <strong>{sentTo}</strong>. Откройте его и нажмите кнопку подтверждения, чтобы завершить регистрацию.</p>
+        <div className="note" style={{ marginTop: 16 }}>
+          Письмо не пришло? Проверьте папку «Спам». Ссылка действует ограниченное время.
+        </div>
+        <button type="button" className="btn" style={{ marginTop: 16 }} onClick={() => go('login')}>Перейти ко входу</button>
+      </div>
+    )
   }
 
   return (
